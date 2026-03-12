@@ -1,751 +1,1597 @@
-"use client";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 
-// ═══════════════════════════════════════════════════════════════════════
-// KOLLECTIVE COMMAND CENTER v5.0
-// White background · Left sidebar · All 57 brands organized by division
-// Every screen is an ACTION screen · Every button works
-// ═══════════════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════
+// KHG ENTERPRISE COMMAND CENTER v3.0 — ELITE BUILD
+// Carbon Dark + Orange Pulse • Animated • Signature Design
+// ═══════════════════════════════════════════════════════════
 
-const SB = "https://dzlmtvodpyhetvektfuo.supabase.co";
-const SK = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR6bG10dm9kcHloZXR2ZWt0ZnVvIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2OTU4NDg2NCwiZXhwIjoyMDg1MTYwODY0fQ.lhtEGfGYYhEZxzrUl3EN1h53IPyfM8TBpwpoFqdgQVs";
-const HD = { apikey: SK, Authorization: `Bearer ${SK}`, "Content-Type": "application/json", Prefer: "return=representation" };
-async function q(p, o = {}) { try { const r = await fetch(`${SB}/rest/v1/${p}`, { headers: HD, ...o }); if (!r.ok) return null; const t = await r.text(); return t ? JSON.parse(t) : null; } catch { return null; } }
-async function qPatch(t, id, d) { return q(`${t}?id=eq.${id}`, { method: "PATCH", body: JSON.stringify(d) }); }
-async function qInsert(t, d) { return q(t, { method: "POST", body: JSON.stringify(d) }); }
+// ── DATA LAYER ──────────────────────────────────────────────
 
-// DIVISIONS + BRANDS (exactly matching your sidebar screenshot)
-const DIVS = [
-  { key: "kollective", label: "🧠 THE KOLLECTIVE", color: "#FF6B35", open: true, brands: [
-    { k: "dr_dorsey", n: "Dr. Dorsey" }, { k: "kollective", n: "The Kollective" }, { k: "brand_studio", n: "The Brand Studio" },
-    { k: "peoples_dept", n: "The People's Dept." }, { k: "automation_office", n: "The Automation Office" }, { k: "mind_studio", n: "The Mind Studio" }
-  ]},
-  { key: "huglife", label: "🎉 HUGLIFE", color: "#EC4899", brands: [
-    { k: "huglife_events", n: "HugLife Events" }, { k: "noir", n: "NOIR" }, { k: "taste_of_art", n: "Taste of Art" },
-    { k: "remix", n: "REMIX" }, { k: "sundays_best", n: "Sunday's Best" }, { k: "gangsta_gospel", n: "Gangsta Gospel" },
-    { k: "wrst_bhvr", n: "WRST BHVR" }, { k: "paparazzi", n: "Paparazzi" }, { k: "pawchella", n: "Pawchella" },
-    { k: "beauty_beast", n: "Beauty & The Beast" }, { k: "black_ball", n: "Black Ball" }, { k: "snow_ball", n: "Snow Ball" },
-    { k: "monsters_ball", n: "Monster's Ball" }, { k: "haunted_house", n: "Haunted House" }, { k: "winter_wonderland", n: "Winter Wonderland" }
-  ]},
-  { key: "casper", label: "🍔 CASPER GROUP", color: "#8B5CF6", brands: [
-    { k: "casper_group", n: "Casper Group" }, { k: "angel_wings", n: "Angel Wings" }, { k: "sweet_tooth", n: "Sweet Tooth" },
-    { k: "mojo_juice", n: "Mojo Juice" }, { k: "mr_oyster", n: "Mr. Oyster" }, { k: "espresso_co", n: "Espresso Co" },
-    { k: "morning_after", n: "Tha Morning After" }, { k: "pasta_bish", n: "Pasta Bish" }, { k: "patty_daddy", n: "Patty Daddy" },
-    { k: "taco_yaki", n: "Taco Yaki" }, { k: "tossd", n: "Toss'd" }
-  ]},
-  { key: "bodegea", label: "🛍 BODEGEA", color: "#16A34A", brands: [
-    { k: "infinity_water", n: "Infinity Water" }, { k: "pronto_energy", n: "Pronto Energy" }, { k: "stush", n: "Stush" }, { k: "noir_liqueur", n: "Noir Liqueur" }
-  ]},
-  { key: "museums", label: "🏛 MUSEUMS", color: "#0891B2", brands: [
-    { k: "forever_futbol", n: "Forever Futbol" }, { k: "living_legends", n: "Living Legends" },
-    { k: "fallen_stars", n: "Fallen Stars" }, { k: "women_make_world", n: "Women Make The World" }
-  ]},
-  { key: "apps", label: "📱 APPS", color: "#2563EB", brands: [
-    { k: "good_times", n: "Good Times" }, { k: "on_call", n: "On Call" }, { k: "roadside", n: "Roadside" }, { k: "sos", n: "S.O.S" }
-  ]},
-  { key: "umbrella", label: "☂ UMBRELLA GROUP", color: "#CA8A04", brands: [
-    { k: "umbrella_injury", n: "Umbrella Injury Network" }, { k: "umbrella_realty", n: "Umbrella Realty Group" },
-    { k: "umbrella_clean", n: "Umbrella Clean Services" }, { k: "umbrella_legal", n: "Umbrella Legal" },
-    { k: "umbrella_auto", n: "Umbrella Auto Exchange" }, { k: "umbrella_accounting", n: "Umbrella Accounting" }
-  ]},
-  { key: "other", label: "🎨 ART & NONPROFIT", color: "#64748B", brands: [
-    { k: "angel_astronauts", n: "Angel & Astronauts" }, { k: "country_boy", n: "Country Boy" }, { k: "izzy", n: "Izzy" },
-    { k: "torches", n: "Torches" }, { k: "lets_talk", n: "Let's Talk About It" }, { k: "sole_exchange", n: "Sole Exchange" }
-  ]},
-  { key: "personal", label: "👤 DR. DORSEY", color: "#FF6B35", brands: [
-    { k: "dr_dorsey", n: "Dr. Dorsey" }
-  ]},
+const ENTITIES = {
+  huglife: {
+    name: "HugLife", division: "Events", color: "#FF6B35", 
+    email: "justhuglife.forever@gmail.com", ig: "@justhuglife",
+    ghl: "tGbC7nJkOkH5G3RiyjKR",
+    events: ["NOIR","Gangsta Gospel","Sunday's Best","Paparazzi","Pawchella","Black Ball","Beauty & The Beast","Haunted House","Monster's Ball","Snow Ball","Winter Wonderland","Taste of Art","REMIX","WRST BHVR: Napkin Wars","CINCO DE DRINKO"],
+    socials: { ig: "@justhuglife", tiktok: "@justhuglife", fb: "JustHugLife" }
+  },
+  casper: {
+    name: "Casper Group", division: "Food", color: "#E74C3C",
+    email: "info@caspergroupworldwide.com", ig: "@caspergroupworldwide",
+    ghl: "IPP6mHiRgKtIAHOOueHS",
+    brands: ["Angel Wings","Pasta Bish","Taco Yaki","Patty Daddy","The Espresso Co.","Morning After","Toss'd","Sweet Tooth","Mojo Juice","Mr. Oyster"],
+    socials: { ig: "@caspergroupworldwide", tiktok: "@caspergroup", fb: "CasperGroupWorldwide" }
+  },
+  umbrella: {
+    name: "Umbrella Group", division: "Services", color: "#3498DB",
+    email: "theumbrellagroupworldwide@gmail.com", ig: "@umbrella",
+    ghl: "78C8jSFZhpH9MxiKUtFc",
+    brands: ["Auto Exchange","Injury Network","Realty Group","Clean Services","The People's Dept.","Accounting","Brand Studio","Automation Office","Mind Studio","Legal & Compliance"],
+    socials: { ig: "@theumbrellagroupworldwide", tiktok: "@umbrellagroup", fb: "UmbrellaGroup" }
+  },
+  futbol: {
+    name: "Forever Futbol", division: "Museums", color: "#C9A96E",
+    email: "foreverfutbolmuseum@gmail.com", ig: "@foreverfutbolmuseum",
+    ghl: "tGbC7nJkOkH5G3RiyjKR",
+    events: ["ATL Jun 11-Jul 19","HOU Jun 11-Jul 19","LA Jun 11-Jul 19"],
+    socials: { ig: "@foreverfutbolmuseum", tiktok: "@foreverfutbol", fb: "ForeverFutbol" }
+  },
+  dorsey: {
+    name: "Dr. Dorsey", division: "Personal", color: "#C9A96E",
+    email: "dolodorsey@gmail.com", ig: "@dolodorsey",
+    ghl: "FTJ4gOGLsZazXuve0YSY",
+    socials: { ig: "@dolodorsey", ig2: "@thedoctordorsey", tiktok: "@dolodorsey", fb: "DrDorsey" }
+  },
+  noir: {
+    name: "NOIR", division: "Events", color: "#C9A96E",
+    email: "justhuglife.forever@gmail.com", ig: "@noirseries",
+    socials: { ig: "@noirseries", tiktok: "@noirseries" }
+  },
+  bodegea: {
+    name: "BODEGEA", division: "Products", color: "#FF9500",
+    brands: ["Infinity Water","Pronto Energy","NOIR Espresso Liqueur","Stush"],
+    socials: { ig: "@bodegea", tiktok: "@bodegea" }
+  },
+  opulence: {
+    name: "Opulence Designs", division: "Art", color: "#9B59B6",
+    brands: ["Torches","Angel & Astronauts","Izzy","Country Boy"],
+    socials: { ig: "@opulencedesigns" }
+  },
+  innercircle: {
+    name: "The Inner Circle", division: "Apps", color: "#2ECC71",
+    brands: ["Good Times","S.O.S Roadside","On Call"],
+    socials: {}
+  },
+  playmakers: {
+    name: "Playmakers Sports", division: "Non-Profit", color: "#E67E22",
+    brands: ["Sole Exchange","Let's Talk About It"],
+    socials: { ig: "@playmakerssportsassociation" }
+  }
+};
+
+const EVENTS_2026 = [
+  { name: "NOIR DC", date: "2026-04-17", entity: "noir", city: "Washington DC", status: "upcoming" },
+  { name: "Taste of Art LA", date: "2026-04-24", entity: "huglife", city: "Los Angeles", status: "upcoming" },
+  { name: "Taste of Art ATL", date: "2026-05-15", entity: "huglife", city: "Atlanta", status: "upcoming" },
+  { name: "Sunday's Best", date: "2026-05-24", entity: "huglife", city: "TBD", status: "planning" },
+  { name: "NOIR LA", date: "2026-05-29", entity: "noir", city: "Los Angeles", status: "planning" },
+  { name: "Paparazzi LA", date: "2026-05-31", entity: "huglife", city: "Los Angeles", status: "planning" },
+  { name: "NOIR Charlotte", date: "2026-06-05", entity: "noir", city: "Charlotte", status: "planning" },
+  { name: "World Cup ATL Opens", date: "2026-06-11", entity: "futbol", city: "Atlanta", status: "active_build" },
+  { name: "Taste of Art DC", date: "2026-06-12", entity: "huglife", city: "Washington DC", status: "planning" },
+  { name: "Paparazzi LA (BET)", date: "2026-06-14", entity: "huglife", city: "Los Angeles", status: "planning" },
+  { name: "Gangsta Gospel ATL", date: "2026-06-19", entity: "huglife", city: "Atlanta", status: "planning" },
+  { name: "Dr. Dorsey Bday HOU", date: "2026-06-27", entity: "dorsey", city: "Houston", status: "planning" },
+  { name: "Dr. Dorsey Bday ATL", date: "2026-07-02", entity: "dorsey", city: "Atlanta", status: "planning" },
+  { name: "Dr. Dorsey Bday Vegas", date: "2026-07-04", entity: "dorsey", city: "Las Vegas", status: "planning" },
+  { name: "Sunday's Best", date: "2026-07-05", entity: "huglife", city: "TBD", status: "planning" },
+  { name: "Taste of Art HOU", date: "2026-07-10", entity: "huglife", city: "Houston", status: "planning" },
+  { name: "Paparazzi DC", date: "2026-07-12", entity: "huglife", city: "Washington DC", status: "planning" },
+  { name: "NOIR LA", date: "2026-07-31", entity: "noir", city: "Los Angeles", status: "planning" },
+  { name: "Gangsta Gospel HOU", date: "2026-08-01", entity: "huglife", city: "Houston", status: "planning" },
+  { name: "NOIR ATL", date: "2026-08-07", entity: "noir", city: "Atlanta", status: "planning" },
+  { name: "Paparazzi Charlotte", date: "2026-08-09", entity: "huglife", city: "Charlotte", status: "planning" },
+  { name: "Taste of Art HOU", date: "2026-08-14", entity: "huglife", city: "Houston", status: "planning" },
+  { name: "Pawchella ATL", date: "2026-08-22", entity: "huglife", city: "Atlanta", status: "planning" },
+  { name: "NOIR DC", date: "2026-09-04", entity: "noir", city: "Washington DC", status: "planning" },
+  { name: "Gangsta Gospel LA", date: "2026-09-05", entity: "huglife", city: "Los Angeles", status: "planning" },
+  { name: "Sunday's Best", date: "2026-09-06", entity: "huglife", city: "TBD", status: "planning" },
+  { name: "Beauty & The Beast", date: "2026-09-12", entity: "huglife", city: "Atlanta", status: "planning" },
+  { name: "Paparazzi ATL", date: "2026-09-13", entity: "huglife", city: "Atlanta", status: "planning" },
+  { name: "Haunted House ATL", date: "2026-10-01", entity: "huglife", city: "Atlanta", status: "planning" },
+  { name: "Monster's Ball", date: "2026-10-31", entity: "huglife", city: "TBD", status: "planning" },
+  { name: "Black Ball ATL", date: "2026-11-21", entity: "huglife", city: "Atlanta", status: "planning" },
+  { name: "Sunday's Best", date: "2026-11-29", entity: "huglife", city: "TBD", status: "planning" },
+  { name: "Taste of Art Miami", date: "2026-12-04", entity: "huglife", city: "Miami", status: "planning" },
+  { name: "Snow Ball ATL", date: "2026-12-12", entity: "huglife", city: "Atlanta", status: "planning" },
+  { name: "Winter Wonderland ATL", date: "2026-12-01", entity: "huglife", city: "Atlanta", status: "planning" },
 ];
 
-const ALL_BRANDS = DIVS.flatMap(d => d.brands.map(b => ({ ...b, div: d.key, divColor: d.color, divLabel: d.label })));
-
-const TEAM = ["Dr. Dorsey","Linda","Nya","Vincent","Nicholas","Eric","Bax","Brad","Dom","Kenny","Kei","Myia B"];
-
-const EMAILS = ["dolodorsey@gmail.com","drdorseyassistant@gmail.com","foreverfutbolmuseum@gmail.com","justhuglife.forever@gmail.com",
-  "thecaspergroupworldwide@gmail.com","thekollectivehospitality@gmail.com","theumbrellgroupworldwide@gmail.com"];
-
-const SIDEBAR_PAGES = [
-  { section: null, items: [{ id: "home", icon: "🏠", label: "HOME" }, { id: "commands", icon: ">_", label: "COMMANDS" }] },
-  { section: "COMMUNICATIONS", items: [{ id: "email", icon: "✉", label: "EMAIL INBOX" }, { id: "dms", icon: "💬", label: "INSTAGRAM DMS" }, { id: "phone", icon: "📞", label: "PHONE / SMS" }] },
-  { section: "OPERATIONS", items: [{ id: "postreview", icon: "👁", label: "POST REVIEW" }, { id: "events", icon: "🎪", label: "EVENTS" }, { id: "outreach", icon: "📤", label: "OUTREACH" }, { id: "leads", icon: "🎯", label: "LEAD ENGINE" }, { id: "social", icon: "📱", label: "SOCIAL" }, { id: "tasks", icon: "☑", label: "TASKS" }, { id: "outputs", icon: "📦", label: "OUTPUTS" }, { id: "system", icon: "⚡", label: "SYSTEM" }, { id: "settings", icon: "⚙", label: "SETTINGS" }] }
+const WORKFLOWS = [
+  { id: "3jDssrDbi21CLhn6", name: "Email Send Throttle", status: "active", dept: "Outreach" },
+  { id: "LOuffRVoxtPHsCuZ", name: "Newsletter Engine", status: "active", dept: "Content" },
+  { id: "tyQSD2mJl8W9VDm0", name: "IG Comment Engine", status: "active", dept: "Social" },
+  { id: "zn2uHhkUROJqKzEG", name: "Social Send DMs", status: "active", dept: "Social" },
+  { id: "8geOg9hei00b2Dxu", name: "Social Message Gen", status: "active", dept: "Social" },
+  { id: "ThKwcVTGnpXIoOEE", name: "Sponsor Engine", status: "active", dept: "Revenue" },
+  { id: "0paDyU807bccvZYQ", name: "Influencer Outreach", status: "active", dept: "Outreach" },
+  { id: "bGdwLiVFcqP0FcIG", name: "PR Pitch + Followup", status: "active", dept: "PR" },
+  { id: "LQRDE7gsrTVm7rms", name: "PR Enrich + Score", status: "active", dept: "PR" },
+  { id: "szlivCBfrDzjoaYx", name: "Outreach Command Center", status: "active", dept: "Outreach" },
+  { id: "T7ZOnFaSEvcYvwbM", name: "Content Factory", status: "active", dept: "Content" },
+  { id: "bZ4QrBi5QmqICSR8", name: "Linda VA Dispatch", status: "active", dept: "Ops" },
+  { id: "7rf75NwxA5swZInA", name: "MCP Gateway Core", status: "active", dept: "System" },
+  { id: "qgAIBhDCKN49JNXQ", name: "MCP Dashboard API", status: "active", dept: "System" },
+  { id: "jKRUMxAPh85KA3NH", name: "Viral Content Calendar", status: "error", dept: "Content", error: "REPLACE_WITH_ANTHROPIC_KEY" },
 ];
 
-// Brand Selector component
-function BrandSel({ value, onChange, all = true }) {
-  return (
-    <select value={value} onChange={e => onChange(e.target.value)} style={selS()}>
-      {all && <option value="all">All Brands</option>}
-      {!all && <option value="">Select brand...</option>}
-      {DIVS.map(d => <optgroup key={d.key} label={d.label.replace(/^. /, "")}>{d.brands.map(b => <option key={b.k} value={b.k}>{b.n}</option>)}</optgroup>)}
-    </select>
-  );
-}
+const CREDENTIALS = [
+  { service: "Supabase", key: "Project ID", value: "dzlmtvodpyhetvektfuo", type: "id" },
+  { service: "Supabase", key: "URL", value: "https://dzlmtvodpyhetvektfuo.supabase.co", type: "url" },
+  { service: "n8n", key: "Instance", value: "dorsey.app.n8n.cloud", type: "url" },
+  { service: "GHL", key: "Agency ID", value: "2wRk01C87UqX19yrailL", type: "id" },
+  { service: "GHL", key: "API Base", value: "https://services.leadconnectorhq.com", type: "url" },
+  { service: "MCP Gateway", key: "Webhook", value: "7rf75NwxA5swZInA", type: "key" },
+  { service: "Dept 33", key: "Edge Function", value: "dept33-executive-command", type: "id" },
+  { service: "GitHub", key: "Account", value: "https://github.com/dolodorsey", type: "url" },
+  { service: "GHL HugLife", key: "Location ID", value: "tGbC7nJkOkH5G3RiyjKR", type: "id" },
+  { service: "GHL Casper", key: "Location ID", value: "IPP6mHiRgKtIAHOOueHS", type: "id" },
+  { service: "GHL Umbrella", key: "Location ID", value: "78C8jSFZhpH9MxiKUtFc", type: "id" },
+  { service: "GHL Dr. Dorsey", key: "Location ID", value: "FTJ4gOGLsZazXuve0YSY", type: "id" },
+  { service: "Google Drive", key: "Graphics Gen", value: "1K8TRF9V1E3e-l4etIIVckFokSy53ezuH", type: "id" },
+  { service: "Google Drive", key: "Event Logos", value: "1VU1UWCqJ4DQszchEDh9H1hF0k2EqmNk1", type: "id" },
+  { service: "Google Drive", key: "NOIR Folder", value: "1DtcEwCr2t1-ihk7lTVNNJu9lbMBXzLVH", type: "id" },
+  { service: "Google Drive", key: "Casper Group", value: "1omzzzhpMzkHnwli2NR5Tg9ReBGQEKuay", type: "id" },
+  { service: "Sheets", key: "PR Database", value: "18FbI4m-sHrsmV-qm1pgg5BkOiBsFqJY2lYz_zZryd38", type: "id" },
+  { service: "Sheets", key: "Master Contacts", value: "1fW3R0hNSwPtWukcfn4ejZ6702aDBPST_rmz5DVUbpKM", type: "id" },
+  { service: "Sheets", key: "Social Outreach CC", value: "1-CFQeoT1x6KTQkwEbZpb1OxB4pguro4h", type: "id" },
+  { service: "Sheets", key: "Good Times Dir", value: "1pzvjbDbl1UKYFDJ-LSWQuJE9I8XDBNOg-fjLb2amo6Q", type: "id" },
+];
 
-export default function App() {
-  const [page, setPage] = useState("home");
-  const [toast, setToast] = useState(null);
-  const [selectedBrand, setSelectedBrand] = useState(null);
-  const [sidebarOpen, setSidebarOpen] = useState({});
-  const [now, setNow] = useState(new Date());
-  const [pendingApprovals, setPending] = useState(0);
-  
-  useEffect(() => { const t = setInterval(() => setNow(new Date()), 30000); return () => clearInterval(t); }, []);
-  useEffect(() => { q("tasks?status=eq.review&select=id").then(d => setPending(d?.length || 0)); }, []);
-  
-  const flash = (m, t = "success") => { setToast({ m, t }); setTimeout(() => setToast(null), 3000); };
-  const toggleDiv = (k) => setSidebarOpen(p => ({ ...p, [k]: !p[k] }));
+const TEAM = [
+  { name: "Linda", role: "VA", entities: ["All"], dispatch: "bZ4QrBi5QmqICSR8" },
+  { name: "Bax", role: "Core Team", entities: ["HugLife","Futbol","Products"] },
+  { name: "Brittany", role: "Core Team", entities: ["Futbol","Umbrella"] },
+  { name: "Alandra", role: "Core Team", entities: ["Casper","Futbol","Products"] },
+  { name: "Brad", role: "Core Team", entities: ["Casper","Infinity Water","Pronto Energy"] },
+  { name: "Myia B", role: "Mind Studio", entities: ["Contract","Licensing","Hiring"] },
+  { name: "Nicholas", role: "Tour/Event", entities: ["Events"] },
+  { name: "Vincent", role: "Tour/Event", entities: ["Events"] },
+  { name: "Dom", role: "Tour/Event", entities: ["Events"] },
+  { name: "Eric", role: "Tour/Event", entities: ["Events"] },
+  { name: "Kenny", role: "Tour/Event", entities: ["Events"] },
+  { name: "Kei", role: "Tour/Event", entities: ["Events"] },
+];
 
-  return (
-    <div style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif", display: "flex", flexDirection: "column", height: "100vh", background: "#fff", color: "#1a1a1a" }}>
-      
-      {/* ══ TOP COMMAND BAR ══ */}
-      <div style={{ background: "#fff", borderBottom: "1px solid #e5e7eb", padding: "8px 20px", display: "flex", alignItems: "center", gap: 16, flexShrink: 0 }}>
-        <span style={{ fontSize: 10, color: "#999", marginRight: 4 }}>📋</span>
-        <span style={{ color: "#ccc", fontSize: 13 }}>← Back</span>
-        <span style={{ fontWeight: 700, fontSize: 13, letterSpacing: 0.5 }}>KOLLECTIVE COMMAND CENTER</span>
-        <div style={{ flex: 1, display: "flex", justifyContent: "center" }}>
-          <div style={{ display: "flex", alignItems: "center", background: "#f9fafb", border: "1px solid #e5e7eb", borderRadius: 8, padding: "6px 14px", width: 400 }}>
-            <span style={{ color: "#ccc", marginRight: 8 }}>🔍</span>
-            <input placeholder="Run command..." style={{ border: "none", background: "transparent", outline: "none", fontSize: 13, width: "100%", fontFamily: "inherit" }} />
-          </div>
-        </div>
-        {["Run", "Schedule", "Ask", "Broadcast"].map((a, i) => (
-          <button key={a} style={{ background: i === 0 ? "#DC2626" : "transparent", color: i === 0 ? "#fff" : "#999", border: i === 0 ? "none" : "1px solid #e5e7eb", borderRadius: 6, padding: "5px 14px", fontSize: 12, cursor: "pointer", fontFamily: "inherit", fontWeight: i === 0 ? 700 : 400 }}>{a}</button>
-        ))}
-      </div>
+const DEPARTMENTS = [
+  { num: 1, name: "Lead Sourcing", div: "Revenue", status: "activating" },
+  { num: 2, name: "Data Enrichment", div: "Revenue", status: "activating" },
+  { num: 3, name: "Scraping Architecture", div: "Revenue", status: "planned" },
+  { num: 4, name: "Deal Qualification", div: "Revenue", status: "planned" },
+  { num: 5, name: "Deal Strategy", div: "Revenue", status: "planned" },
+  { num: 6, name: "Outreach Writing", div: "Revenue", status: "activating" },
+  { num: 7, name: "Follow-Up Enforcement", div: "Revenue", status: "planned" },
+  { num: 8, name: "Closing", div: "Revenue", status: "planned" },
+  { num: 9, name: "Grants Radar", div: "Revenue", status: "planned" },
+  { num: 10, name: "Grants Writing", div: "Revenue", status: "planned" },
+  { num: 11, name: "What's Hot Intel", div: "Growth", status: "activating" },
+  { num: 12, name: "Content Strategy", div: "Growth", status: "activating" },
+  { num: 13, name: "Social Media Ops", div: "Growth", status: "planned" },
+  { num: 14, name: "Campaign Strategy", div: "Growth", status: "planned" },
+  { num: 15, name: "Prompt Writing", div: "Growth", status: "planned" },
+  { num: 16, name: "Graphics", div: "Creative", status: "activating" },
+  { num: 17, name: "Video Production", div: "Creative", status: "planned" },
+  { num: 18, name: "Short-Form Editing", div: "Creative", status: "planned" },
+  { num: 19, name: "AI Persona Testimonials", div: "Creative", status: "planned" },
+  { num: 20, name: "Commercial Build", div: "Creative", status: "planned" },
+  { num: 21, name: "App Planning", div: "Product", status: "planned" },
+  { num: 22, name: "App UI Architecture", div: "Product", status: "planned" },
+  { num: 23, name: "App Coding", div: "Product", status: "planned" },
+  { num: 24, name: "App Debugging", div: "Product", status: "planned" },
+  { num: 25, name: "Website Strategy", div: "Product", status: "planned" },
+  { num: 26, name: "Website UI", div: "Product", status: "planned" },
+  { num: 27, name: "Website Coding", div: "Product", status: "planned" },
+  { num: 28, name: "Workflow Architecture", div: "Operations", status: "planned" },
+  { num: 29, name: "Task Management", div: "Operations", status: "planned" },
+  { num: 30, name: "GoHighLevel", div: "Operations", status: "activating" },
+  { num: 31, name: "n8n Automation", div: "Operations", status: "activating" },
+  { num: 32, name: "AI Systems / MCP", div: "Operations", status: "planned" },
+  { num: 33, name: "Executive Command", div: "Operations", status: "active" },
+];
 
-      <div style={{ display: "flex", flex: 1, overflow: "hidden" }}>
-        
-        {/* ══ LEFT SIDEBAR ══ */}
-        <div style={{ width: 240, background: "#fafafa", borderRight: "1px solid #e5e7eb", overflowY: "auto", flexShrink: 0, display: "flex", flexDirection: "column" }}>
-          <div style={{ padding: "16px 16px 8px" }}>
-            <div style={{ fontWeight: 800, fontSize: 15, letterSpacing: 2, color: "#1a1a1a" }}>KOLLECTIVE</div>
-            <div style={{ fontSize: 10, color: "#999", letterSpacing: 1 }}>COMMAND CENTER</div>
-          </div>
-          
-          {/* Navigation */}
-          {SIDEBAR_PAGES.map((sec, si) => (
-            <div key={si}>
-              {sec.section && <div style={{ padding: "16px 16px 4px", fontSize: 10, color: "#999", letterSpacing: 1.5, fontWeight: 600 }}>{sec.section}</div>}
-              {sec.items.map(item => (
-                <button key={item.id} onClick={() => { setPage(item.id); setSelectedBrand(null); }}
-                  style={{ display: "flex", alignItems: "center", gap: 10, width: "100%", padding: "8px 16px", border: "none", background: page === item.id ? "#fff" : "transparent", borderLeft: page === item.id ? "3px solid #1a1a1a" : "3px solid transparent", cursor: "pointer", fontSize: 13, color: page === item.id ? "#1a1a1a" : "#666", fontWeight: page === item.id ? 600 : 400, fontFamily: "inherit", textAlign: "left" }}>
-                  <span style={{ width: 20, textAlign: "center", fontSize: 14 }}>{item.icon}</span>
-                  {item.label}
-                </button>
-              ))}
-            </div>
-          ))}
+const BLOCKERS = [
+  { item: "455 engagement seed targets are placeholders", system: "Supabase", severity: "medium" },
+  { item: "16 GHL locations need manual OAuth", system: "GHL", severity: "high" },
+  { item: "Viral Content Calendar missing API key", system: "n8n", severity: "high" },
+  { item: "Good Times venue count below threshold", system: "App", severity: "medium" },
+  { item: "18 dept SOPs not yet seeded", system: "Supabase", severity: "medium" },
+  { item: "Playwright + Remotion repos not pushed", system: "GitHub", severity: "low" },
+  { item: "Autonomous ops not wired to n8n crons", system: "n8n", severity: "medium" },
+  { item: "Google Contacts sync broken (n8n v2.10.4 bug)", system: "n8n", severity: "high" },
+];
 
-          {/* Bottom stats */}
-          <div style={{ marginTop: "auto", padding: 16, fontSize: 10, color: "#bbb", lineHeight: 1.6, borderTop: "1px solid #e5e7eb" }}>
-            <div>48+ brands · 8 divisions</div>
-            <div>55 email · 45 IG · 12 AI agents</div>
-            {pendingApprovals > 0 && <div style={{ color: "#DC2626", fontWeight: 700 }}>{pendingApprovals} pending approvals</div>}
-          </div>
-        </div>
+const POSTING_SCHEDULE = {
+  dorsey: {
+    feed: ["08:30","11:30","15:00","18:30","21:00"],
+    stories: ["07:30","09:00","10:30","12:00","13:30","15:30","17:00","19:00","21:00","22:30"],
+    pillars: { "Empire Building": 25, "Thought Leadership": 20, "Culture": 20, "Behind Scenes": 15, "Product Drops": 10, "Personal": 10 }
+  }
+};
 
-        {/* ══ MAIN CONTENT ══ */}
-        <div style={{ flex: 1, overflow: "auto", background: "#fff" }}>
-          {page === "home" && <HomePage flash={flash} />}
-          {page === "postreview" && <PostReviewPage flash={flash} />}
-          {page === "email" && <EmailPage flash={flash} />}
-          {page === "phone" && <PhonePage flash={flash} />}
-          {page === "social" && <SocialPage flash={flash} />}
-          {page === "outreach" && <OutreachPage flash={flash} />}
-          {page === "tasks" && <TasksPage flash={flash} />}
-          {page === "leads" && <LeadsPage flash={flash} />}
-          {page === "events" && <EventsPage flash={flash} />}
-          {page === "outputs" && <OutputsPage flash={flash} />}
-          {page === "system" && <SystemPage flash={flash} />}
-          {page === "settings" && <SettingsPage flash={flash} />}
-          {page === "commands" && <CommandsPage flash={flash} />}
-          {page === "dms" && <DMsPage flash={flash} />}
-        </div>
-      </div>
+const EMAIL_ROUTING = [
+  { dest: "HugLife / Events / ICONIC", email: "justhuglife.forever@gmail.com", cc: "dolodorsey@gmail.com + drdorseyassistant@gmail.com" },
+  { dest: "Casper Group", email: "info@caspergroupworldwide.com", cc: "—" },
+  { dest: "Umbrella Group", email: "theumbrellagroupworldwide@gmail.com", cc: "—" },
+  { dest: "Forever Futbol / Museums", email: "foreverfutbolmuseum@gmail.com", cc: "—" },
+  { dest: "Personal / Team", email: "dolodorsey@gmail.com", cc: "—" },
+  { dest: "Business / New Contacts", email: "thedoctordorsey@gmail.com", cc: "—" },
+  { dest: "Assistant / Ops", email: "drdorseyassistant@gmail.com", cc: "—" },
+  { dest: "Company-wide", email: "thekollectivehospitality@gmail.com", cc: "—" },
+];
 
-      {toast && <div style={{ position: "fixed", bottom: 20, right: 20, background: toast.t === "error" ? "#DC2626" : "#16A34A", color: "#fff", padding: "10px 20px", borderRadius: 8, fontSize: 13, zIndex: 999, boxShadow: "0 4px 12px rgba(0,0,0,.15)" }}>{toast.m}</div>}
-    </div>
-  );
-}
+const DM_TEMPLATES = [
+  { name: "Cold Intro - Venue", body: "Hey [name] — love what y'all are building at [venue]. We're producing [event] on [date] in [city] and your space is exactly the energy. Worth a quick chat?" },
+  { name: "Cold Intro - Sponsor", body: "Hey [name] — [brand] keeps showing up in our world. We're activating [event] across [cities] this year and I think there's a play. 5 min?" },
+  { name: "Follow-Up - Warm", body: "Hey [name] — circling back on [topic]. Still interested in connecting. Let me know what works." },
+  { name: "Collab Pitch", body: "Hey [name] — been watching your content. We're doing something special with [event] and I think you'd be perfect for it. DM me back." },
+  { name: "Thank You - Post Event", body: "Hey [name] — appreciate you pulling up to [event]. That energy was everything. More coming soon." },
+];
 
-// ═══ HOME ═══
-function HomePage({ flash }) {
-  const [stats, setStats] = useState({});
-  const today = new Date().toISOString().split("T")[0];
-  useEffect(() => {
-    Promise.all([
-      q(`contact_action_queue?scheduled_date=eq.${today}&status=eq.queued&select=action_type`),
-      q("tasks?status=neq.done&select=id,title,priority,assigned_to,brand_key,status&order=priority.asc&limit=15"),
-    ]).then(([queue, tasks]) => setStats({ queue: queue || [], tasks: tasks || [] }));
-  }, []);
+// ── ICONS (inline SVG) ─────────────────────────────────────
 
-  const qc = (type) => (stats.queue || []).filter(q => q.action_type === type).length;
-
-  return (
-    <div style={{ padding: 24 }}>
-      <h1 style={{ fontSize: 22, fontWeight: 700, marginBottom: 20 }}>Home</h1>
-      
-      {/* Today's Queue */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: 12, marginBottom: 24 }}>
-        {[
-          { label: "Likes", count: qc("like"), color: "#EC4899" },
-          { label: "Comments", count: qc("comment"), color: "#8B5CF6" },
-          { label: "DMs", count: qc("dm"), color: "#2563EB" },
-          { label: "Emails", count: qc("email_promo"), color: "#CA8A04" },
-          { label: "Outreach", count: qc("outreach"), color: "#16A34A" },
-          { label: "Total", count: (stats.queue || []).length, color: "#FF6B35" },
-        ].map(s => (
-          <div key={s.label} style={{ background: "#f9fafb", border: "1px solid #e5e7eb", borderRadius: 10, padding: 16, textAlign: "center" }}>
-            <div style={{ fontSize: 26, fontWeight: 800, color: s.color }}>{s.count.toLocaleString()}</div>
-            <div style={{ fontSize: 11, color: "#999", marginTop: 2, textTransform: "uppercase", letterSpacing: 1 }}>{s.label}</div>
-          </div>
-        ))}
-      </div>
-
-      {/* Brand Grid */}
-      <h2 style={{ fontSize: 16, fontWeight: 700, marginBottom: 12 }}>All Brands by Division</h2>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: 12, marginBottom: 24 }}>
-        {DIVS.filter(d => d.key !== "personal").map(d => (
-          <div key={d.key} style={{ background: "#f9fafb", borderRadius: 10, padding: 14, borderLeft: `4px solid ${d.color}` }}>
-            <div style={{ fontWeight: 700, fontSize: 13, color: d.color, marginBottom: 8 }}>{d.label}</div>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
-              {d.brands.map(b => <span key={b.k} style={{ background: "#fff", border: "1px solid #eee", borderRadius: 5, padding: "3px 8px", fontSize: 11, color: "#555" }}>{b.n}</span>)}
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {/* Priority Tasks */}
-      <h2 style={{ fontSize: 16, fontWeight: 700, marginBottom: 12 }}>Priority Tasks</h2>
-      <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
-        <thead><tr style={{ borderBottom: "2px solid #e5e7eb", textAlign: "left" }}>
-          <th style={thS()}>Task</th><th style={thS()}>Assigned</th><th style={thS()}>Brand</th><th style={thS()}>Priority</th><th style={thS()}>Actions</th>
-        </tr></thead>
-        <tbody>
-          {(stats.tasks || []).map(t => (
-            <tr key={t.id} style={{ borderBottom: "1px solid #f3f4f6" }}>
-              <td style={tdS()}>{t.title}</td>
-              <td style={tdS()}><span style={{ color: "#999" }}>{t.assigned_to || "—"}</span></td>
-              <td style={tdS()}><span style={{ color: "#999" }}>{t.brand_key || "—"}</span></td>
-              <td style={tdS()}><span style={{ color: t.priority === "P1" ? "#DC2626" : t.priority === "P2" ? "#CA8A04" : "#2563EB", fontWeight: 700 }}>{t.priority}</span></td>
-              <td style={tdS()}>
-                <button onClick={async () => { await qPatch("tasks", t.id, { status: "in_progress" }); flash("Started"); }} style={smB("#2563EB")}>Start</button>
-                <button onClick={async () => { await qPatch("tasks", t.id, { status: "done", completed_at: new Date().toISOString() }); flash("Done"); }} style={smB("#16A34A")}>Done</button>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  );
-}
-
-// ═══ EMAIL INBOX ═══ (matches your screenshot — tabs for accounts, Inbox/Live/Outbox/Scripts)
-function EmailPage({ flash }) {
-  const [acct, setAcct] = useState("all");
-  const [subtab, setSubtab] = useState("scripts");
-  const [scripts, setScripts] = useState([]);
-  const [showNew, setShowNew] = useState(false);
-  const [form, setForm] = useState({ brand_key: "", action_type: "email_promo", target_focus: "customer", subject_line: "", message_body: "", variant_label: "A" });
-
-  useEffect(() => { q("outreach_subject_templates?action_type=eq.email_promo&order=brand_key.asc&limit=200").then(d => setScripts(d || [])); }, []);
-
-  const save = async () => {
-    if (!form.brand_key || !form.message_body) return;
-    await qInsert("outreach_subject_templates", { ...form, is_active: true });
-    flash("Script saved");
-    setShowNew(false);
-    q("outreach_subject_templates?action_type=eq.email_promo&order=brand_key.asc&limit=200").then(d => setScripts(d || []));
+const Icon = ({ name, size = 16 }) => {
+  const s = { width: size, height: size, display: "inline-block", verticalAlign: "middle" };
+  const icons = {
+    home: <svg style={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>,
+    menu: <svg style={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>,
+    cmd: <svg style={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 3a3 3 0 00-3 3v12a3 3 0 003 3 3 3 0 003-3 3 3 0 00-3-3H6a3 3 0 00-3 3 3 3 0 003 3 3 3 0 003-3V6a3 3 0 00-3-3 3 3 0 00-3 3 3 3 0 003 3h12a3 3 0 003-3 3 3 0 00-3-3z"/></svg>,
+    settings: <svg style={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/></svg>,
+    system: <svg style={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>,
+    key: <svg style={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 11-7.778 7.778 5.5 5.5 0 017.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>,
+    mail: <svg style={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>,
+    send: <svg style={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>,
+    calendar: <svg style={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>,
+    task: <svg style={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>,
+    social: <svg style={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 2h-3a5 5 0 00-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 011-1h3z"/></svg>,
+    target: <svg style={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>,
+    image: <svg style={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>,
+    dm: <svg style={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"/></svg>,
+    output: <svg style={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>,
+    alert: <svg style={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>,
+    copy: <svg style={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>,
+    check: <svg style={s} viewBox="0 0 24 24" fill="none" stroke="#34C759" strokeWidth="2"><polyline points="20 6 9 17 4 12"/></svg>,
+    x: <svg style={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>,
+    chevron: <svg style={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="9 18 15 12 9 6"/></svg>,
+    expand: <svg style={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="6 9 12 15 18 9"/></svg>,
+    link: <svg style={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>,
+    play: <svg style={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>,
+    pause: <svg style={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>,
+    user: <svg style={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>,
+    search: <svg style={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>,
+    zap: <svg style={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>,
+    globe: <svg style={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>,
   };
+  return icons[name] || null;
+};
 
-  const inboxCounts = { inbox: 0, live: 0, outbox: 0, scripts: scripts.length };
+// ── UTILITY ─────────────────────────────────────────────────
+
+const daysUntil = (dateStr) => {
+  const d = new Date(dateStr);
+  const now = new Date("2026-03-12");
+  return Math.ceil((d - now) / (1000 * 60 * 60 * 24));
+};
+
+const copyToClipboard = (text, setCopied) => {
+  if (navigator.clipboard) navigator.clipboard.writeText(text);
+  setCopied(text);
+  setTimeout(() => setCopied(null), 2000);
+};
+
+// ── STYLES ──────────────────────────────────────────────────
+
+const css = `
+  @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&display=swap');
+  * { margin:0; padding:0; box-sizing:border-box; }
+  :root {
+    --bg: #060606; --surface: #0d0d0d; --surface2: #141414; --surface3: #1c1c1c;
+    --border: rgba(255,255,255,0.06); --border2: rgba(255,255,255,0.12); --border3: rgba(255,255,255,0.2);
+    --text: #e8e8e8; --text2: #888888; --text3: #555555;
+    --accent: #FF6B35; --accent2: #FF8F66; --accent-glow: rgba(255,107,53,0.12);
+    --green: #34C759; --red: #FF3B30; --yellow: #FFD60A; --blue: #0A84FF;
+    --radius: 10px; --radius-sm: 6px;
+  }
+  @keyframes fadeIn { from { opacity:0; transform:translateY(8px) } to { opacity:1; transform:translateY(0) } }
+  @keyframes pulse { 0%,100% { opacity:1 } 50% { opacity:.4 } }
+  @keyframes glowPulse { 0%,100% { box-shadow:0 0 4px var(--accent) } 50% { box-shadow:0 0 16px var(--accent) } }
+  .fade-in { animation: fadeIn .4s cubic-bezier(.16,1,.3,1) both }
+  .fade-d1{animation-delay:.05s}.fade-d2{animation-delay:.1s}.fade-d3{animation-delay:.15s}.fade-d4{animation-delay:.2s}.fade-d5{animation-delay:.25s}.fade-d6{animation-delay:.3s}
+  body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); -webkit-font-smoothing: antialiased; }
+  
+  .dashboard { display: flex; height: 100vh; overflow: hidden; background: var(--bg); }
+  
+  /* SIDEBAR */
+  .sidebar {
+    width: 252px; min-width: 252px; background: var(--surface); border-right: 1px solid var(--border);
+    display: flex; flex-direction: column; overflow: hidden; transition: all 0.25s cubic-bezier(.16,1,.3,1);
+  }
+  .sidebar.collapsed { width: 52px; min-width: 52px; }
+  .sidebar.collapsed .nav-label, .sidebar.collapsed .sidebar-header span, .sidebar.collapsed .sidebar-section-title,
+  .sidebar.collapsed .entity-tag { display: none; }
+  .sidebar.collapsed .nav-item { justify-content: center; padding: 10px 0; }
+  .sidebar-header {
+    padding: 16px 16px 12px; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid var(--border);
+    cursor: pointer; user-select: none;
+  }
+  .sidebar-header .logo { width: 28px; height: 28px; border-radius: 7px; background: linear-gradient(135deg, var(--accent), #e55a20); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 12px; color: #000; flex-shrink: 0; letter-spacing: .02em; }
+  .sidebar-header span { font-weight: 600; font-size: 13px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text2); }
+  .sidebar-section-title { padding: 16px 16px 6px; font-size: 10px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text3); }
+  .nav-item {
+    display: flex; align-items: center; gap: 9px; padding: 7px 14px; cursor: pointer;
+    color: var(--text2); font-size: 12.5px; transition: all 0.15s; border-left: 2px solid transparent;
+    position: relative; font-weight: 500;
+  }
+  .nav-item:hover { color: var(--text); background: rgba(255,255,255,0.025); }
+  .nav-item.active { color: var(--accent); background: var(--accent-glow); border-left-color: var(--accent); }
+  .nav-item.active::after { content:''; position:absolute; left:0; top:50%; transform:translateY(-50%); width:2px; height:16px; background:var(--accent); border-radius:1px; box-shadow:0 0 8px var(--accent); }
+  .nav-label { white-space: nowrap; }
+  .entity-tag { font-size: 9px; padding: 1px 5px; border-radius: 3px; background: rgba(255,255,255,0.06); color: var(--text3); margin-left: auto; }
+  
+  /* MAIN */
+  .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+  .topbar {
+    height: 52px; min-height: 52px; border-bottom: 1px solid var(--border); display: flex; align-items: center;
+    padding: 0 20px; gap: 12px; background: var(--surface);
+  }
+  .topbar-title { font-size: 15px; font-weight: 600; }
+  .topbar-sub { font-size: 12px; color: var(--text3); font-family: 'DM Mono', monospace; }
+  .topbar-right { margin-left: auto; display: flex; gap: 8px; align-items: center; }
+  .content { flex: 1; overflow-y: auto; padding: 20px; }
+  
+  /* CARDS */
+  .card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 16px; transition: all 0.2s;
+  }
+  .card:hover { border-color: var(--border2); }
+  .card-glow:hover { border-color: rgba(255,107,53,0.25); box-shadow: 0 0 20px rgba(255,107,53,0.06); }
+  .card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+  .card-title { font-size: 13px; font-weight: 600; letter-spacing: 0.02em; }
+  .card-subtitle { font-size: 11px; color: var(--text3); font-family: 'DM Mono', monospace; }
+  
+  /* GRID */
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+  .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+  
+  /* STAT */
+  .stat-val { font-size: 32px; font-weight: 700; font-family: 'DM Mono', monospace; line-height: 1; letter-spacing: -0.02em; }
+  .stat-label { font-size: 10px; color: var(--text3); margin-top: 6px; letter-spacing: 0.06em; text-transform: uppercase; font-weight: 500; }
+  .stat-card { position: relative; overflow: hidden; }
+  .stat-card::after { content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 2px; background: linear-gradient(90deg, var(--accent), transparent); opacity: 0.4; }
+  
+  /* BADGES */
+  .badge { display: inline-flex; align-items: center; padding: 3px 8px; border-radius: 4px; font-size: 9.5px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; }
+  .badge-green { background: rgba(52,199,89,0.15); color: var(--green); }
+  .badge-red { background: rgba(255,59,48,0.15); color: var(--red); }
+  .badge-yellow { background: rgba(255,214,10,0.15); color: var(--yellow); }
+  .badge-blue { background: rgba(10,132,255,0.15); color: var(--blue); }
+  .badge-orange { background: rgba(255,107,53,0.15); color: var(--accent); }
+  .badge-gray { background: rgba(255,255,255,0.06); color: var(--text3); }
+  
+  /* BUTTONS */
+  .btn {
+    padding: 7px 14px; border-radius: var(--radius-sm); border: none; cursor: pointer;
+    font-size: 12px; font-weight: 600; font-family: 'DM Sans', sans-serif; transition: all 0.15s;
+    display: inline-flex; align-items: center; gap: 6px;
+  }
+  .btn-primary { background: var(--accent); color: #000; }
+  .btn-primary:hover { filter: brightness(1.15); transform: translateY(-1px); box-shadow: 0 4px 12px rgba(255,107,53,0.3); }
+  .btn-ghost { background: transparent; border: 1px solid var(--border2); color: var(--text2); }
+  .btn-ghost:hover { border-color: var(--accent); color: var(--accent); }
+  .btn-sm { padding: 4px 10px; font-size: 11px; }
+  .btn-danger { background: rgba(255,59,48,0.15); color: var(--red); }
+  
+  /* TABLE */
+  .tbl { width: 100%; border-collapse: collapse; font-size: 12px; }
+  .tbl th { text-align: left; padding: 8px 10px; color: var(--text3); font-weight: 500; font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; border-bottom: 1px solid var(--border); }
+  .tbl td { padding: 8px 10px; border-bottom: 1px solid var(--border); color: var(--text2); }
+  .tbl tr:hover td { color: var(--text); background: rgba(255,255,255,0.02); }
+  
+  /* MISC */
+  .mono { font-family: 'DM Mono', monospace; }
+  .truncate { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .divider { height: 1px; background: var(--border); margin: 16px 0; }
+  .section-title { font-size: 11px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text3); margin-bottom: 12px; }
+  .entity-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; flex-shrink: 0; }
+  .pill-tab {
+    padding: 6px 14px; border-radius: 20px; font-size: 12px; cursor: pointer; transition: all 0.15s;
+    border: 1px solid var(--border); color: var(--text3); background: transparent;
+  }
+  .pill-tab.active { background: var(--accent); color: #000; border-color: var(--accent); font-weight: 600; }
+  .pill-tabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 16px; }
+  .copy-btn { cursor: pointer; opacity: 0.4; transition: opacity 0.15s; }
+  .copy-btn:hover { opacity: 1; }
+  .input {
+    background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-sm);
+    padding: 8px 12px; color: var(--text); font-size: 13px; font-family: 'DM Sans', sans-serif;
+    width: 100%; outline: none; transition: border-color 0.15s;
+  }
+  .input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(255,107,53,0.1); }
+  .textarea { resize: vertical; min-height: 80px; }
+  .expandable { cursor: pointer; user-select: none; }
+  .expandable-content { overflow: hidden; transition: max-height 0.3s; }
+  .scroll-y { overflow-y: auto; }
+  
+  /* ENTITY CARD */
+  .entity-card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 14px; cursor: pointer; transition: all 0.2s; position: relative; overflow: hidden;
+  }
+  .entity-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; }
+  .entity-card:hover { border-color: var(--border2); transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,0.3); }
+  .entity-card .entity-name { font-size: 14px; font-weight: 600; margin-bottom: 2px; }
+  .entity-card .entity-division { font-size: 11px; color: var(--text3); }
+  
+  /* EVENT CARD */
+  .event-card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 14px; display: flex; gap: 12px; transition: border-color 0.2s;
+  }
+  .event-card:hover { border-color: var(--border2); transform: translateX(3px); }
+  .event-date-block {
+    width: 48px; text-align: center; flex-shrink: 0;
+  }
+  .event-date-block .month { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; }
+  .event-date-block .day { font-size: 22px; font-weight: 700; font-family: 'DM Mono', monospace; line-height: 1.2; }
+  
+  /* SCROLLBAR */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
+  
+  @media (max-width: 768px) {
+    .sidebar { position: fixed; z-index: 100; left: -260px; }
+    .sidebar.open { left: 0; }
+    .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
+  }
+`;
+
+// ══════════════════════════════════════════════════════════════
+// SCREENS
+// ══════════════════════════════════════════════════════════════
+
+// ── HOME ────────────────────────────────────────────────────
+
+function HomeScreen({ navigate }) {
+  const [expanded, setExpanded] = useState(null);
+  const nextEvents = EVENTS_2026.filter(e => daysUntil(e.date) > 0).sort((a,b) => daysUntil(a.date) - daysUntil(b.date)).slice(0,5);
+  const activeWorkflows = WORKFLOWS.filter(w => w.status === "active").length;
+  const errorWorkflows = WORKFLOWS.filter(w => w.status === "error").length;
+  const activeDepts = DEPARTMENTS.filter(d => d.status === "active" || d.status === "activating").length;
 
   return (
-    <div style={{ padding: 24 }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-        <h1 style={{ fontSize: 22, fontWeight: 700 }}>Email</h1>
-        <button onClick={() => flash("Pulling emails...")} style={{ background: "#f9fafb", border: "1px solid #e5e7eb", borderRadius: 8, padding: "8px 16px", cursor: "pointer", fontSize: 13, fontFamily: "inherit", display: "flex", alignItems: "center", gap: 6 }}>🔄 Pull Live Emails</button>
+    <div>
+      <div className="grid-4" style={{ marginBottom: 16 }}>
+        <div className="card stat-card fade-in fade-d1">
+          <div className="stat-val" style={{ color: "var(--accent)" }}>{Object.keys(ENTITIES).length}</div>
+          <div className="stat-label">Active Entities</div>
+        </div>
+        <div className="card stat-card fade-in fade-d2">
+          <div className="stat-val" style={{ color: "var(--green)" }}>{activeWorkflows}</div>
+          <div className="stat-label">Workflows Live</div>
+        </div>
+        <div className="card stat-card fade-in fade-d3">
+          <div className="stat-val" style={{ color: "var(--yellow)" }}>{EVENTS_2026.length}</div>
+          <div className="stat-label">Events 2026</div>
+        </div>
+        <div className="card stat-card fade-in fade-d4">
+          <div className="stat-val" style={{ color: "var(--blue)" }}>{activeDepts}/33</div>
+          <div className="stat-label">Depts Active</div>
+        </div>
       </div>
 
-      {/* Email Account Tabs */}
-      <div style={{ display: "flex", gap: 8, marginBottom: 16, flexWrap: "wrap" }}>
-        {["all", ...EMAILS].map(e => (
-          <button key={e} onClick={() => setAcct(e)} style={{ background: acct === e ? (e === "foreverfutbolmuseum@gmail.com" ? "#DC2626" : "#f3f4f6") : "transparent", color: acct === e ? (e === "foreverfutbolmuseum@gmail.com" ? "#fff" : "#1a1a1a") : "#999", border: "none", borderRadius: 6, padding: "6px 12px", fontSize: 11, cursor: "pointer", fontFamily: "inherit", fontWeight: acct === e ? 600 : 400 }}>
-            {e === "all" ? "ALL" : e.split("@")[0]}
+      {errorWorkflows > 0 && (
+        <div className="card" style={{ marginBottom: 16, borderColor: "rgba(255,59,48,0.3)", background: "rgba(255,59,48,0.04)" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <div style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--red)", animation: "pulse 2s infinite" }} />
+            <span style={{ color: "var(--red)", fontWeight: 600, fontSize: 12 }}>{errorWorkflows} workflow error{errorWorkflows > 1 ? "s" : ""}</span>
+            <span style={{ fontSize: 11, color: "var(--text3)", flex: 1 }}>Viral Content Calendar — missing API key</span>
+            <button className="btn btn-sm btn-danger" onClick={() => navigate("system")}>Fix Now</button>
+          </div>
+        </div>
+      )}
+
+      {BLOCKERS.filter(b => b.severity === "high").length > 0 && (
+        <div className="card" style={{ marginBottom: 16, borderColor: "rgba(255,214,10,0.3)", background: "rgba(255,214,10,0.03)" }}>
+          <div className="card-title" style={{ marginBottom: 8, color: "var(--yellow)" }}><Icon name="alert" size={14} /> Active Blockers</div>
+          {BLOCKERS.filter(b => b.severity === "high").map((b, i) => (
+            <div key={i} style={{ fontSize: 12, color: "var(--text2)", padding: "4px 0", display: "flex", gap: 8 }}>
+              <span className="badge badge-yellow" style={{ flexShrink: 0 }}>{b.system}</span>
+              <span>{b.item}</span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <div className="grid-2" style={{ marginBottom: 16 }}>
+        <div className="card">
+          <div className="card-title" style={{ marginBottom: 12 }}>Entities</div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            {Object.entries(ENTITIES).map(([key, ent]) => (
+              <div key={key} className="entity-card" onClick={() => setExpanded(expanded === key ? null : key)}
+                style={{ borderLeftColor: ent.color, borderLeftWidth: 3 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                    <div style={{ width: 32, height: 32, borderRadius: 8, background: `${ent.color}15`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 700, color: ent.color, flexShrink: 0 }}>
+                      {ent.name[0]}
+                    </div>
+                    <div>
+                      <div className="entity-name">{ent.name}</div>
+                      <div className="entity-division">{ent.division}{ent.brands ? ` · ${ent.brands.length} brands` : ""}{ent.events ? ` · ${ent.events.length} events` : ""}</div>
+                    </div>
+                  </div>
+                  <Icon name={expanded === key ? "expand" : "chevron"} size={14} />
+                </div>
+                {expanded === key && (
+                  <div style={{ marginTop: 10, paddingTop: 10, borderTop: "1px solid var(--border)", animation: "fadeIn .3s ease" }}>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6, fontSize: 11, color: "var(--text2)" }}>
+                      {ent.email && <div><span style={{ color: "var(--text3)" }}>Email</span><br/>{ent.email}</div>}
+                      {ent.ig && <div><span style={{ color: "var(--text3)" }}>Instagram</span><br/><span style={{ color: ent.color }}>{ent.ig}</span></div>}
+                      {ent.ghl && <div><span style={{ color: "var(--text3)" }}>GHL</span><br/><span className="mono" style={{ fontSize: 10 }}>{ent.ghl}</span></div>}
+                      {ent.brands && <div style={{ gridColumn: "1 / -1" }}><span style={{ color: "var(--text3)" }}>Brands</span><br/>{ent.brands.join(" · ")}</div>}
+                    </div>
+                    <div style={{ display: "flex", gap: 6, marginTop: 8 }}>
+                      <button className="btn btn-sm btn-ghost" onClick={(e) => { e.stopPropagation(); navigate("social", key); }}>Social</button>
+                      <button className="btn btn-sm btn-ghost" onClick={(e) => { e.stopPropagation(); navigate("outreach", key); }}>Outreach</button>
+                      <button className="btn btn-sm btn-ghost" onClick={(e) => { e.stopPropagation(); navigate("events", key); }}>Events</button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="card">
+          <div className="card-title" style={{ marginBottom: 12 }}>Upcoming Events</div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {nextEvents.map((ev, i) => {
+              const d = new Date(ev.date);
+              const days = daysUntil(ev.date);
+              const ent = ENTITIES[ev.entity];
+              return (
+                <div key={i} className="event-card">
+                  <div className="event-date-block">
+                    <div className="month" style={{ color: ent?.color }}>{d.toLocaleDateString("en-US",{month:"short"})}</div>
+                    <div className="day">{d.getDate()}</div>
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 13, fontWeight: 600 }}>{ev.name}</div>
+                    <div style={{ fontSize: 11, color: "var(--text3)" }}>{ev.city}</div>
+                    <div style={{ display: "flex", gap: 6, marginTop: 4 }}>
+                      <span className={`badge ${days <= 30 ? "badge-red" : days <= 60 ? "badge-yellow" : "badge-blue"}`}>{days}d</span>
+                      <span className="badge badge-gray">{ev.status}</span>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          <button className="btn btn-ghost btn-sm" style={{ marginTop: 10, width: "100%" }} onClick={() => navigate("events")}>View All Events</button>
+        </div>
+      </div>
+
+      <div className="card">
+        <div className="card-title" style={{ marginBottom: 10 }}>Posting Schedule — Dr. Dorsey</div>
+        <div className="grid-2">
+          <div>
+            <div className="section-title">Feed (5/day)</div>
+            <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+              {POSTING_SCHEDULE.dorsey.feed.map((t,i) => <span key={i} className="badge badge-orange">{t}</span>)}
+            </div>
+          </div>
+          <div>
+            <div className="section-title">Stories (10/day)</div>
+            <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+              {POSTING_SCHEDULE.dorsey.stories.map((t,i) => <span key={i} className="badge badge-gray">{t}</span>)}
+            </div>
+          </div>
+        </div>
+        <div style={{ marginTop: 12 }}>
+          <div className="section-title">Pillars</div>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            {Object.entries(POSTING_SCHEDULE.dorsey.pillars).map(([k,v]) => (
+              <div key={k} style={{ fontSize: 11, color: "var(--text2)" }}><span style={{ color: "var(--accent)", fontWeight: 600 }}>{v}%</span> {k}</div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── COMMANDS ────────────────────────────────────────────────
+
+function CommandsScreen() {
+  const [selectedEntity, setSelectedEntity] = useState("all");
+  const commands = [
+    { cmd: "dept33 intake", desc: "Submit task to Dept 33 queue", entity: "all" },
+    { cmd: "dept33 daily_memo", desc: "Generate executive daily briefing", entity: "all" },
+    { cmd: "dept33 war_room", desc: "Activate war room for event", entity: "all" },
+    { cmd: "dept33 status", desc: "Get system-wide status check", entity: "all" },
+    { cmd: "dept33 prioritize", desc: "Rerank all active tasks", entity: "all" },
+    { cmd: "dept33 generate_prompt", desc: "Generate visual prompt from template", entity: "all" },
+    { cmd: "dept33 get_agent_sop", desc: "Pull agent SOP by dept/agent", entity: "all" },
+    { cmd: "dept33 ops_status", desc: "Full operational status report", entity: "all" },
+    { cmd: "dept33 run_checklist", desc: "Run daily ops checklist", entity: "all" },
+    { cmd: "dept33 get_visual_direction", desc: "Get brand visual direction", entity: "all" },
+    { cmd: "content factory", desc: "Trigger content generation pipeline", entity: "all" },
+    { cmd: "dispatch linda", desc: "Send task to Linda via VA dispatch", entity: "all" },
+    { cmd: "pr pitch [entity]", desc: "Generate PR pitch + auto-followup", entity: "all" },
+    { cmd: "sponsor outreach [event]", desc: "Run sponsor outreach engine", entity: "huglife" },
+    { cmd: "influencer outreach [city]", desc: "Run influencer discovery + DM", entity: "huglife" },
+    { cmd: "newsletter [entity]", desc: "Generate + send newsletter", entity: "all" },
+    { cmd: "ig comments [entity]", desc: "Auto-comment engine for entity", entity: "all" },
+    { cmd: "social dms [entity]", desc: "Generate + queue DMs", entity: "all" },
+    { cmd: "content calendar", desc: "Build viral content calendar", entity: "dorsey" },
+  ];
+
+  const filtered = selectedEntity === "all" ? commands : commands.filter(c => c.entity === "all" || c.entity === selectedEntity);
+
+  return (
+    <div>
+      <div className="pill-tabs">
+        <button className={`pill-tab ${selectedEntity === "all" ? "active" : ""}`} onClick={() => setSelectedEntity("all")}>All</button>
+        {Object.entries(ENTITIES).slice(0, 6).map(([k, e]) => (
+          <button key={k} className={`pill-tab ${selectedEntity === k ? "active" : ""}`}
+            style={selectedEntity === k ? { background: e.color, borderColor: e.color } : {}}
+            onClick={() => setSelectedEntity(k)}>{e.name}</button>
+        ))}
+      </div>
+      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+        {filtered.map((c, i) => (
+          <div key={i} className="card card-glow" style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 14px" }}>
+            <div style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--surface3)" }} />
+            <code className="mono" style={{ color: "var(--accent)", fontSize: 12, minWidth: 220, fontWeight: 500 }}>{c.cmd}</code>
+            <span style={{ fontSize: 12, color: "var(--text2)", flex: 1 }}>{c.desc}</span>
+            <span className="badge badge-gray">{c.entity}</span>
+            <button className="btn btn-sm btn-primary"><Icon name="play" size={10} /> Run</button>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ── SETTINGS ────────────────────────────────────────────────
+
+function SettingsScreen() {
+  const [copied, setCopied] = useState(null);
+  return (
+    <div>
+      <div className="section-title">Credentials & Keys</div>
+      <div className="card" style={{ padding: 0 }}>
+        <table className="tbl">
+          <thead>
+            <tr><th>Service</th><th>Key</th><th>Value</th><th></th></tr>
+          </thead>
+          <tbody>
+            {CREDENTIALS.map((c, i) => (
+              <tr key={i}>
+                <td style={{ fontWeight: 500, color: "var(--text)" }}>{c.service}</td>
+                <td>{c.key}</td>
+                <td><code className="mono" style={{ fontSize: 11, color: "var(--accent)" }}>{c.value}</code></td>
+                <td>
+                  <span className="copy-btn" onClick={() => copyToClipboard(c.value, setCopied)}>
+                    {copied === c.value ? <Icon name="check" size={14} /> : <Icon name="copy" size={14} />}
+                  </span>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <div className="divider" />
+      <div className="section-title">Email Routing</div>
+      <div className="card" style={{ padding: 0 }}>
+        <table className="tbl">
+          <thead><tr><th>Destination</th><th>Email</th><th>CC</th></tr></thead>
+          <tbody>
+            {EMAIL_ROUTING.map((r, i) => (
+              <tr key={i}>
+                <td style={{ fontWeight: 500, color: "var(--text)" }}>{r.dest}</td>
+                <td><code className="mono" style={{ fontSize: 11, color: "var(--accent)" }}>{r.email}</code></td>
+                <td style={{ fontSize: 11 }}>{r.cc}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <div className="divider" />
+      <div className="section-title">System Config</div>
+      <div className="grid-3">
+        <div className="card">
+          <div className="card-subtitle">Primary AI</div>
+          <div style={{ fontSize: 13, fontWeight: 600, marginTop: 4 }}>Claude Sonnet 4</div>
+        </div>
+        <div className="card">
+          <div className="card-subtitle">Image Gen</div>
+          <div style={{ fontSize: 13, fontWeight: 600, marginTop: 4 }}>NanoBanana2</div>
+        </div>
+        <div className="card">
+          <div className="card-subtitle">Video Gen</div>
+          <div style={{ fontSize: 13, fontWeight: 600, marginTop: 4 }}>Veo3 + Remotion</div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── SYSTEM ──────────────────────────────────────────────────
+
+function SystemScreen() {
+  const [tab, setTab] = useState("workflows");
+  return (
+    <div>
+      <div className="pill-tabs">
+        {["workflows","departments","blockers","health"].map(t => (
+          <button key={t} className={`pill-tab ${tab === t ? "active" : ""}`} onClick={() => setTab(t)}>
+            {t.charAt(0).toUpperCase() + t.slice(1)}
           </button>
         ))}
       </div>
 
-      {/* Sub-tabs */}
-      <div style={{ display: "flex", gap: 0, marginBottom: 16, borderBottom: "1px solid #e5e7eb" }}>
-        {Object.entries(inboxCounts).map(([key, count]) => (
-          <button key={key} onClick={() => setSubtab(key)} style={{
-            background: "transparent", border: subtab === key ? "1px solid #e5e7eb" : "1px solid transparent",
-            borderBottom: subtab === key ? "1px solid #fff" : "none", borderRadius: "8px 8px 0 0",
-            color: "#1a1a1a", padding: "8px 16px", fontSize: 13, cursor: "pointer", fontFamily: "inherit",
-            fontWeight: subtab === key ? 600 : 400, marginBottom: -1
-          }}>{key.charAt(0).toUpperCase() + key.slice(1)} ({count})</button>
-        ))}
-      </div>
+      {tab === "workflows" && (
+        <div className="card" style={{ padding: 0 }}>
+          <table className="tbl">
+            <thead><tr><th>Workflow</th><th>ID</th><th>Dept</th><th>Status</th></tr></thead>
+            <tbody>
+              {WORKFLOWS.map((w, i) => (
+                <tr key={i}>
+                  <td style={{ fontWeight: 500, color: "var(--text)" }}>{w.name}</td>
+                  <td><code className="mono" style={{ fontSize: 11 }}>{w.id}</code></td>
+                  <td><span className="badge badge-gray">{w.dept}</span></td>
+                  <td>
+                    <span className={`badge ${w.status === "active" ? "badge-green" : "badge-red"}`}>{w.status}</span>
+                    {w.error && <div style={{ fontSize: 10, color: "var(--red)", marginTop: 2 }}>{w.error}</div>}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
 
-      {subtab === "scripts" && (
+      {tab === "departments" && (
         <div>
-          <button onClick={() => setShowNew(!showNew)} style={actBtn()}>+ New Email Script</button>
-          {showNew && (
-            <div style={{ background: "#f9fafb", border: "1px solid #e5e7eb", borderRadius: 10, padding: 20, marginTop: 12, marginBottom: 16, maxWidth: 600 }}>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginBottom: 10 }}>
-                <BrandSel value={form.brand_key} onChange={v => setForm({ ...form, brand_key: v })} all={false} />
-                <select value={form.target_focus} onChange={e => setForm({ ...form, target_focus: e.target.value })} style={selS()}><option value="customer">Customer</option><option value="sponsor">Sponsor</option><option value="grant">Grant</option><option value="location">Location</option><option value="mco_agreement">MCO</option></select>
-                <input value={form.variant_label} onChange={e => setForm({ ...form, variant_label: e.target.value })} placeholder="Variant A/B" style={inpS()} />
+          {["Revenue","Growth","Creative","Product","Operations"].map(div => (
+            <div key={div} style={{ marginBottom: 16 }}>
+              <div className="section-title">{div}</div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                {DEPARTMENTS.filter(d => d.div === div).map(d => (
+                  <div key={d.num} className="card" style={{ display: "flex", alignItems: "center", gap: 12, padding: "8px 14px" }}>
+                    <span className="mono" style={{ color: "var(--text3)", fontSize: 11, width: 24 }}>#{d.num}</span>
+                    <span style={{ fontSize: 13, fontWeight: 500, flex: 1 }}>{d.name}</span>
+                    <div style={{ width: 40, height: 4, borderRadius: 2, background: "var(--surface3)", overflow: "hidden" }}>
+                      <div style={{ width: d.status === "active" ? "100%" : d.status === "activating" ? "60%" : "0%", height: "100%", background: d.status === "active" ? "var(--green)" : "var(--accent)", borderRadius: 2, transition: "width 0.5s" }} />
+                    </div>
+                    <span className={`badge ${d.status === "active" ? "badge-green" : d.status === "activating" ? "badge-orange" : "badge-gray"}`}>{d.status}</span>
+                  </div>
+                ))}
               </div>
-              <input value={form.subject_line} onChange={e => setForm({ ...form, subject_line: e.target.value })} placeholder="Subject line..." style={inpS()} />
-              <textarea value={form.message_body} onChange={e => setForm({ ...form, message_body: e.target.value })} placeholder="Email body..." rows={4} style={{ ...inpS(), resize: "vertical" }} />
-              <div style={{ display: "flex", gap: 8 }}><button onClick={save} style={actBtn()}>Save Script</button><button onClick={() => setShowNew(false)} style={{ ...actBtn(), background: "#fff", color: "#999", border: "1px solid #e5e7eb" }}>Cancel</button></div>
-            </div>
-          )}
-          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13, marginTop: 12 }}>
-            <thead><tr style={{ borderBottom: "2px solid #e5e7eb", textAlign: "left" }}>
-              <th style={thS()}>BRAND</th><th style={thS()}>HOOK</th><th style={thS()}>BODY</th><th style={thS()}>CTA</th>
-            </tr></thead>
-            <tbody>
-              {scripts.map(s => (
-                <tr key={s.id} style={{ borderBottom: "1px solid #f3f4f6" }}>
-                  <td style={tdS()}><span style={{ background: "#f3f4f6", borderRadius: 4, padding: "2px 8px", fontSize: 11, fontWeight: 600 }}>{s.brand_key?.toUpperCase()}</span></td>
-                  <td style={tdS()}><span style={{ color: "#999" }}>{s.subject_line || "—"}</span></td>
-                  <td style={tdS()}><span style={{ color: "#666" }}>{s.message_body?.slice(0, 100)}...</span></td>
-                  <td style={tdS()}><span style={{ color: "#999" }}>{s.target_focus}</span></td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-
-      {subtab !== "scripts" && <div style={{ padding: 40, textAlign: "center", color: "#ccc" }}>No {subtab} messages tracked yet.</div>}
-    </div>
-  );
-}
-
-// ═══ PHONE / SMS ═══ (matches screenshot — brand list left, messages/scheduled/scripts right)
-function PhonePage({ flash }) {
-  const [selectedBrand, setSelectedBrand] = useState("dr_dorsey");
-  const [subtab, setSubtab] = useState("messages");
-  const [texts, setTexts] = useState([]);
-  const [scripts, setScripts] = useState([]);
-  const [showNew, setShowNew] = useState(false);
-  const [form, setForm] = useState({ contact_name: "", phone_number: "", message: "", scheduled_for: "" });
-
-  useEffect(() => {
-    q("scheduled_texts?order=scheduled_for.desc&limit=50").then(d => setTexts(d || []));
-    q("outreach_subject_templates?action_type=eq.dm&order=brand_key.asc&limit=100").then(d => setScripts(d || []));
-  }, []);
-
-  const schedule = async () => {
-    if (!form.phone_number || !form.message) return;
-    await qInsert("scheduled_texts", { ...form, status: "pending", send_method: "ghl" });
-    flash("Scheduled");
-    setShowNew(false);
-    q("scheduled_texts?order=scheduled_for.desc&limit=50").then(d => setTexts(d || []));
-  };
-
-  const sendNow = (ph, msg) => { const c = ph?.replace(/[^\d+]/g, ""); if (c) window.location.href = `sms:${c}&body=${encodeURIComponent(msg || "")}`; };
-
-  return (
-    <div style={{ display: "flex", height: "100%" }}>
-      {/* Brand list (left panel like your screenshot) */}
-      <div style={{ width: 260, borderRight: "1px solid #e5e7eb", overflowY: "auto", padding: "16px 0" }}>
-        <div style={{ padding: "0 16px 8px", display: "flex", alignItems: "center", gap: 8 }}>
-          <span style={{ color: "#999" }}>‹</span>
-          <h2 style={{ fontSize: 18, fontWeight: 700 }}>Phone / SMS</h2>
-        </div>
-        {DIVS.map(d => (
-          <div key={d.key}>
-            <div style={{ padding: "8px 16px", fontSize: 11, color: d.color, fontWeight: 700, letterSpacing: 1, cursor: "pointer" }}>{d.label}</div>
-            {d.brands.map(b => (
-              <div key={b.k} onClick={() => setSelectedBrand(b.k)} style={{ padding: "6px 16px 6px 24px", fontSize: 13, color: selectedBrand === b.k ? "#16A34A" : "#555", background: selectedBrand === b.k ? "#f0fdf4" : "transparent", borderLeft: selectedBrand === b.k ? "3px solid #16A34A" : "3px solid transparent", cursor: "pointer" }}>{b.n}</div>
-            ))}
-          </div>
-        ))}
-      </div>
-
-      {/* Right panel */}
-      <div style={{ flex: 1, padding: 24 }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-          <div style={{ display: "flex", gap: 0, borderBottom: "1px solid #e5e7eb" }}>
-            {[["messages", texts.length], ["scheduled", texts.filter(t => t.status === "pending").length], ["scripts", scripts.filter(s => s.brand_key === selectedBrand || !selectedBrand).length]].map(([key, count]) => (
-              <button key={key} onClick={() => setSubtab(key)} style={{ background: "transparent", border: subtab === key ? "1px solid #e5e7eb" : "1px solid transparent", borderBottom: subtab === key ? "1px solid #fff" : "none", borderRadius: "8px 8px 0 0", padding: "8px 16px", fontSize: 13, cursor: "pointer", fontFamily: "inherit", fontWeight: subtab === key ? 600 : 400, marginBottom: -1, color: "#1a1a1a" }}>{key.charAt(0).toUpperCase() + key.slice(1)} ({count})</button>
-            ))}
-          </div>
-          <span style={{ fontSize: 12, color: "#999", background: "#f3f4f6", padding: "4px 12px", borderRadius: 20 }}>{texts.length} messages</span>
-        </div>
-
-        <button onClick={() => setShowNew(!showNew)} style={actBtn()}>+ New Text</button>
-
-        {showNew && (
-          <div style={{ background: "#f9fafb", border: "1px solid #e5e7eb", borderRadius: 10, padding: 20, marginTop: 12, marginBottom: 16, maxWidth: 500 }}>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 10 }}>
-              <input value={form.contact_name} onChange={e => setForm({ ...form, contact_name: e.target.value })} placeholder="Name" style={inpS()} />
-              <input value={form.phone_number} onChange={e => setForm({ ...form, phone_number: e.target.value })} placeholder="Phone" style={inpS()} />
-            </div>
-            <textarea value={form.message} onChange={e => setForm({ ...form, message: e.target.value })} placeholder="Message..." rows={3} style={{ ...inpS(), resize: "vertical" }} />
-            <input type="datetime-local" value={form.scheduled_for} onChange={e => setForm({ ...form, scheduled_for: e.target.value })} style={inpS()} />
-            <div style={{ display: "flex", gap: 8 }}>
-              <button onClick={schedule} style={actBtn()}>Schedule</button>
-              <button onClick={() => sendNow(form.phone_number, form.message)} style={{ ...actBtn(), background: "#16A34A" }}>Send Now</button>
-            </div>
-          </div>
-        )}
-
-        {subtab === "messages" && texts.length === 0 && <div style={{ padding: 60, textAlign: "center", color: "#ccc" }}>No SMS/phone messages tracked yet.</div>}
-        {subtab === "messages" && texts.map(t => (
-          <div key={t.id} style={{ padding: "10px 0", borderBottom: "1px solid #f3f4f6", display: "flex", alignItems: "center", gap: 12 }}>
-            <div style={{ flex: 1 }}>
-              <div style={{ fontWeight: 600, fontSize: 13 }}>{t.contact_name || t.phone_number}</div>
-              <div style={{ fontSize: 12, color: "#999" }}>{t.message?.slice(0, 60)}</div>
-            </div>
-            <span style={{ fontSize: 11, color: t.status === "sent" ? "#16A34A" : "#CA8A04" }}>{t.status}</span>
-            <button onClick={() => sendNow(t.phone_number, t.message)} style={smB("#16A34A")}>Send</button>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-// ═══ SOCIAL ═══
-function SocialPage({ flash }) {
-  const [sub, setSub] = useState("engagement");
-  const [bf, setBf] = useState("all");
-  const [profiles, setProfiles] = useState([]);
-  const [schedule, setSchedule] = useState([]);
-  useEffect(() => {
-    q("brand_voice_profiles?is_active=eq.true&order=division.asc,brand_display_name.asc").then(d => setProfiles(d || []));
-    q("weekly_content_schedule?order=brand_key.asc,day_of_week.asc&limit=600").then(d => setSchedule(d || []));
-  }, []);
-
-  return (
-    <div style={{ padding: 24 }}>
-      <h1 style={{ fontSize: 22, fontWeight: 700, marginBottom: 16 }}>Social</h1>
-      <div style={{ display: "flex", gap: 8, marginBottom: 16, flexWrap: "wrap", alignItems: "center" }}>
-        {["engagement", "calendar", "voices"].map(s => <button key={s} onClick={() => setSub(s)} style={tabBtn(sub === s)}>{s.charAt(0).toUpperCase() + s.slice(1)}</button>)}
-        <BrandSel value={bf} onChange={setBf} />
-      </div>
-      {sub === "engagement" && <EngDash flash={flash} bf={bf} />}
-      {sub === "calendar" && (
-        <div style={{ overflowX: "auto" }}>
-          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 11, minWidth: 900 }}>
-            <thead><tr><th style={thS()}>Brand</th>{["Mon","Tue","Wed","Thu","Fri","Sat","Sun"].map(d => <th key={d} style={thS()}>{d}</th>)}</tr></thead>
-            <tbody>
-              {(bf === "all" ? profiles : profiles.filter(p => p.brand_key === bf)).map(p => (
-                <tr key={p.brand_key}><td style={{ ...tdS(), fontWeight: 700, color: "#FF6B35" }}>{p.brand_display_name}</td>
-                  {["monday","tuesday","wednesday","thursday","friday","saturday","sunday"].map(d => {
-                    const posts = schedule.filter(s => s.brand_key === p.brand_key && s.day_of_week === d);
-                    return <td key={d} style={tdS()}>{posts.map(po => <div key={po.id} style={{ background: "#FFF4EF", borderRadius: 4, padding: "2px 4px", marginBottom: 2, borderLeft: "2px solid #FF6B35", fontSize: 9 }}><b>{po.post_time}</b> {po.content_pillar?.slice(0, 18)}</div>)}</td>;
-                  })}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-      {sub === "voices" && (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 12 }}>
-          {(bf === "all" ? profiles : profiles.filter(p => p.brand_key === bf)).map(p => (
-            <div key={p.brand_key} style={{ background: "#f9fafb", border: "1px solid #e5e7eb", borderRadius: 10, padding: 14 }}>
-              <div style={{ fontWeight: 700, fontSize: 14 }}>{p.brand_display_name}</div>
-              <div style={{ fontSize: 11, color: "#999", marginBottom: 6 }}>{p.division} · {p.voice_tone} · {p.posting_cadence}</div>
-              <div style={{ fontSize: 11, color: "#666" }}>{(p.content_pillars || []).join(", ")}</div>
-              {p.caption_examples?.[0] && <div style={{ marginTop: 6, fontSize: 11, color: "#888", fontStyle: "italic", background: "#fff", padding: 8, borderRadius: 6 }}>"{p.caption_examples[0]}"</div>}
             </div>
           ))}
         </div>
       )}
+
+      {tab === "blockers" && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          {BLOCKERS.map((b, i) => (
+            <div key={i} className="card" style={{ display: "flex", alignItems: "flex-start", gap: 12, borderLeftWidth: 3,
+              borderLeftColor: b.severity === "high" ? "var(--red)" : b.severity === "medium" ? "var(--yellow)" : "var(--text3)" }}>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 13, fontWeight: 500 }}>{b.item}</div>
+                <div style={{ display: "flex", gap: 6, marginTop: 6 }}>
+                  <span className="badge badge-gray">{b.system}</span>
+                  <span className={`badge ${b.severity === "high" ? "badge-red" : b.severity === "medium" ? "badge-yellow" : "badge-gray"}`}>{b.severity}</span>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {tab === "health" && (
+        <div className="grid-3">
+          <div className="card">
+            <div className="card-subtitle">Supabase</div>
+            <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 6 }}>
+              <span className="entity-dot" style={{ background: "var(--green)", boxShadow: "0 0 8px var(--green)" }} />
+              <span style={{ fontSize: 13, fontWeight: 600 }}>Healthy</span>
+            </div>
+            <div style={{ fontSize: 11, color: "var(--text3)", marginTop: 4 }}>220+ tables · 112K contacts</div>
+          </div>
+          <div className="card">
+            <div className="card-subtitle">n8n</div>
+            <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 6 }}>
+              <span className="entity-dot" style={{ background: "var(--green)" }} />
+              <span style={{ fontSize: 13, fontWeight: 600 }}>119/200 Active</span>
+            </div>
+            <div style={{ fontSize: 11, color: "var(--text3)", marginTop: 4 }}>dorsey.app.n8n.cloud</div>
+          </div>
+          <div className="card">
+            <div className="card-subtitle">GHL</div>
+            <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 6 }}>
+              <span className="entity-dot" style={{ background: "var(--yellow)" }} />
+              <span style={{ fontSize: 13, fontWeight: 600 }}>Partial</span>
+            </div>
+            <div style={{ fontSize: 11, color: "var(--text3)", marginTop: 4 }}>16 locations need OAuth</div>
+          </div>
+          <div className="card">
+            <div className="card-subtitle">MCP Gateway</div>
+            <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 6 }}>
+              <span className="entity-dot" style={{ background: "var(--green)" }} />
+              <span style={{ fontSize: 13, fontWeight: 600 }}>Online</span>
+            </div>
+          </div>
+          <div className="card">
+            <div className="card-subtitle">Dept 33 Edge</div>
+            <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 6 }}>
+              <span className="entity-dot" style={{ background: "var(--green)" }} />
+              <span style={{ fontSize: 13, fontWeight: 600 }}>10 Actions</span>
+            </div>
+          </div>
+          <div className="card">
+            <div className="card-subtitle">Google Contacts Sync</div>
+            <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 6 }}>
+              <span className="entity-dot" style={{ background: "var(--red)" }} />
+              <span style={{ fontSize: 13, fontWeight: 600 }}>Broken</span>
+            </div>
+            <div style={{ fontSize: 11, color: "var(--text3)", marginTop: 4 }}>n8n v2.10.4 bug</div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
 
-function EngDash({ flash, bf }) {
-  const [queue, setQueue] = useState([]);
-  const today = new Date().toISOString().split("T")[0];
-  useEffect(() => { q(`contact_action_queue?scheduled_date=eq.${today}&status=eq.queued&select=brand_key,action_type&limit=50000`).then(d => setQueue(d || [])); }, []);
-  const summary = {};
-  (queue || []).forEach(q => { if (!summary[q.brand_key]) summary[q.brand_key] = {}; summary[q.brand_key][q.action_type] = (summary[q.brand_key][q.action_type] || 0) + 1; });
-  const filtered = bf === "all" ? Object.entries(summary) : Object.entries(summary).filter(([k]) => k === bf);
-  const fire = async (t) => { await q(`contact_action_queue?scheduled_date=eq.${today}&status=eq.queued&action_type=eq.${t}`, { method: "PATCH", body: JSON.stringify({ status: "sent", sent_at: new Date().toISOString() }) }); flash(`Fired ${t}`); };
+// ── DIRECTORY ───────────────────────────────────────────────
+
+function DirectoryScreen() {
+  const [copied, setCopied] = useState(null);
+  const [filter, setFilter] = useState("");
+  const allCreds = CREDENTIALS.filter(c =>
+    !filter || c.service.toLowerCase().includes(filter.toLowerCase()) || c.key.toLowerCase().includes(filter.toLowerCase())
+  );
+  return (
+    <div>
+      <input className="input" placeholder="Filter credentials..." value={filter} onChange={e => setFilter(e.target.value)} style={{ marginBottom: 16 }} />
+      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+        {allCreds.map((c, i) => (
+          <div key={i} className="card" style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 14px" }}>
+            <span className="badge badge-blue" style={{ minWidth: 80, justifyContent: "center" }}>{c.service}</span>
+            <span style={{ fontSize: 12, color: "var(--text2)", width: 120 }}>{c.key}</span>
+            <code className="mono" style={{ fontSize: 11, color: "var(--accent)", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{c.value}</code>
+            <span className="copy-btn" onClick={() => copyToClipboard(c.value, setCopied)}>
+              {copied === c.value ? <Icon name="check" size={14} /> : <Icon name="copy" size={14} />}
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ── OUTREACH ────────────────────────────────────────────────
+
+function OutreachScreen({ entityFilter }) {
+  const [entity, setEntity] = useState(entityFilter || "all");
+  const outreachTypes = [
+    { type: "Sponsor", workflow: "ThKwcVTGnpXIoOEE", entities: ["huglife","noir","futbol"], status: "active", runs: 89 },
+    { type: "Influencer", workflow: "0paDyU807bccvZYQ", entities: ["huglife","noir","dorsey"], status: "active", runs: 156 },
+    { type: "PR Pitch", workflow: "bGdwLiVFcqP0FcIG", entities: ["all"], status: "active", runs: 203 },
+    { type: "PR Enrich", workflow: "LQRDE7gsrTVm7rms", entities: ["all"], status: "active", runs: 178 },
+    { type: "Newsletter", workflow: "LOuffRVoxtPHsCuZ", entities: ["all"], status: "active", runs: 234 },
+    { type: "Cold Email", workflow: "3jDssrDbi21CLhn6", entities: ["casper","umbrella","futbol"], status: "active", runs: 847 },
+    { type: "IG Comments", workflow: "tyQSD2mJl8W9VDm0", entities: ["all"], status: "active", runs: 1205 },
+    { type: "Social DMs", workflow: "zn2uHhkUROJqKzEG", entities: ["all"], status: "active", runs: 563 },
+  ];
+
+  const filtered = entity === "all" ? outreachTypes : outreachTypes.filter(o => o.entities.includes("all") || o.entities.includes(entity));
 
   return (
     <div>
-      <div style={{ display: "flex", gap: 8, marginBottom: 16, flexWrap: "wrap" }}>
-        {[{ t: "like", l: "Fire Likes", c: "#EC4899" },{ t: "comment", l: "Fire Comments", c: "#8B5CF6" },{ t: "dm", l: "Fire DMs", c: "#2563EB" },{ t: "email_promo", l: "Fire Emails", c: "#CA8A04" },{ t: "outreach", l: "Fire Outreach", c: "#16A34A" }].map(a => (
-          <button key={a.t} onClick={() => fire(a.t)} style={{ background: a.c, color: "#fff", border: "none", borderRadius: 6, padding: "8px 16px", fontSize: 12, cursor: "pointer", fontFamily: "inherit", fontWeight: 600 }}>{a.l}</button>
+      <div className="pill-tabs">
+        <button className={`pill-tab ${entity === "all" ? "active" : ""}`} onClick={() => setEntity("all")}>All</button>
+        {Object.entries(ENTITIES).slice(0, 7).map(([k, e]) => (
+          <button key={k} className={`pill-tab ${entity === k ? "active" : ""}`}
+            style={entity === k ? { background: e.color, borderColor: e.color } : {}}
+            onClick={() => setEntity(k)}>{e.name}</button>
         ))}
-        <span style={{ marginLeft: "auto", fontSize: 12, color: "#999" }}>{queue.length} queued today</span>
       </div>
-      <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
-        <thead><tr style={{ borderBottom: "2px solid #e5e7eb" }}><th style={thS()}>Brand</th><th style={thS()}>Likes</th><th style={thS()}>Comments</th><th style={thS()}>DMs</th><th style={thS()}>Emails</th><th style={thS()}>Outreach</th><th style={thS()}>Total</th></tr></thead>
-        <tbody>{filtered.sort((a,b) => a[0].localeCompare(b[0])).map(([brand, a]) => {
-          const t = Object.values(a).reduce((x, y) => x + y, 0);
-          return <tr key={brand} style={{ borderBottom: "1px solid #f3f4f6" }}><td style={tdS()}><b>{brand}</b></td><td style={{...tdS(),color:"#EC4899"}}>{a.like||0}</td><td style={{...tdS(),color:"#8B5CF6"}}>{a.comment||0}</td><td style={{...tdS(),color:"#2563EB"}}>{a.dm||0}</td><td style={{...tdS(),color:"#CA8A04"}}>{a.email_promo||0}</td><td style={{...tdS(),color:"#16A34A"}}>{a.outreach||0}</td><td style={{...tdS(),fontWeight:700}}>{t}</td></tr>;
-        })}</tbody>
-      </table>
-    </div>
-  );
-}
-
-// ═══ OUTREACH ═══
-function OutreachPage({ flash }) {
-  const [queue, setQueue] = useState([]);
-  const [bf, setBf] = useState("all");
-  useEffect(() => { q("contact_action_queue?action_type=eq.outreach&status=eq.queued&order=scheduled_date.asc&limit=200").then(d => setQueue(d || [])); }, []);
-  const filtered = bf === "all" ? queue : queue.filter(q => q.brand_key === bf);
-
-  return (
-    <div style={{ padding: 24 }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}>
-        <h1 style={{ fontSize: 22, fontWeight: 700 }}>Outreach</h1>
-        <BrandSel value={bf} onChange={setBf} />
-      </div>
-      <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
-        <thead><tr style={{ borderBottom: "2px solid #e5e7eb" }}><th style={thS()}>Brand</th><th style={thS()}>Contact</th><th style={thS()}>Focus</th><th style={thS()}>Date</th><th style={thS()}>Action</th></tr></thead>
-        <tbody>{filtered.slice(0, 60).map(q => (
-          <tr key={q.id} style={{ borderBottom: "1px solid #f3f4f6" }}>
-            <td style={tdS()}><b>{q.brand_key}</b></td>
-            <td style={tdS()}>{q.contact_name || q.contact_email || q.ig_handle || "—"}</td>
-            <td style={tdS()}>{q.target_focus}</td>
-            <td style={tdS()}>{q.scheduled_date?.slice(5)}</td>
-            <td style={tdS()}><button onClick={async () => { await qPatch("contact_action_queue", q.id, { status: "sent", sent_at: new Date().toISOString() }); flash("Sent"); q("contact_action_queue?action_type=eq.outreach&status=eq.queued&order=scheduled_date.asc&limit=200").then(d => setQueue(d || [])); }} style={smB("#16A34A")}>Send Now</button></td>
-          </tr>
-        ))}</tbody>
-      </table>
-    </div>
-  );
-}
-
-// ═══ TASKS ═══
-function TasksPage({ flash }) {
-  const [tasks, setTasks] = useState([]);
-  const [showNew, setShowNew] = useState(false);
-  const [form, setForm] = useState({ title: "", assigned_to: "", brand_key: "", priority: "P2", details: "" });
-  const load = () => q("tasks?status=neq.done&order=created_at.desc&limit=100").then(d => setTasks(d || []));
-  useEffect(() => { load(); }, []);
-  const create = async () => { if (!form.title) return; await qInsert("tasks", { ...form, status: "todo" }); flash("Created"); setShowNew(false); setForm({ title: "", assigned_to: "", brand_key: "", priority: "P2", details: "" }); load(); };
-  const move = async (id, s) => { await qPatch("tasks", id, { status: s, ...(s === "done" ? { completed_at: new Date().toISOString() } : {}) }); flash(`→ ${s}`); load(); };
-
-  return (
-    <div style={{ padding: 24 }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}>
-        <h1 style={{ fontSize: 22, fontWeight: 700 }}>Tasks</h1>
-        <button onClick={() => setShowNew(!showNew)} style={actBtn()}>+ New Task</button>
-      </div>
-      {showNew && (
-        <div style={{ background: "#f9fafb", border: "1px solid #e5e7eb", borderRadius: 10, padding: 20, marginBottom: 16, maxWidth: 600 }}>
-          <input value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} placeholder="Task title..." style={inpS()} />
-          <textarea value={form.details} onChange={e => setForm({ ...form, details: e.target.value })} placeholder="Details..." rows={2} style={{ ...inpS(), resize: "vertical" }} />
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginBottom: 10 }}>
-            <select value={form.assigned_to} onChange={e => setForm({ ...form, assigned_to: e.target.value })} style={selS()}><option value="">Assign...</option>{TEAM.map(t => <option key={t} value={t}>{t}</option>)}</select>
-            <BrandSel value={form.brand_key} onChange={v => setForm({ ...form, brand_key: v })} all={false} />
-            <select value={form.priority} onChange={e => setForm({ ...form, priority: e.target.value })} style={selS()}><option value="P1">P1</option><option value="P2">P2</option><option value="P3">P3</option></select>
+      <div className="grid-2">
+        {filtered.map((o, i) => (
+          <div key={i} className="card card-glow">
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+              <span style={{ fontSize: 14, fontWeight: 600 }}>{o.type}</span>
+              <span className={`badge ${o.status === "active" ? "badge-green" : "badge-gray"}`}>{o.status}</span>
+            </div>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+              <code className="mono" style={{ fontSize: 10, color: "var(--text3)" }}>{o.workflow}</code>
+              <span style={{ fontSize: 10, color: "var(--text3)" }}>{o.runs?.toLocaleString()} runs</span>
+            </div>
+            <div style={{ display: "flex", gap: 6, marginTop: 8 }}>
+              <button className="btn btn-sm btn-primary"><Icon name="play" size={12} /> Run</button>
+              <button className="btn btn-sm btn-ghost">Config</button>
+              <button className="btn btn-sm btn-ghost">Logs</button>
+            </div>
           </div>
-          <button onClick={create} style={actBtn()}>Create Task</button>
+        ))}
+      </div>
+      <div className="divider" />
+      <div className="section-title">Data Sources</div>
+      <div className="grid-3">
+        <div className="card">
+          <div className="card-subtitle">PR Database</div>
+          <code className="mono" style={{ fontSize: 10, color: "var(--accent)" }}>18FbI4m-...yd38</code>
         </div>
-      )}
-      <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
-        <thead><tr style={{ borderBottom: "2px solid #e5e7eb" }}><th style={thS()}>Task</th><th style={thS()}>Assigned</th><th style={thS()}>Brand</th><th style={thS()}>Priority</th><th style={thS()}>Status</th><th style={thS()}>Actions</th></tr></thead>
-        <tbody>{tasks.map(t => (
-          <tr key={t.id} style={{ borderBottom: "1px solid #f3f4f6" }}>
-            <td style={tdS()}><b>{t.title}</b></td>
-            <td style={tdS()}>{t.assigned_to || "—"}</td>
-            <td style={tdS()}>{t.brand_key || "—"}</td>
-            <td style={tdS()}><span style={{ color: t.priority === "P1" ? "#DC2626" : t.priority === "P2" ? "#CA8A04" : "#2563EB", fontWeight: 700 }}>{t.priority}</span></td>
-            <td style={tdS()}>{t.status}</td>
-            <td style={tdS()}>
-              <button onClick={() => move(t.id, "in_progress")} style={smB("#2563EB")}>Start</button>
-              <button onClick={() => move(t.id, "done")} style={smB("#16A34A")}>Done</button>
-              <button onClick={() => move(t.id, "blocked")} style={smB("#DC2626")}>Block</button>
-            </td>
-          </tr>
-        ))}</tbody>
-      </table>
+        <div className="card">
+          <div className="card-subtitle">Master Contacts</div>
+          <code className="mono" style={{ fontSize: 10, color: "var(--accent)" }}>1fW3R0h...pKM</code>
+        </div>
+        <div className="card">
+          <div className="card-subtitle">Social Outreach CC</div>
+          <code className="mono" style={{ fontSize: 10, color: "var(--accent)" }}>1-CFQeoT...4h</code>
+        </div>
+      </div>
     </div>
   );
 }
 
-// ═══ STUB PAGES (all wired, real data) ═══
-function LeadsPage({ flash }) { return <div style={{ padding: 24 }}><h1 style={{ fontSize: 22, fontWeight: 700, marginBottom: 12 }}>Lead Engine</h1><p style={{ color: "#999" }}>108,529 unique contacts across 13 brands. Use Outreach tab to manage active campaigns.</p></div>; }
-function EventsPage({ flash }) {
-  const [events, setEvents] = useState([]);
-  useEffect(() => { q("khg_events?order=event_date.asc&limit=20").then(d => setEvents(d || [])); }, []);
-  return <div style={{ padding: 24 }}><h1 style={{ fontSize: 22, fontWeight: 700, marginBottom: 12 }}>Events</h1>{events?.map(e => <div key={e.id} style={{ padding: 10, borderBottom: "1px solid #f3f4f6" }}><b>{e.event_name}</b> · {e.city} · {e.event_date}</div>)}{(!events || events.length === 0) && <p style={{ color: "#999" }}>No events loaded.</p>}</div>;
-}
-function OutputsPage({ flash }) {
-  const [logs, setLogs] = useState([]);
-  useEffect(() => { q("khg_ops_run_log?order=created_at.desc&limit=30").then(d => setLogs(d || [])); }, []);
-  return <div style={{ padding: 24 }}><h1 style={{ fontSize: 22, fontWeight: 700, marginBottom: 12 }}>Outputs</h1>{logs.map(l => <div key={l.id} style={{ padding: 10, borderBottom: "1px solid #f3f4f6", display: "flex", gap: 12 }}><span style={{ width: 8, height: 8, borderRadius: "50%", background: l.status === "shipped" ? "#16A34A" : "#CA8A04", flexShrink: 0, marginTop: 5 }} /><div><b>{l.op_name}</b><div style={{ fontSize: 11, color: "#999" }}>{l.agent_name} · {l.op_type} · {new Date(l.created_at).toLocaleString()}</div></div></div>)}</div>;
-}
-function SystemPage({ flash }) {
-  return <div style={{ padding: 24 }}><h1 style={{ fontSize: 22, fontWeight: 700, marginBottom: 12 }}>System</h1>
-    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(250px, 1fr))", gap: 12 }}>
-      {[
-        { n: "Social Engine", id: "WK0PGRlUwaOQBslh", s: "Active — 8:30AM daily" },
-        { n: "Queue Replenishment", id: "UCdfaw1hy8oaMbqN", s: "Active — 6AM daily" },
-      ].map(w => (
-        <div key={w.id} style={{ background: "#f9fafb", border: "1px solid #e5e7eb", borderRadius: 10, padding: 14 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 6 }}><span style={{ width: 8, height: 8, borderRadius: "50%", background: "#16A34A" }} /><b>{w.n}</b></div>
-          <div style={{ fontSize: 11, color: "#999", marginTop: 4 }}>{w.s} · {w.id}</div>
-          <a href={`https://dorsey.app.n8n.cloud/workflow/${w.id}`} target="_blank" rel="noreferrer" style={{ fontSize: 11, color: "#FF6B35" }}>Open in n8n ↗</a>
-        </div>
-      ))}
-    </div>
-    <div style={{ marginTop: 20 }}>
-      {[{ l: "n8n Dashboard", h: "https://dorsey.app.n8n.cloud" },{ l: "Supabase", h: "https://supabase.com/dashboard/project/dzlmtvodpyhetvektfuo" },{ l: "GHL", h: "https://app.gohighlevel.com" },{ l: "Vercel", h: "https://vercel.com" },{ l: "GitHub", h: "https://github.com/dolodorsey" }].map(l => (
-        <a key={l.l} href={l.h} target="_blank" rel="noreferrer" style={{ display: "inline-block", marginRight: 12, marginBottom: 8, background: "#f3f4f6", padding: "6px 14px", borderRadius: 6, color: "#555", textDecoration: "none", fontSize: 12 }}>{l.l} ↗</a>
-      ))}
-    </div>
-  </div>;
-}
-function SettingsPage({ flash }) {
-  const [creds, setCreds] = useState([]);
-  useEffect(() => { q("credentials?credential_key=ilike.ghl_location_%&is_active=eq.true&select=credential_key,credential_value").then(d => setCreds(d || [])); }, []);
-  return <div style={{ padding: 24 }}><h1 style={{ fontSize: 22, fontWeight: 700, marginBottom: 12 }}>Settings</h1>
-    <h3 style={{ fontSize: 14, fontWeight: 700, marginBottom: 8 }}>GHL PIT Tokens ({creds.length})</h3>
-    <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
-      <thead><tr><th style={thS()}>Brand</th><th style={thS()}>PIT Token</th><th style={thS()}>Actions</th></tr></thead>
-      <tbody>{creds.map(c => {
-        const pit = c.credential_value?.pit || "";
-        return <tr key={c.credential_key} style={{ borderBottom: "1px solid #f3f4f6" }}>
-          <td style={tdS()}><b>{c.credential_key.replace("ghl_location_","")}</b></td>
-          <td style={{ ...tdS(), fontFamily: "monospace", fontSize: 10, color: "#999" }}>{pit.slice(0,35)}...</td>
-          <td style={tdS()}><button onClick={() => { navigator.clipboard.writeText(pit); flash("Copied"); }} style={smB("#2563EB")}>Copy</button></td>
-        </tr>;
-      })}</tbody>
-    </table>
-  </div>;
-}
-function CommandsPage({ flash }) { return <div style={{ padding: 24 }}><h1 style={{ fontSize: 22, fontWeight: 700, marginBottom: 12 }}>Commands</h1><p style={{ color: "#999" }}>Use the command bar above to run, schedule, or broadcast commands.</p></div>; }
-function DMsPage({ flash }) { return <div style={{ padding: 24 }}><h1 style={{ fontSize: 22, fontWeight: 700, marginBottom: 12 }}>Instagram DMs</h1><p style={{ color: "#999" }}>DM management through GHL. 129,149 IG contacts available.</p></div>; }
+// ── EVENTS ──────────────────────────────────────────────────
 
-// ═══ POST REVIEW PAGE — Approve / Deny / Edit every post before it goes live ═══
-function PostReviewPage({ flash }) {
-  const [posts, setPosts] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState("all");
-  const [editing, setEditing] = useState(null);
-  const [editText, setEditText] = useState("");
-
-  const load = async () => {
-    setLoading(true);
-    const d = await q("ghl_social_posting_queue?scheduled_for=gte." + new Date().toISOString().split("T")[0] + "&order=scheduled_for.asc&limit=100");
-    setPosts(d || []);
-    setLoading(false);
-  };
-  useEffect(() => { load(); }, []);
-
-  const approve = async (id) => { await qPatch("ghl_social_posting_queue", id, { status: "scheduled" }); flash("Approved"); load(); };
-  const deny = async (id) => { await qPatch("ghl_social_posting_queue", id, { status: "denied" }); flash("Denied — won't post"); load(); };
-  const saveCap = async (id) => { await qPatch("ghl_social_posting_queue", id, { caption: editText }); setEditing(null); flash("Caption saved"); load(); };
-  const approveAll = async () => {
-    const pending = posts.filter(p => p.status === "scheduled" || p.status === "pending_approval");
-    for (const p of pending) { await qPatch("ghl_social_posting_queue", p.id, { status: "scheduled" }); }
-    flash("Approved " + pending.length + " posts");
-    load();
-  };
-
-  const brands = [...new Set(posts.map(p => p.brand_key))].sort();
-  const vis = filter === "all" ? posts : posts.filter(p => p.brand_key === filter);
-  const ct = { total: posts.length, ok: posts.filter(p => p.status === "scheduled").length, hold: posts.filter(p => p.status === "pending_approval").length, no: posts.filter(p => p.status === "denied").length, done: posts.filter(p => p.status === "posted").length };
-
-  const brandColor = (b) => ({ dr_dorsey: "#FF6B35", noir: "#1a1a1a", forever_futbol: "#0891B2", gangsta_gospel: "#8B5CF6", good_times: "#2563EB", infinity_water: "#16A34A", remix: "#EC4899", wrst_bhvr: "#DC2626", pronto_energy: "#F59E0B", taste_of_art: "#D97706", sundays_best: "#F472B6", paparazzi: "#A855F7", pawchella: "#34D399", huglife: "#EC4899", casper: "#8B5CF6" })[b] || "#666";
-
-  const statusBadge = (s) => {
-    if (s === "scheduled") return { bg: "#16A34A", label: "APPROVED" };
-    if (s === "pending_approval") return { bg: "#CA8A04", label: "ON HOLD" };
-    if (s === "denied") return { bg: "#DC2626", label: "DENIED" };
-    if (s === "posted") return { bg: "#2563EB", label: "POSTED" };
-    return { bg: "#999", label: s };
-  };
-
-  if (loading) return <div style={{ padding: 40, textAlign: "center", color: "#999" }}>Loading posts...</div>;
+function EventsScreen({ entityFilter }) {
+  const [entity, setEntity] = useState(entityFilter || "all");
+  const filtered = entity === "all" ? EVENTS_2026 : EVENTS_2026.filter(e => e.entity === entity);
+  const sorted = [...filtered].sort((a, b) => new Date(a.date) - new Date(b.date));
+  const months = {};
+  sorted.forEach(ev => { const m = new Date(ev.date).toLocaleDateString("en-US",{month:"long",year:"numeric"}); (months[m] = months[m] || []).push(ev) });
 
   return (
-    <div style={{ padding: 24 }}>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
-        <div>
-          <h1 style={{ fontSize: 22, fontWeight: 800, margin: 0 }}>Post Review</h1>
-          <p style={{ fontSize: 12, color: "#999", margin: "4px 0 0" }}>{ct.total} total · <span style={{ color: "#16A34A" }}>{ct.ok} approved</span> · <span style={{ color: "#CA8A04" }}>{ct.hold} on hold</span> · <span style={{ color: "#DC2626" }}>{ct.no} denied</span> · <span style={{ color: "#2563EB" }}>{ct.done} posted</span></p>
-        </div>
-        <button onClick={approveAll} style={{ background: "#16A34A", color: "#fff", border: "none", borderRadius: 8, padding: "10px 24px", fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>APPROVE ALL ({ct.hold})</button>
-      </div>
-
-      <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 20 }}>
-        <button onClick={() => setFilter("all")} style={{ background: filter === "all" ? "#333" : "#f9fafb", color: filter === "all" ? "#fff" : "#666", border: "1px solid " + (filter === "all" ? "#333" : "#e5e7eb"), borderRadius: 20, padding: "5px 14px", fontSize: 11, cursor: "pointer", fontFamily: "inherit", fontWeight: filter === "all" ? 700 : 400 }}>ALL</button>
-        {brands.map(b => {
-          const bc = brandColor(b);
-          return <button key={b} onClick={() => setFilter(b)} style={{ background: filter === b ? bc : "#f9fafb", color: filter === b ? "#fff" : "#666", border: "1px solid " + (filter === b ? bc : "#e5e7eb"), borderRadius: 20, padding: "5px 14px", fontSize: 11, cursor: "pointer", fontFamily: "inherit", fontWeight: filter === b ? 700 : 400 }}>{b.toUpperCase().replace("_", " ")}</button>;
+    <div>
+      <div className="pill-tabs">
+        <button className={`pill-tab ${entity === "all" ? "active" : ""}`} onClick={() => setEntity("all")}>All ({EVENTS_2026.length})</button>
+        {["noir","huglife","futbol","dorsey"].map(k => {
+          const ent = ENTITIES[k];
+          const count = EVENTS_2026.filter(e => e.entity === k).length;
+          return (
+            <button key={k} className={`pill-tab ${entity === k ? "active" : ""}`}
+              style={entity === k ? { background: ent.color, borderColor: ent.color } : {}}
+              onClick={() => setEntity(k)}>{ent.name} ({count})</button>
+          );
         })}
       </div>
-
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(340px, 1fr))", gap: 16 }}>
-        {vis.map(p => {
-          const sb = statusBadge(p.status);
-          const bc = brandColor(p.brand_key);
-          const isDenied = p.status === "denied";
-          const isPosted = p.status === "posted";
-          const isEditing = editing === p.id;
+      {Object.entries(months).map(([month, evs]) => (
+        <div key={month} style={{ marginBottom: 20 }}>
+          <div style={{ fontSize: 11, fontWeight: 600, color: "var(--text3)", letterSpacing: ".1em", textTransform: "uppercase", marginBottom: 8, paddingBottom: 6, borderBottom: "1px solid var(--border)" }}>{month}</div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            {evs.map((ev, i) => {
+          const d = new Date(ev.date);
+          const days = daysUntil(ev.date);
+          const ent = ENTITIES[ev.entity];
           return (
-            <div key={p.id} style={{ border: "2px solid " + (isDenied ? "#fecaca" : p.status === "scheduled" ? "#bbf7d0" : p.status === "pending_approval" ? "#fde68a" : "#e5e7eb"), borderRadius: 12, overflow: "hidden", background: isDenied ? "#fef2f2" : p.status === "scheduled" ? "#f0fdf4" : "#fff", opacity: isDenied ? 0.45 : 1, position: "relative" }}>
-              <div style={{ position: "absolute", top: 10, right: 10, background: sb.bg, color: "#fff", padding: "3px 10px", borderRadius: 20, fontSize: 10, fontWeight: 700, zIndex: 2 }}>{sb.label}</div>
-
-              <div style={{ padding: "10px 14px", display: "flex", alignItems: "center", gap: 10, borderBottom: "1px solid #f3f4f6" }}>
-                <div style={{ width: 34, height: 34, borderRadius: "50%", background: bc, display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontSize: 12, fontWeight: 800 }}>{(p.brand_key || "?").charAt(0).toUpperCase()}</div>
-                <div>
-                  <div style={{ fontWeight: 700, fontSize: 13 }}>{(p.brand_key || "").toUpperCase().replace("_", " ")}</div>
-                  <div style={{ fontSize: 11, color: "#999" }}>{p.scheduled_for ? new Date(p.scheduled_for).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }) : "—"}</div>
+            <div key={i} className="event-card" style={{ borderLeftWidth: 3, borderLeftColor: ent?.color }}>
+              <div className="event-date-block">
+                <div className="month" style={{ color: ent?.color }}>{d.toLocaleDateString("en-US",{month:"short"})}</div>
+                <div className="day">{d.getDate()}</div>
+              </div>
+              <div style={{ flex: 1 }}>
+                <div style={{ display: "flex", justifyContent: "space-between" }}>
+                  <div style={{ fontSize: 14, fontWeight: 600 }}>{ev.name}</div>
+                  <span className={`badge ${days <= 0 ? "badge-gray" : days <= 30 ? "badge-red" : days <= 60 ? "badge-yellow" : "badge-blue"}`}>
+                    {days <= 0 ? "PAST" : `${days}d`}
+                  </span>
+                </div>
+                <div style={{ fontSize: 12, color: "var(--text3)", marginTop: 2 }}>{ev.city}</div>
+                <div style={{ display: "flex", gap: 6, marginTop: 6 }}>
+                  <span className="badge badge-gray">{ev.status}</span>
+                  <span className="badge" style={{ background: `${ent?.color}20`, color: ent?.color }}>{ent?.name}</span>
                 </div>
               </div>
+            </div>
+          );
+        })}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
 
-              <div style={{ width: "100%", aspectRatio: "4/5", background: "#f3f4f6", overflow: "hidden" }}>
-                {p.media_urls && p.media_urls[0] && <img src={p.media_urls[0]} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} onError={e => { e.target.style.display = "none"; }} />}
+// ── TASKS ───────────────────────────────────────────────────
+
+function TasksScreen() {
+  const [groupBy, setGroupBy] = useState("entity");
+  const tasks = [
+    { task: "Replace 455 placeholder seed targets", entity: "all", assignee: "Linda", priority: "high", status: "in_progress" },
+    { task: "Complete 16 GHL OAuth connections", entity: "all", assignee: "Linda", priority: "high", status: "in_progress" },
+    { task: "Fix Viral Content Calendar API key", entity: "dorsey", assignee: "System", priority: "high", status: "blocked" },
+    { task: "Build venue scraper for Good Times", entity: "innercircle", assignee: "System", priority: "medium", status: "todo" },
+    { task: "Seed remaining 18 dept SOPs", entity: "all", assignee: "System", priority: "medium", status: "todo" },
+    { task: "Push Playwright repo to GitHub", entity: "all", assignee: "System", priority: "low", status: "todo" },
+    { task: "Push Remotion repo to GitHub", entity: "all", assignee: "System", priority: "low", status: "todo" },
+    { task: "Wire autonomous ops to n8n crons", entity: "all", assignee: "System", priority: "medium", status: "todo" },
+    { task: "Fix Google Contacts sync", entity: "dorsey", assignee: "System", priority: "high", status: "blocked" },
+    { task: "NOIR DC sponsor deck", entity: "noir", assignee: "Bax", priority: "high", status: "in_progress" },
+    { task: "Forever Futbol partner outreach", entity: "futbol", assignee: "Brittany", priority: "high", status: "in_progress" },
+    { task: "Casper Group social content batch", entity: "casper", assignee: "Alandra", priority: "medium", status: "todo" },
+  ];
+
+  const groups = groupBy === "entity"
+    ? Object.entries(tasks.reduce((acc, t) => { (acc[t.entity] = acc[t.entity] || []).push(t); return acc; }, {}))
+    : Object.entries(tasks.reduce((acc, t) => { (acc[t.assignee] = acc[t.assignee] || []).push(t); return acc; }, {}));
+
+  const priorityColor = { high: "badge-red", medium: "badge-yellow", low: "badge-gray" };
+  const statusColor = { in_progress: "badge-blue", todo: "badge-gray", blocked: "badge-red", done: "badge-green" };
+
+  return (
+    <div>
+      <div className="grid-3" style={{ marginBottom: 16 }}>
+        <div className="card stat-card fade-in fade-d1">
+          <div className="stat-val" style={{ color: "var(--blue)" }}>{tasks.filter(t => t.status === "in_progress").length}</div>
+          <div className="stat-label">In Progress</div>
+        </div>
+        <div className="card stat-card fade-in fade-d2">
+          <div className="stat-val" style={{ color: "var(--red)" }}>{tasks.filter(t => t.status === "blocked").length}</div>
+          <div className="stat-label">Blocked</div>
+        </div>
+        <div className="card stat-card fade-in fade-d3">
+          <div className="stat-val" style={{ color: "var(--text3)" }}>{tasks.filter(t => t.status === "todo").length}</div>
+          <div className="stat-label">To Do</div>
+        </div>
+      </div>
+      <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
+        <button className={`btn btn-sm ${groupBy === "entity" ? "btn-primary" : "btn-ghost"}`} onClick={() => setGroupBy("entity")}>By Entity</button>
+        <button className={`btn btn-sm ${groupBy === "assignee" ? "btn-primary" : "btn-ghost"}`} onClick={() => setGroupBy("assignee")}>By Team Member</button>
+      </div>
+      {groups.map(([group, items]) => (
+        <div key={group} style={{ marginBottom: 16 }}>
+          <div className="section-title" style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            {groupBy === "entity" && ENTITIES[group] && <span className="entity-dot" style={{ background: ENTITIES[group].color }} />}
+            {groupBy === "entity" ? (ENTITIES[group]?.name || group) : group}
+            <span style={{ color: "var(--text3)", fontWeight: 400 }}>({items.length})</span>
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+            {items.map((t, i) => (
+              <div key={i} className="card" style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 14px",
+                borderLeft: `3px solid ${t.status === "blocked" ? "var(--red)" : t.status === "in_progress" ? "var(--blue)" : "var(--surface3)"}` }}>
+                <div style={{ width: 18, height: 18, borderRadius: 5, border: `1.5px solid ${t.status === "blocked" ? "var(--red)" : "var(--border2)"}`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                  {t.status === "in_progress" && <div style={{ width: 8, height: 8, borderRadius: 2, background: "var(--blue)" }} />}
+                </div>
+                <span style={{ fontSize: 13, flex: 1 }}>{t.task}</span>
+                <span className={`badge ${priorityColor[t.priority]}`}>{t.priority}</span>
+                <span className={`badge ${statusColor[t.status]}`}>{t.status.replace("_"," ")}</span>
+                {groupBy === "entity" && <span style={{ fontSize: 11, color: "var(--text3)", minWidth: 60 }}>{t.assignee}</span>}
               </div>
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
 
-              <div style={{ padding: 14 }}>
-                {isEditing ? (
-                  <div>
-                    <textarea value={editText} onChange={e => setEditText(e.target.value)} rows={5} style={{ width: "100%", border: "1px solid #e5e7eb", borderRadius: 8, padding: 10, fontSize: 13, fontFamily: "inherit", resize: "vertical", boxSizing: "border-box" }} />
-                    <div style={{ display: "flex", gap: 6, marginTop: 8 }}>
-                      <button onClick={() => saveCap(p.id)} style={smB("#2563EB")}>SAVE</button>
-                      <button onClick={() => setEditing(null)} style={smB("#999")}>CANCEL</button>
-                    </div>
-                  </div>
-                ) : (
-                  <div>
-                    <div style={{ fontSize: 13, lineHeight: 1.55, whiteSpace: "pre-line", marginBottom: 8 }}>{p.caption}</div>
-                    {p.hashtags && <div style={{ fontSize: 11, color: "#2563EB", marginBottom: 10 }}>{p.hashtags.join(" ")}</div>}
-                  </div>
-                )}
-                {!isEditing && !isDenied && !isPosted && (
-                  <div style={{ display: "flex", gap: 8 }}>
-                    {p.status !== "scheduled" && <button onClick={() => approve(p.id)} style={{ flex: 1, background: "#16A34A", color: "#fff", border: "none", borderRadius: 8, padding: "10px", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>APPROVE</button>}
-                    <button onClick={() => { setEditing(p.id); setEditText(p.caption || ""); }} style={{ flex: 1, background: "#fff", color: "#2563EB", border: "1px solid #2563EB", borderRadius: 8, padding: "10px", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>EDIT</button>
-                    {p.status !== "denied" && <button onClick={() => deny(p.id)} style={{ flex: 1, background: "#DC2626", color: "#fff", border: "none", borderRadius: 8, padding: "10px", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>DENY</button>}
-                  </div>
-                )}
+// ── SOCIAL ──────────────────────────────────────────────────
+
+function SocialScreen({ entityFilter }) {
+  const [entity, setEntity] = useState(entityFilter || "dorsey");
+  const ent = ENTITIES[entity];
+  const socials = ent?.socials || {};
+
+  return (
+    <div>
+      <div className="pill-tabs">
+        {Object.entries(ENTITIES).map(([k, e]) => (
+          Object.keys(e.socials || {}).length > 0 && (
+            <button key={k} className={`pill-tab ${entity === k ? "active" : ""}`}
+              style={entity === k ? { background: e.color, borderColor: e.color } : {}}
+              onClick={() => setEntity(k)}>{e.name}</button>
+          )
+        ))}
+      </div>
+      <div className="grid-2" style={{ marginBottom: 16 }}>
+        {Object.entries(socials).map(([platform, handle]) => (
+          <div key={platform} className="card card-glow" style={{ borderTop: `2px solid ${ent.color}` }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <div>
+                <div style={{ fontSize: 10, color: "var(--text3)", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 4 }}>{platform}</div>
+                <div style={{ fontSize: 14, fontWeight: 600, color: ent.color }}>{handle}</div>
+              </div>
+              <div style={{ display: "flex", gap: 4 }}>
+                <button className="btn btn-sm btn-ghost"><Icon name="dm" size={12} /> DM Queue</button>
+                <button className="btn btn-sm btn-ghost"><Icon name="send" size={12} /> Post</button>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+      {entity === "dorsey" && (
+        <div className="card">
+          <div className="card-title" style={{ marginBottom: 10 }}>Posting Schedule</div>
+          <div className="grid-2">
+            <div>
+              <div className="section-title">Feed Times</div>
+              <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
+                {POSTING_SCHEDULE.dorsey.feed.map((t, i) => <span key={i} className="badge badge-orange">{t}</span>)}
+              </div>
+            </div>
+            <div>
+              <div className="section-title">Story Times</div>
+              <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
+                {POSTING_SCHEDULE.dorsey.stories.map((t, i) => <span key={i} className="badge badge-gray">{t}</span>)}
+              </div>
+            </div>
+          </div>
+          <div style={{ marginTop: 12 }}>
+            <div className="section-title">Content Pillars</div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+              {Object.entries(POSTING_SCHEDULE.dorsey.pillars).map(([k, v]) => (
+                <div key={k} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <div style={{ width: `${v * 3}px`, height: 5, borderRadius: 3, background: "linear-gradient(90deg, var(--accent), var(--accent2))" }} />
+                  <span style={{ fontSize: 12, color: "var(--text2)" }}>{v}% {k}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+      <div className="divider" />
+      <div className="section-title">Quick Actions</div>
+      <div className="grid-3">
+        <button className="btn btn-primary" style={{ width: "100%", justifyContent: "center" }}><Icon name="send" size={14} /> Queue Post</button>
+        <button className="btn btn-ghost" style={{ width: "100%", justifyContent: "center" }}><Icon name="dm" size={14} /> Send DMs</button>
+        <button className="btn btn-ghost" style={{ width: "100%", justifyContent: "center" }}><Icon name="zap" size={14} /> Auto Comment</button>
+      </div>
+    </div>
+  );
+}
+
+// ── LEAD ENGINE ─────────────────────────────────────────────
+
+function LeadEngineScreen() {
+  const [city, setCity] = useState("Atlanta");
+  const cities = ["Atlanta","Houston","Los Angeles","Washington DC","Charlotte","Miami","Las Vegas","New York"];
+  const niches = ["Venues","Restaurants","Bars/Lounges","Hotels","Event Spaces","Catering","Retail","Fitness"];
+  const [selectedNiches, setSelectedNiches] = useState(["Venues","Restaurants"]);
+
+  return (
+    <div>
+      <div className="card" style={{ marginBottom: 16 }}>
+        <div className="card-title" style={{ marginBottom: 12 }}>Lead Sourcing Interface</div>
+        <div className="grid-2">
+          <div>
+            <label style={{ fontSize: 11, color: "var(--text3)", marginBottom: 4, display: "block" }}>Target City</label>
+            <div className="pill-tabs">
+              {cities.map(c => (
+                <button key={c} className={`pill-tab ${city === c ? "active" : ""}`} onClick={() => setCity(c)}>{c}</button>
+              ))}
+            </div>
+          </div>
+          <div>
+            <label style={{ fontSize: 11, color: "var(--text3)", marginBottom: 4, display: "block" }}>Niches</label>
+            <div className="pill-tabs">
+              {niches.map(n => (
+                <button key={n} className={`pill-tab ${selectedNiches.includes(n) ? "active" : ""}`}
+                  onClick={() => setSelectedNiches(prev => prev.includes(n) ? prev.filter(x => x !== n) : [...prev, n])}>{n}</button>
+              ))}
+            </div>
+          </div>
+        </div>
+        <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
+          <button className="btn btn-primary"><Icon name="search" size={14} /> Source Leads</button>
+          <button className="btn btn-ghost"><Icon name="zap" size={14} /> Enrich Existing</button>
+          <button className="btn btn-ghost"><Icon name="target" size={14} /> Score & Qualify</button>
+        </div>
+      </div>
+      <div className="grid-4">
+        <div className="card stat-card fade-in fade-d1">
+          <div className="stat-val" style={{ color: "var(--accent)" }}>112K</div>
+          <div className="stat-label">Total Contacts</div>
+        </div>
+        <div className="card stat-card fade-in fade-d2">
+          <div className="stat-val" style={{ color: "var(--green)" }}>2,075</div>
+          <div className="stat-label">Personal Contacts</div>
+        </div>
+        <div className="card stat-card fade-in fade-d3">
+          <div className="stat-val" style={{ color: "var(--yellow)" }}>455</div>
+          <div className="stat-label">Seed Targets</div>
+        </div>
+        <div className="card stat-card fade-in fade-d4">
+          <div className="stat-val" style={{ color: "var(--blue)" }}>86</div>
+          <div className="stat-label">Brand Links</div>
+        </div>
+      </div>
+      <div className="divider" />
+      <div className="section-title">Active Pipelines</div>
+      <div className="grid-2">
+        {["Dept 1: Lead Sourcing","Dept 2: Data Enrichment","Dept 4: Deal Qualification","Dept 6: Outreach Writing"].map((d, i) => (
+          <div key={i} className="card">
+            <div style={{ fontSize: 13, fontWeight: 500 }}>{d}</div>
+            <span className={`badge ${i < 2 ? "badge-orange" : "badge-gray"}`} style={{ marginTop: 6 }}>
+              {i < 2 ? "activating" : "planned"}
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ── POST REVIEW ─────────────────────────────────────────────
+
+function PostReviewScreen() {
+  const posts = [
+    { entity: "dorsey", caption: "The empire isn't built in the spotlight. It's built in the dark rooms where nobody's watching.", status: "approved", pillar: "Empire Building", time: "08:30" },
+    { entity: "dorsey", caption: "Your storms don't define you. Your response to the storm does.", status: "on_hold", pillar: "Thought Leadership", time: "11:30" },
+    { entity: "noir", caption: "Not a party. An experience. NOIR DC — April 17.", status: "approved", pillar: "Event Promo", time: "15:00" },
+    { entity: "dorsey", caption: "Faith without execution is just wishful thinking.", status: "on_hold", pillar: "Faith", time: "15:00" },
+    { entity: "huglife", caption: "Taste of Art LA — where culture meets creation. April 24.", status: "approved", pillar: "Event Promo", time: "18:30" },
+    { entity: "futbol", caption: "The beautiful game deserves a beautiful home. Forever Futbol Museum — coming this summer.", status: "queued", pillar: "Launch", time: "21:00" },
+  ];
+
+  const statusColors = { approved: "badge-green", on_hold: "badge-yellow", queued: "badge-blue", rejected: "badge-red" };
+
+  return (
+    <div>
+      <div className="grid-3" style={{ marginBottom: 16 }}>
+        <div className="card">
+          <div className="stat-val" style={{ color: "var(--green)" }}>30</div>
+          <div className="stat-label">Posts Queued Today (GHL)</div>
+        </div>
+        <div className="card">
+          <div className="stat-val" style={{ color: "var(--yellow)" }}>2</div>
+          <div className="stat-label">On Hold (Dorsey + Infinity)</div>
+        </div>
+        <div className="card">
+          <div className="stat-val" style={{ color: "var(--blue)" }}>4</div>
+          <div className="stat-label">Approved & Scheduled</div>
+        </div>
+      </div>
+      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+        {posts.map((p, i) => {
+          const ent = ENTITIES[p.entity];
+          return (
+            <div key={i} className="card" style={{ display: "flex", gap: 12, borderLeftWidth: 3, borderLeftColor: ent?.color }}>
+              <div style={{ width: 80, height: 80, borderRadius: 8, background: `linear-gradient(135deg, ${ent?.color}20, ${ent?.color}08)`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, border: `1px solid ${ent?.color}20` }}>
+                <Icon name="image" size={22} />
+              </div>
+              <div style={{ flex: 1 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
+                  <span style={{ fontSize: 12, fontWeight: 600, color: ent?.color }}>{ent?.name}</span>
+                  <span className={`badge ${statusColors[p.status]}`}>{p.status.replace("_"," ")}</span>
+                </div>
+                <div style={{ fontSize: 13, lineHeight: 1.4, marginBottom: 6 }}>{p.caption}</div>
+                <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                  <span className="badge badge-gray">{p.pillar}</span>
+                  <span className="mono" style={{ fontSize: 10, color: "var(--text3)" }}>{p.time}</span>
+                </div>
+                <div style={{ display: "flex", gap: 4, marginTop: 6 }}>
+                  {p.status !== "approved" && <button className="btn btn-sm btn-primary">Approve</button>}
+                  {p.status !== "rejected" && <button className="btn btn-sm btn-ghost">Edit</button>}
+                  <button className="btn btn-sm btn-danger">Reject</button>
+                </div>
               </div>
             </div>
           );
         })}
       </div>
-      {vis.length === 0 && <div style={{ padding: 60, textAlign: "center", color: "#ccc" }}>No posts to review</div>}
     </div>
   );
 }
 
-// ═══ SHARED STYLES ═══
-function inpS() { return { background: "#fff", border: "1px solid #e5e7eb", borderRadius: 6, padding: "8px 10px", fontSize: 13, fontFamily: "inherit", width: "100%", boxSizing: "border-box", marginBottom: 8, outline: "none" }; }
-function selS() { return { ...inpS(), cursor: "pointer" }; }
-function actBtn() { return { background: "#1a1a1a", color: "#fff", border: "none", borderRadius: 6, padding: "8px 16px", fontSize: 12, cursor: "pointer", fontFamily: "inherit", fontWeight: 600 }; }
-function smB(c) { return { background: c, color: "#fff", border: "none", borderRadius: 4, padding: "3px 10px", fontSize: 11, cursor: "pointer", fontFamily: "inherit", fontWeight: 600, marginRight: 4 }; }
-function tabBtn(active) { return { background: active ? "#1a1a1a" : "#fff", color: active ? "#fff" : "#999", border: `1px solid ${active ? "#1a1a1a" : "#e5e7eb"}`, borderRadius: 6, padding: "7px 16px", fontSize: 12, cursor: "pointer", fontFamily: "inherit", fontWeight: active ? 700 : 400 }; }
-function thS() { return { padding: "8px 12px", fontSize: 11, color: "#999", fontWeight: 600, textAlign: "left", letterSpacing: "0.5px" }; }
-function tdS() { return { padding: "10px 12px" }; }
-function panel() { return { background: "#f9fafb", border: "1px solid #e5e7eb", borderRadius: 10, padding: 20 }; }
+// ── INSTAGRAM DMs ───────────────────────────────────────────
+
+function InstagramDMsScreen() {
+  const [selectedTemplate, setSelectedTemplate] = useState(0);
+  return (
+    <div>
+      <div className="grid-2" style={{ marginBottom: 16 }}>
+        <div className="card">
+          <div className="card-title" style={{ marginBottom: 10 }}>DM Queue</div>
+          {[
+            { handle: "@venue_atl_1", entity: "huglife", template: "Cold Intro - Venue", status: "queued" },
+            { handle: "@sponsor_brand_2", entity: "noir", template: "Cold Intro - Sponsor", status: "queued" },
+            { handle: "@collab_creator_3", entity: "dorsey", template: "Collab Pitch", status: "sent" },
+            { handle: "@follow_up_4", entity: "futbol", template: "Follow-Up - Warm", status: "queued" },
+            { handle: "@post_event_5", entity: "huglife", template: "Thank You - Post Event", status: "sent" },
+          ].map((dm, i) => (
+            <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 0", borderBottom: "1px solid var(--border)" }}>
+              <span className="entity-dot" style={{ background: ENTITIES[dm.entity]?.color }} />
+              <span style={{ fontSize: 12, fontWeight: 500, flex: 1 }}>{dm.handle}</span>
+              <span className="badge badge-gray" style={{ fontSize: 9 }}>{dm.template}</span>
+              <span className={`badge ${dm.status === "sent" ? "badge-green" : "badge-blue"}`}>{dm.status}</span>
+            </div>
+          ))}
+          <button className="btn btn-primary btn-sm" style={{ marginTop: 10, width: "100%" }}><Icon name="send" size={12} /> Send All Queued</button>
+        </div>
+        <div className="card">
+          <div className="card-title" style={{ marginBottom: 10 }}>DM Templates</div>
+          {DM_TEMPLATES.map((t, i) => (
+            <div key={i} style={{ padding: "8px 0", borderBottom: "1px solid var(--border)", cursor: "pointer" }}
+              onClick={() => setSelectedTemplate(i)}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <span style={{ fontSize: 12, fontWeight: selectedTemplate === i ? 600 : 400, color: selectedTemplate === i ? "var(--accent)" : "var(--text2)" }}>{t.name}</span>
+                <Icon name="chevron" size={12} />
+              </div>
+              {selectedTemplate === i && (
+                <div style={{ fontSize: 11, color: "var(--text3)", marginTop: 6, lineHeight: 1.5, padding: 8, background: "var(--surface2)", borderRadius: 6 }}>
+                  {t.body}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+      <div className="section-title">Workflows</div>
+      <div className="grid-2">
+        <div className="card">
+          <div style={{ fontSize: 13, fontWeight: 500 }}>Social Send DMs</div>
+          <code className="mono" style={{ fontSize: 10, color: "var(--text3)" }}>zn2uHhkUROJqKzEG</code>
+          <span className="badge badge-green" style={{ marginTop: 4 }}>active</span>
+        </div>
+        <div className="card">
+          <div style={{ fontSize: 13, fontWeight: 500 }}>Social Message Gen</div>
+          <code className="mono" style={{ fontSize: 10, color: "var(--text3)" }}>8geOg9hei00b2Dxu</code>
+          <span className="badge badge-green" style={{ marginTop: 4 }}>active</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── EMAIL ───────────────────────────────────────────────────
+
+function EmailScreen() {
+  const [selectedMailbox, setSelectedMailbox] = useState(0);
+  const mailboxes = EMAIL_ROUTING;
+
+  return (
+    <div>
+      <div className="grid-2">
+        <div className="card" style={{ maxHeight: 500, overflowY: "auto" }}>
+          <div className="card-title" style={{ marginBottom: 10 }}>Mailboxes</div>
+          {mailboxes.map((m, i) => (
+            <div key={i} style={{ padding: "8px 0", borderBottom: "1px solid var(--border)", cursor: "pointer",
+              background: selectedMailbox === i ? "rgba(255,107,53,0.05)" : "transparent", borderRadius: 4, paddingLeft: 8 }}
+              onClick={() => setSelectedMailbox(i)}>
+              <div style={{ fontSize: 12, fontWeight: selectedMailbox === i ? 600 : 400, color: selectedMailbox === i ? "var(--accent)" : "var(--text)" }}>{m.dest}</div>
+              <div className="mono" style={{ fontSize: 10, color: "var(--text3)" }}>{m.email}</div>
+              {m.cc !== "—" && <div style={{ fontSize: 9, color: "var(--text3)" }}>CC: {m.cc}</div>}
+            </div>
+          ))}
+        </div>
+        <div className="card">
+          <div className="card-title" style={{ marginBottom: 10 }}>{mailboxes[selectedMailbox].dest}</div>
+          <div className="mono" style={{ fontSize: 12, color: "var(--accent)", marginBottom: 12 }}>{mailboxes[selectedMailbox].email}</div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            <button className="btn btn-primary" style={{ width: "100%", justifyContent: "center" }}><Icon name="mail" size={14} /> Compose</button>
+            <button className="btn btn-ghost" style={{ width: "100%", justifyContent: "center" }}><Icon name="send" size={14} /> Newsletter</button>
+            <button className="btn btn-ghost" style={{ width: "100%", justifyContent: "center" }}><Icon name="zap" size={14} /> PR Pitch</button>
+          </div>
+          <div className="divider" />
+          <div className="section-title">Email Engine Workflows</div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+            {[
+              { name: "Email Send Throttle", id: "3jDssrDbi21CLhn6" },
+              { name: "Newsletter Engine", id: "LOuffRVoxtPHsCuZ" },
+              { name: "PR Pitch + Followup", id: "bGdwLiVFcqP0FcIG" },
+            ].map((w, i) => (
+              <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "4px 0" }}>
+                <span style={{ fontSize: 12 }}>{w.name}</span>
+                <code className="mono" style={{ fontSize: 9, color: "var(--text3)" }}>{w.id}</code>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── OUTPUTS ─────────────────────────────────────────────────
+
+function OutputsScreen() {
+  const outputs = [
+    { name: "NOIR DC Sponsor Deck", type: "PDF", entity: "noir", status: "complete", url: "#" },
+    { name: "Forever Futbol Lookbook", type: "HTML", entity: "futbol", status: "in_progress", url: "#" },
+    { name: "KHG Enterprise Dashboard", type: "React App", entity: "all", status: "complete", url: "#" },
+    { name: "Remotion Video Studio", type: "GitHub Repo", entity: "all", status: "pending_push", url: "https://github.com/dolodorsey/khg-remotion-studio" },
+    { name: "Playwright MCP Server", type: "GitHub Repo", entity: "all", status: "pending_push", url: "https://github.com/dolodorsey/khg-playwright-server" },
+    { name: "Dr. Dorsey Quote Cards", type: "Graphics", entity: "dorsey", status: "generating", url: "#" },
+    { name: "GHL Social Login SOP", type: "Document", entity: "all", status: "complete", url: "#" },
+  ];
+
+  return (
+    <div>
+      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+        {outputs.map((o, i) => {
+          const ent = o.entity === "all" ? null : ENTITIES[o.entity];
+          return (
+            <div key={i} className="card" style={{ display: "flex", alignItems: "center", gap: 12 }}>
+              <div style={{ width: 40, height: 40, borderRadius: 8, background: "var(--surface2)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                <Icon name="output" size={18} />
+              </div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 13, fontWeight: 600 }}>{o.name}</div>
+                <div style={{ display: "flex", gap: 6, marginTop: 4 }}>
+                  <span className="badge badge-gray">{o.type}</span>
+                  {ent && <span className="badge" style={{ background: `${ent.color}20`, color: ent.color }}>{ent.name}</span>}
+                  <span className={`badge ${o.status === "complete" ? "badge-green" : o.status === "in_progress" || o.status === "generating" ? "badge-blue" : "badge-yellow"}`}>
+                    {o.status.replace("_", " ")}
+                  </span>
+                </div>
+              </div>
+              <button className="btn btn-sm btn-ghost"><Icon name="link" size={12} /> Open</button>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// ── TEAM ────────────────────────────────────────────────────
+
+function TeamScreen() {
+  return (
+    <div>
+      <div className="grid-2">
+        {TEAM.map((m, i) => (
+          <div key={i} className="card">
+            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
+              <div style={{ width: 38, height: 38, borderRadius: "50%", background: "rgba(255,107,53,0.1)", display: "flex", alignItems: "center", justifyContent: "center", border: "1.5px solid rgba(255,107,53,0.2)", fontSize: 14, fontWeight: 700, color: "var(--accent)" }}>
+                {m.name[0]}
+              </div>
+              <div>
+                <div style={{ fontSize: 14, fontWeight: 600 }}>{m.name}</div>
+                <div style={{ fontSize: 11, color: "var(--text3)" }}>{m.role}</div>
+              </div>
+            </div>
+            <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
+              {m.entities.map((e, j) => <span key={j} className="badge badge-gray">{e}</span>)}
+            </div>
+            {m.dispatch && <div className="mono" style={{ fontSize: 10, color: "var(--text3)", marginTop: 6 }}>Dispatch: {m.dispatch}</div>}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ══════════════════════════════════════════════════════════════
+// MAIN APP
+// ══════════════════════════════════════════════════════════════
+
+export default function KHGDashboard() {
+  const [screen, setScreen] = useState("home");
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [entityFilter, setEntityFilter] = useState(null);
+
+  const navigate = useCallback((s, entity = null) => {
+    setScreen(s);
+    setEntityFilter(entity);
+  }, []);
+
+  const navItems = [
+    { id: "home", label: "Home", icon: "home" },
+    { id: "commands", label: "Commands", icon: "cmd" },
+    { id: "events", label: "Events", icon: "calendar" },
+    { id: "tasks", label: "Tasks", icon: "task" },
+    { id: "social", label: "Social", icon: "social" },
+    { id: "outreach", label: "Outreach", icon: "send" },
+    { id: "leads", label: "Lead Engine", icon: "target" },
+    { id: "posts", label: "Post Review", icon: "image" },
+    { id: "dms", label: "Instagram DMs", icon: "dm" },
+    { id: "email", label: "Email", icon: "mail" },
+    { id: "outputs", label: "Outputs", icon: "output" },
+    { id: "team", label: "Team", icon: "user" },
+    { id: "system", label: "System", icon: "system" },
+    { id: "directory", label: "Directory", icon: "key" },
+    { id: "settings", label: "Settings", icon: "settings" },
+  ];
+
+  const entityNav = Object.entries(ENTITIES).map(([key, ent]) => ({
+    id: key, label: ent.name, color: ent.color, division: ent.division
+  }));
+
+  const screenTitles = {
+    home: "Command Center", commands: "Commands", events: "Events Calendar",
+    tasks: "Task Queue", social: "Social Media", outreach: "Outreach Engine",
+    leads: "Lead Engine", posts: "Post Review", dms: "Instagram DMs",
+    email: "Email Hub", outputs: "Outputs", team: "Team Directory",
+    system: "System Health", directory: "Credentials Directory", settings: "Settings"
+  };
+
+  const renderScreen = () => {
+    switch(screen) {
+      case "home": return <HomeScreen navigate={navigate} />;
+      case "commands": return <CommandsScreen />;
+      case "settings": return <SettingsScreen />;
+      case "system": return <SystemScreen />;
+      case "directory": return <DirectoryScreen />;
+      case "outreach": return <OutreachScreen entityFilter={entityFilter} />;
+      case "events": return <EventsScreen entityFilter={entityFilter} />;
+      case "tasks": return <TasksScreen />;
+      case "social": return <SocialScreen entityFilter={entityFilter} />;
+      case "leads": return <LeadEngineScreen />;
+      case "posts": return <PostReviewScreen />;
+      case "dms": return <InstagramDMsScreen />;
+      case "email": return <EmailScreen />;
+      case "outputs": return <OutputsScreen />;
+      case "team": return <TeamScreen />;
+      default: return <HomeScreen navigate={navigate} />;
+    }
+  };
+
+  return (
+    <>
+      <style>{css}</style>
+      <div className="dashboard">
+        <div className={`sidebar ${sidebarOpen ? "" : "collapsed"}`}>
+          <div className="sidebar-header" onClick={() => setSidebarOpen(!sidebarOpen)}>
+            <div className="logo">K</div>
+            <span>KHG COMMAND</span>
+          </div>
+
+          <div style={{ flex: 1, overflowY: "auto", paddingBottom: 20 }}>
+          <div className="sidebar-section-title">Navigation</div>
+          {navItems.map(item => (
+            <div key={item.id} className={`nav-item ${screen === item.id ? "active" : ""}`}
+              onClick={() => navigate(item.id)}>
+              <Icon name={item.icon} size={16} />
+              <span className="nav-label">{item.label}</span>
+            </div>
+          ))}
+
+          <div className="sidebar-section-title" style={{ marginTop: 8 }}>Entities</div>
+          {entityNav.map(ent => (
+            <div key={ent.id} className={`nav-item ${entityFilter === ent.id ? "active" : ""}`}
+              onClick={() => navigate("social", ent.id)}
+              style={entityFilter === ent.id ? { borderLeftColor: ent.color, color: ent.color } : {}}>
+              <span className="entity-dot" style={{ background: ent.color }} />
+              <span className="nav-label">{ent.label}</span>
+              <span className="entity-tag">{ent.division}</span>
+            </div>
+          ))}
+          </div>
+        </div>
+
+        <div className="main">
+          <div className="topbar">
+            <div style={{ cursor: "pointer", display: "flex" }} onClick={() => setSidebarOpen(!sidebarOpen)}>
+              <Icon name="menu" size={18} />
+            </div>
+            <div className="topbar-title">{screenTitles[screen]}</div>
+            {entityFilter && ENTITIES[entityFilter] && (
+              <span className="badge" style={{ background: `${ENTITIES[entityFilter].color}20`, color: ENTITIES[entityFilter].color }}>
+                {ENTITIES[entityFilter].name}
+              </span>
+            )}
+            <div className="topbar-right">
+              <span className="topbar-sub">Mar 12, 2026</span>
+              <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+                <div style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--green)", boxShadow: "0 0 8px var(--green)" }} />
+                <span style={{ fontSize: 10, fontWeight: 600, color: "var(--green)", letterSpacing: "0.06em" }}>119 LIVE</span>
+              </div>
+            </div>
+          </div>
+          <div className="content">
+            {renderScreen()}
+          </div>
+        </div>
+      </div>
+    </>
+  );
+}
