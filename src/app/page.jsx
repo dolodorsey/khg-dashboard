@@ -1443,6 +1443,80 @@ function OutputsScreen() {
   );
 }
 
+// ── TEXT SCHEDULER ─────────────────────────────────────────
+
+function TextSchedulerScreen() {
+  const [messages, setMessages] = useState([
+    { id: 1, to: "Brad", phone: "+1 (404) 555-0102", brand: "Casper Group", body: "Hey Brad — following up on the Buckhead location walkthrough. Are we confirmed for Thursday at 2pm?", scheduledFor: "2026-03-17 09:00", status: "queued" },
+    { id: 2, to: "Vincent", phone: "+1 (713) 555-0234", brand: "HugLife", body: "V — REMIX vendor list needs final approval before Wednesday. Can you confirm the DJ lineup?", scheduledFor: "2026-03-17 10:30", status: "queued" },
+    { id: 3, to: "Nya", phone: "+1 (404) 555-0178", brand: "Casper Group", body: "Nya — lease agreement for the Charlotte ghost kitchen location. Need your review by EOD.", scheduledFor: "2026-03-17 11:00", status: "queued" },
+    { id: 4, to: "Maia", phone: "+1 (404) 555-0156", brand: "Casper Group", body: "Maia — the Casper IG content calendar is light for next week. Need 3 more posts by Friday.", scheduledFor: "2026-03-17 14:00", status: "queued" },
+    { id: 5, to: "Eric", phone: "+1 (404) 555-0189", brand: "KHG", body: "E — n8n execution budget update. Need the deactivation report for the 42 workflows by tomorrow.", scheduledFor: "2026-03-17 08:00", status: "sent" },
+    { id: 6, to: "Linda", phone: "+1 (404) 555-0145", brand: "KHG", body: "Linda — Please schedule the Forever Futbol vendor calls for next Monday-Wednesday. Priority: Houston sponsors.", scheduledFor: "2026-03-16 15:00", status: "sent" },
+  ]);
+  const [newMsg, setNewMsg] = useState({ to: "", phone: "", brand: "", body: "", scheduledFor: "" });
+  const [filter, setFilter] = useState("all");
+  
+  const filtered = filter === "all" ? messages : messages.filter(m => m.status === filter);
+  const queuedCount = messages.filter(m => m.status === "queued").length;
+  const sentCount = messages.filter(m => m.status === "sent").length;
+
+  return (
+    <div>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12, marginBottom: 20 }}>
+        {[
+          { label: "Total Scheduled", value: messages.length, color: "var(--accent)" },
+          { label: "Queued", value: queuedCount, color: "var(--yellow)" },
+          { label: "Sent Today", value: sentCount, color: "var(--green)" },
+          { label: "Team Members", value: 8, color: "var(--blue)" },
+        ].map(s => (
+          <div key={s.label} className="card">
+            <div className="stat-value" style={{ color: s.color }}>{s.value}</div>
+            <div className="stat-label">{s.label}</div>
+          </div>
+        ))}
+      </div>
+
+      <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
+        {["all", "queued", "sent"].map(f => (
+          <button key={f} className={`badge ${filter === f ? "" : ""}`}
+            style={{ cursor: "pointer", background: filter === f ? "var(--accent)" : "var(--surface-2)", color: filter === f ? "#000" : "var(--text-2)", border: "none", padding: "6px 14px", fontSize: 11, fontWeight: 600, letterSpacing: "0.05em", textTransform: "uppercase" }}
+            onClick={() => setFilter(f)}>{f}</button>
+        ))}
+      </div>
+
+      <div className="card" style={{ marginBottom: 16 }}>
+        <div className="card-title" style={{ marginBottom: 12 }}>Compose New Message</div>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10, marginBottom: 10 }}>
+          <input placeholder="Recipient name" value={newMsg.to} onChange={e => setNewMsg({...newMsg, to: e.target.value})} style={{ background: "var(--surface-2)", border: "1px solid var(--border)", padding: "10px 12px", color: "var(--text-1)", fontSize: 12, fontFamily: "var(--mono)" }} />
+          <input placeholder="Phone number" value={newMsg.phone} onChange={e => setNewMsg({...newMsg, phone: e.target.value})} style={{ background: "var(--surface-2)", border: "1px solid var(--border)", padding: "10px 12px", color: "var(--text-1)", fontSize: 12, fontFamily: "var(--mono)" }} />
+          <input placeholder="Brand" value={newMsg.brand} onChange={e => setNewMsg({...newMsg, brand: e.target.value})} style={{ background: "var(--surface-2)", border: "1px solid var(--border)", padding: "10px 12px", color: "var(--text-1)", fontSize: 12, fontFamily: "var(--mono)" }} />
+        </div>
+        <textarea placeholder="Message body..." value={newMsg.body} onChange={e => setNewMsg({...newMsg, body: e.target.value})} rows={3} style={{ width: "100%", background: "var(--surface-2)", border: "1px solid var(--border)", padding: "10px 12px", color: "var(--text-1)", fontSize: 12, fontFamily: "var(--mono)", resize: "vertical", marginBottom: 10 }} />
+        <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+          <input type="datetime-local" value={newMsg.scheduledFor} onChange={e => setNewMsg({...newMsg, scheduledFor: e.target.value})} style={{ background: "var(--surface-2)", border: "1px solid var(--border)", padding: "10px 12px", color: "var(--text-1)", fontSize: 12, fontFamily: "var(--mono)" }} />
+          <button onClick={() => { if(newMsg.to && newMsg.body) { setMessages([...messages, { ...newMsg, id: Date.now(), status: "queued" }]); setNewMsg({ to: "", phone: "", brand: "", body: "", scheduledFor: "" }); }}} style={{ background: "var(--accent)", color: "#000", border: "none", padding: "10px 24px", fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", cursor: "pointer" }}>Schedule</button>
+        </div>
+      </div>
+
+      <div className="card">
+        <div className="card-title" style={{ marginBottom: 12 }}>Message Queue</div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 1 }}>
+          {filtered.map(m => (
+            <div key={m.id} style={{ display: "grid", gridTemplateColumns: "100px 90px 1fr 140px 70px", gap: 12, padding: "12px 0", borderBottom: "1px solid var(--border)", alignItems: "center", fontSize: 12 }}>
+              <span style={{ fontWeight: 700, color: "var(--text-1)" }}>{m.to}</span>
+              <span style={{ color: "var(--text-3)", fontFamily: "var(--mono)", fontSize: 10 }}>{m.brand}</span>
+              <span style={{ color: "var(--text-2)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{m.body}</span>
+              <span style={{ color: "var(--text-3)", fontFamily: "var(--mono)", fontSize: 10 }}>{m.scheduledFor}</span>
+              <span className="badge" style={{ background: m.status === "sent" ? "var(--green)" + "20" : "var(--yellow)" + "20", color: m.status === "sent" ? "var(--green)" : "var(--yellow)", fontSize: 9, padding: "3px 8px", textAlign: "center" }}>{m.status.toUpperCase()}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── TEAM ────────────────────────────────────────────────────
 
 function TeamScreen() {
@@ -1496,6 +1570,7 @@ export default function KHGDashboard() {
     { id: "posts", label: "Post Review", icon: "image" },
     { id: "dms", label: "Instagram DMs", icon: "dm" },
     { id: "email", label: "Email", icon: "mail" },
+    { id: "texts", label: "Text Scheduler", icon: "send" },
     { id: "outputs", label: "Outputs", icon: "output" },
     { id: "team", label: "Team", icon: "user" },
     { id: "system", label: "System", icon: "system" },
@@ -1511,7 +1586,7 @@ export default function KHGDashboard() {
     home: "Command Center", commands: "Commands", events: "Events Calendar",
     tasks: "Task Queue", social: "Social Media", outreach: "Outreach Engine",
     leads: "Lead Engine", posts: "Post Review", dms: "Instagram DMs",
-    email: "Email Hub", outputs: "Outputs", team: "Team Directory",
+    email: "Email Hub", texts: "Text Scheduler", outputs: "Outputs", team: "Team Directory",
     system: "System Health", directory: "Credentials Directory", settings: "Settings"
   };
 
@@ -1530,6 +1605,7 @@ export default function KHGDashboard() {
       case "posts": return <PostReviewScreen />;
       case "dms": return <InstagramDMsScreen />;
       case "email": return <EmailScreen />;
+      case "texts": return <TextSchedulerScreen />;
       case "outputs": return <OutputsScreen />;
       case "team": return <TeamScreen />;
       default: return <HomeScreen navigate={navigate} />;
