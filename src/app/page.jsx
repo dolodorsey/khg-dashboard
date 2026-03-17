@@ -1968,6 +1968,235 @@ function TeamScreen() {
 }
 
 // ══════════════════════════════════════════════════════════════
+// COMMAND BAR — Natural Language Action Router
+// ══════════════════════════════════════════════════════════════
+
+function CommandBar({ navigate }) {
+  const [input, setInput] = useState("");
+  const [processing, setProcessing] = useState(false);
+  const [result, setResult] = useState(null);
+  const [showHelp, setShowHelp] = useState(false);
+  const inputRef = useRef(null);
+
+  const N8N_BASE = "https://dorsey.app.n8n.cloud/webhook";
+  const WF = {
+    taskRouter: "AetfFm74ipOBpvXc",
+    linda: "bZ4QrBi5QmqICSR8",
+    socialDMs: "zn2uHhkUROJqKzEG",
+    socialEngine: "WK0PGRlUwaOQBslh",
+    igComments: "tyQSD2mJl8W9VDm0",
+    emailThrottle: "3jDssrDbi21CLhn6",
+    newsletter: "LOuffRVoxtPHsCuZ",
+    prPitch: "bGdwLiVFcqP0FcIG",
+    sponsor: "ThKwcVTGnpXIoOEE",
+    influencer: "0paDyU807bccvZYQ",
+    contentFactory: "T7ZOnFaSEvcYvwbM",
+  };
+
+  const triggerN8n = async (wfId, data) => {
+    try {
+      await fetch(`${N8N_BASE}/${wfId}`, { method: "POST", headers: {"Content-Type":"application/json"}, body: JSON.stringify({ ...data, source: "command_bar", timestamp: new Date().toISOString() }) });
+      return true;
+    } catch { return false; }
+  };
+
+  const processCommand = async (raw) => {
+    if (!raw.trim()) return;
+    setProcessing(true);
+    setResult(null);
+    const cmd = raw.trim().toLowerCase();
+    const original = raw.trim();
+    let msg = "";
+
+    try {
+      // ── DM: "dm @handle message" ────────────────────────────────
+      if (cmd.startsWith("dm ") || cmd.startsWith("message ")) {
+        const parts = original.replace(/^(dm|message)\s+/i, "").split(" ");
+        const handle = parts[0];
+        const message = parts.slice(1).join(" ");
+        if (!handle) { msg = "Usage: dm @handle your message"; }
+        else {
+          await triggerN8n(WF.socialDMs, { action: "send_single", handle, message: message || "Hey! Wanted to connect.", entity: "huglife" });
+          await supaInsert("khg_tasks", { task: `DM sent to ${handle}: ${message?.slice(0,50) || "connection request"}`, assignee: "System", entity: "all", priority: "low", status: "completed", department: "Social" });
+          msg = `✅ DM sent to ${handle}`;
+        }
+      }
+      // ── POST: "post [brand] caption" ────────────────────────────
+      else if (cmd.startsWith("post ") || cmd.startsWith("queue post ") || cmd.startsWith("make a post ")) {
+        const text = original.replace(/^(post|queue post|make a post)\s*/i, "");
+        const brands = Object.keys(ENTITIES);
+        let brand = "dr_dorsey";
+        let caption = text;
+        for (const b of brands) {
+          if (cmd.includes(b) || cmd.includes(ENTITIES[b]?.name?.toLowerCase())) {
+            brand = b === "dorsey" ? "dr_dorsey" : b;
+            caption = text.replace(new RegExp(b + "|" + (ENTITIES[b]?.name || ""), "gi"), "").trim();
+            break;
+          }
+        }
+        if (!caption) { msg = "Usage: post [brand] your caption text"; }
+        else {
+          await supaInsert("contact_action_queue", { brand_key: brand, action_type: "post", message_body: caption, status: "queued" });
+          await triggerN8n(WF.socialEngine, { action: "queue_post", brand, caption });
+          msg = `✅ Post queued for ${brand}: "${caption.slice(0,60)}..."`;
+        }
+      }
+      // ── TASK: "task [assignee] description" ──────────────────────
+      else if (cmd.startsWith("task ") || cmd.startsWith("schedule ") || cmd.startsWith("add task ") || cmd.startsWith("create task ")) {
+        const text = original.replace(/^(task|schedule|add task|create task)\s*/i, "");
+        // Check for assignee pattern: "task Linda do something"
+        const team = ["Linda","Nya","Maia","Vincent","Nicholas","Eric","Bax","Brad","Dom","Kenny","Kei","Myia","Claude","Dorsey","Alandra","Brittany"];
+        let assignee = "Unassigned";
+        let taskDesc = text;
+        for (const t of team) {
+          if (text.toLowerCase().startsWith(t.toLowerCase() + " ")) {
+            assignee = t;
+            taskDesc = text.slice(t.length + 1).trim();
+            break;
+          }
+        }
+        if (!taskDesc) { msg = "Usage: task [assignee] description"; }
+        else {
+          await supaInsert("khg_tasks", { task: taskDesc, assignee, entity: "all", priority: "medium", status: "pending", department: "Operations" });
+          msg = `✅ Task created${assignee !== "Unassigned" ? ` → ${assignee}` : ""}: "${taskDesc.slice(0,60)}"`;
+        }
+      }
+      // ── DISPATCH LINDA: "dispatch linda [task]" ─────────────────
+      else if (cmd.startsWith("dispatch ") || cmd.startsWith("linda ")) {
+        const task = original.replace(/^(dispatch\s*linda?|linda)\s*/i, "").trim();
+        if (!task) { msg = "Usage: dispatch linda [task description]"; }
+        else {
+          await triggerN8n(WF.linda, { task, assignee: "Linda", source: "command_bar" });
+          await supaInsert("khg_tasks", { task, assignee: "Linda", entity: "all", priority: "medium", status: "pending", department: "Operations" });
+          msg = `✅ Dispatched to Linda: "${task.slice(0,60)}"`;
+        }
+      }
+      // ── EMAIL: "email [to] subject | body" ──────────────────────
+      else if (cmd.startsWith("email ")) {
+        const text = original.replace(/^email\s*/i, "");
+        const pipeIdx = text.indexOf("|");
+        let to = "", subject = "", body = "";
+        if (pipeIdx > -1) {
+          const before = text.slice(0, pipeIdx).trim();
+          body = text.slice(pipeIdx + 1).trim();
+          const atIdx = before.indexOf("@");
+          if (atIdx > -1) {
+            const spaceAfterAt = before.indexOf(" ", atIdx);
+            to = spaceAfterAt > -1 ? before.slice(0, spaceAfterAt) : before;
+            subject = spaceAfterAt > -1 ? before.slice(spaceAfterAt + 1) : "";
+          } else { subject = before; }
+        } else { subject = text; }
+        await triggerN8n(WF.emailThrottle, { action: "compose", to, subject, body });
+        msg = `✅ Email triggered${to ? ` to ${to}` : ""}: "${subject.slice(0,40)}"`;
+      }
+      // ── TEXT: "text [name] message" ──────────────────────────────
+      else if (cmd.startsWith("text ") || cmd.startsWith("sms ")) {
+        const text = original.replace(/^(text|sms)\s*/i, "");
+        const parts = text.split(" ");
+        const name = parts[0];
+        const message = parts.slice(1).join(" ");
+        if (!name || !message) { msg = "Usage: text [name] your message"; }
+        else {
+          await supaInsert("khg_tasks", { task: `Text to ${name}: ${message.slice(0,80)}`, assignee: "System", entity: "all", priority: "low", status: "completed", department: "Communications" });
+          msg = `✅ Text queued to ${name}: "${message.slice(0,60)}"`;
+        }
+      }
+      // ── RUN WORKFLOW: "run [workflow]" ───────────────────────────
+      else if (cmd.startsWith("run ")) {
+        const wfName = cmd.replace(/^run\s*/i, "").trim();
+        const wfMap = {
+          "content": WF.contentFactory, "content factory": WF.contentFactory,
+          "newsletter": WF.newsletter, "pr": WF.prPitch, "pr pitch": WF.prPitch,
+          "sponsor": WF.sponsor, "sponsors": WF.sponsor,
+          "influencer": WF.influencer, "influencers": WF.influencer,
+          "dms": WF.socialDMs, "dm engine": WF.socialDMs,
+          "comments": WF.igComments, "ig comments": WF.igComments,
+          "social": WF.socialEngine, "social engine": WF.socialEngine,
+          "email": WF.emailThrottle, "emails": WF.emailThrottle,
+        };
+        const wfId = wfMap[wfName];
+        if (!wfId) { msg = `Unknown workflow "${wfName}". Try: content, newsletter, pr, sponsor, influencer, dms, comments, social, email`; }
+        else {
+          await triggerN8n(wfId, { action: "run", triggered_by: "command_bar" });
+          msg = `✅ Workflow "${wfName}" triggered`;
+        }
+      }
+      // ── NAVIGATE: "go to [screen]" ──────────────────────────────
+      else if (cmd.startsWith("go to ") || cmd.startsWith("open ") || cmd.startsWith("show ")) {
+        const target = cmd.replace(/^(go to|open|show)\s*/i, "").trim();
+        const screenMap = { home:"home", commands:"commands", events:"events", tasks:"tasks", social:"social", outreach:"outreach", leads:"leads", "lead engine":"leads", posts:"posts", "post review":"posts", dms:"dms", "instagram":"dms", email:"email", texts:"texts", "text":"texts", outputs:"outputs", team:"team", system:"system", directory:"directory", settings:"settings" };
+        const s = screenMap[target];
+        if (s) { navigate(s); msg = `Navigated to ${target}`; }
+        else { msg = `Unknown screen "${target}"`; }
+      }
+      // ── HELP ────────────────────────────────────────────────────
+      else if (cmd === "help" || cmd === "?") {
+        setShowHelp(true);
+        msg = "";
+      }
+      // ── UNKNOWN ─────────────────────────────────────────────────
+      else {
+        // Default: create a task
+        await supaInsert("khg_tasks", { task: original, assignee: "Unassigned", entity: "all", priority: "medium", status: "pending", department: "General" });
+        msg = `✅ Task created: "${original.slice(0,60)}"`;
+      }
+    } catch (err) {
+      msg = `❌ Error: ${err.message || "Failed to execute"}`;
+    }
+
+    setResult(msg);
+    setProcessing(false);
+    setInput("");
+    if (msg) setTimeout(() => setResult(null), 5000);
+  };
+
+  // Keyboard shortcut: Cmd+K or / to focus
+  useEffect(() => {
+    const handler = (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === "k") { e.preventDefault(); inputRef.current?.focus(); }
+      if (e.key === "/" && document.activeElement?.tagName !== "INPUT" && document.activeElement?.tagName !== "TEXTAREA") { e.preventDefault(); inputRef.current?.focus(); }
+      if (e.key === "Escape") { setShowHelp(false); inputRef.current?.blur(); }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, []);
+
+  return (
+    <div style={{ position: "relative", flex: 1, maxWidth: 600, margin: "0 16px" }}>
+      <div style={{ display: "flex", alignItems: "center", background: "var(--surface2)", border: "1px solid var(--border)", borderRadius: 8, padding: "0 12px", transition: "border-color 0.2s" }}>
+        <Icon name="cmd" size={14} />
+        <input ref={inputRef} value={input} onChange={e => setInput(e.target.value)}
+          onKeyDown={e => { if (e.key === "Enter") processCommand(input); }}
+          onFocus={() => setShowHelp(false)}
+          placeholder={processing ? "Processing..." : "Type a command... (dm, post, task, email, run, dispatch)"}
+          disabled={processing}
+          style={{ flex: 1, background: "transparent", border: "none", outline: "none", padding: "10px 8px", color: "var(--text)", fontSize: 13, fontFamily: "'DM Sans',sans-serif" }} />
+        <div style={{ fontSize: 9, color: "var(--text3)", letterSpacing: "0.1em", whiteSpace: "nowrap" }}>⌘K</div>
+      </div>
+      {result && (
+        <div style={{ position: "absolute", top: "100%", left: 0, right: 0, marginTop: 4, padding: "8px 12px", background: result.startsWith("✅") ? "rgba(34,197,94,0.1)" : result.startsWith("❌") ? "rgba(239,68,68,0.1)" : "var(--surface2)", border: `1px solid ${result.startsWith("✅") ? "rgba(34,197,94,0.2)" : result.startsWith("❌") ? "rgba(239,68,68,0.2)" : "var(--border)"}`, borderRadius: 8, fontSize: 12, color: "var(--text)", zIndex: 100 }}>
+          {result}
+        </div>
+      )}
+      {showHelp && (
+        <div style={{ position: "absolute", top: "100%", left: 0, right: 0, marginTop: 4, padding: "12px 16px", background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 8, fontSize: 12, color: "var(--text2)", zIndex: 100, lineHeight: 1.8 }}>
+          <div style={{fontWeight:600,color:"var(--accent)",marginBottom:4}}>Commands:</div>
+          <div><code style={{color:"var(--accent)"}}>dm @handle message</code> — Send Instagram DM</div>
+          <div><code style={{color:"var(--accent)"}}>post [brand] caption</code> — Queue social post</div>
+          <div><code style={{color:"var(--accent)"}}>task [assignee] description</code> — Create task</div>
+          <div><code style={{color:"var(--accent)"}}>email to@addr subject | body</code> — Send email</div>
+          <div><code style={{color:"var(--accent)"}}>text [name] message</code> — Queue SMS</div>
+          <div><code style={{color:"var(--accent)"}}>dispatch linda [task]</code> — VA dispatch</div>
+          <div><code style={{color:"var(--accent)"}}>run [workflow]</code> — Trigger n8n workflow</div>
+          <div><code style={{color:"var(--accent)"}}>go to [screen]</code> — Navigate</div>
+          <div style={{marginTop:4,fontSize:10,color:"var(--text3)"}}>Anything else → creates a task automatically</div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ══════════════════════════════════════════════════════════════
 // MAIN APP
 // ══════════════════════════════════════════════════════════════
 
@@ -2073,16 +2302,17 @@ export default function KHGDashboard() {
               <Icon name="menu" size={18} />
             </div>
             <div className="topbar-title">{screenTitles[screen]}</div>
+            <CommandBar navigate={navigate} />
             {entityFilter && ENTITIES[entityFilter] && (
               <span className="badge" style={{ background: `${ENTITIES[entityFilter].color}20`, color: ENTITIES[entityFilter].color }}>
                 {ENTITIES[entityFilter].name}
               </span>
             )}
             <div className="topbar-right">
-              <span className="topbar-sub">Mar 12, 2026</span>
+              <span className="topbar-sub">{new Date().toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"})}</span>
               <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
                 <div style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--green)", boxShadow: "0 0 8px var(--green)" }} />
-                <span style={{ fontSize: 10, fontWeight: 600, color: "var(--green)", letterSpacing: "0.06em" }}>119 LIVE</span>
+                <span style={{ fontSize: 10, fontWeight: 600, color: "var(--green)", letterSpacing: "0.06em" }}>LIVE</span>
               </div>
             </div>
           </div>
