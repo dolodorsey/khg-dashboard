@@ -8,6 +8,37 @@ import { useState, useEffect, useCallback, useRef } from "react";
 
 // ── DATA LAYER ──────────────────────────────────────────────
 
+const SUPA_URL = "https://dzlmtvodpyhetvektfuo.supabase.co";
+const SUPA_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR6bG10dm9kcHloZXR2ZWt0ZnVvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk1ODQ4NjQsImV4cCI6MjA4NTE2MDg2NH0.qmnWB4aWdb7U8Iod9Hv8PQAOJO3AG0vYEGnPS--kfAo";
+const supa = async (table, query = "") => {
+  try {
+    const r = await fetch(`${SUPA_URL}/rest/v1/${table}${query ? "?" + query : ""}`, {
+      headers: { apikey: SUPA_KEY, Authorization: `Bearer ${SUPA_KEY}` }
+    });
+    return r.ok ? await r.json() : [];
+  } catch { return []; }
+};
+const supaInsert = async (table, data) => {
+  try {
+    const r = await fetch(`${SUPA_URL}/rest/v1/${table}`, {
+      method: "POST",
+      headers: { apikey: SUPA_KEY, Authorization: `Bearer ${SUPA_KEY}`, "Content-Type": "application/json", Prefer: "return=representation" },
+      body: JSON.stringify(data)
+    });
+    return r.ok ? await r.json() : null;
+  } catch { return null; }
+};
+const supaUpdate = async (table, match, data) => {
+  try {
+    const r = await fetch(`${SUPA_URL}/rest/v1/${table}?${match}`, {
+      method: "PATCH",
+      headers: { apikey: SUPA_KEY, Authorization: `Bearer ${SUPA_KEY}`, "Content-Type": "application/json", Prefer: "return=representation" },
+      body: JSON.stringify(data)
+    });
+    return r.ok ? await r.json() : null;
+  } catch { return null; }
+};
+
 const ENTITIES = {
   huglife: {
     name: "HugLife", division: "Events", color: "#FF6B35", 
@@ -67,7 +98,26 @@ const ENTITIES = {
     name: "Playmakers Sports", division: "Non-Profit", color: "#E67E22",
     brands: ["Sole Exchange","Let's Talk About It"],
     socials: { ig: "@playmakerssportsassociation" }
-  }
+  },
+  remix: { name: "REMIX", division: "Events", color: "#B6E03E", socials: { ig: "@remixmashup" } },
+  wrst_bhvr: { name: "WRST BHVR", division: "Events", color: "#BB2C35", socials: { ig: "@wrstbhvr" } },
+  taste_of_art: { name: "Taste of Art", division: "Events", color: "#A75C43", socials: { ig: "@tasteofartshow" } },
+  gangsta_gospel: { name: "Gangsta Gospel", division: "Events", color: "#3C5B8A", socials: { ig: "@gangstagospel" } },
+  sundays_best: { name: "Sunday's Best", division: "Events", color: "#D8BA7C", socials: { ig: "@sundaysbest" } },
+  paparazzi: { name: "Paparazzi", division: "Events", color: "#B73A4B", socials: { ig: "@paparazzi" } },
+  pawchella: { name: "Pawchella", division: "Events", color: "#4A8A3A", socials: { ig: "@pawchella" } },
+  kulture: { name: "The Kulture", division: "Events", color: "#D9B44A", socials: { ig: "@thekulture" } },
+  soul_sessions: { name: "Soul Sessions", division: "Events", color: "#D947A8", socials: { ig: "@soulsessions" } },
+  underground_king: { name: "Underground King", division: "Events", color: "#6D4AE0", socials: { ig: "@undergroundking" } },
+  cravings: { name: "CRVNGS", division: "Events", color: "#C85A1A", socials: { ig: "@crvngs" } },
+  bravo: { name: "BRAVO", division: "Events", color: "#FFD700", socials: {} },
+  black_ball: { name: "Black Ball", division: "Events", color: "#1A1A1A", socials: {} },
+  snow_ball: { name: "Snow Ball", division: "Events", color: "#B7D4E8", socials: {} },
+  monsters_ball: { name: "Monster's Ball", division: "Events", color: "#6D4AE0", socials: {} },
+  beauty_beast: { name: "Beauty & The Beast", division: "Events", color: "#C9A96E", socials: {} },
+  haunted_house: { name: "Haunted House", division: "Events", color: "#8B0000", socials: {} },
+  winter_wonderland: { name: "Winter Wonderland", division: "Events", color: "#88CCEE", socials: {} },
+  parking_lot: { name: "Parking Lot Pimpin", division: "Events", color: "#E67E22", socials: {} },
 };
 
 const EVENTS_2026 = [
@@ -863,17 +913,42 @@ function SystemScreen() {
 function DirectoryScreen() {
   const [copied, setCopied] = useState(null);
   const [filter, setFilter] = useState("");
-  const allCreds = CREDENTIALS.filter(c =>
+  const [creds, setCreds] = useState(CREDENTIALS);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    (async () => {
+      const data = await supa("credentials", "is_active=eq.true&select=credential_key,credential_value,service_name&order=service_name.asc&limit=50");
+      if (data && data.length > 0) {
+        const mapped = data.map(c => ({
+          service: c.service_name || c.credential_key.split("_")[0],
+          key: c.credential_key,
+          value: c.credential_value,
+          type: "key"
+        }));
+        setCreds([...mapped, ...CREDENTIALS]);
+      }
+      setLoading(false);
+    })();
+  }, []);
+
+  const allCreds = creds.filter(c =>
     !filter || c.service.toLowerCase().includes(filter.toLowerCase()) || c.key.toLowerCase().includes(filter.toLowerCase())
   );
+  // Deduplicate by key
+  const seen = new Set();
+  const unique = allCreds.filter(c => { const k = c.key + c.value; if (seen.has(k)) return false; seen.add(k); return true; });
+
   return (
     <div>
       <input className="input" placeholder="Filter credentials..." value={filter} onChange={e => setFilter(e.target.value)} style={{ marginBottom: 16 }} />
+      {loading && <div style={{fontSize:11,color:"var(--text3)",marginBottom:8}}>Loading from Supabase credentials table...</div>}
+      <div style={{fontSize:11,color:"var(--text3)",marginBottom:12}}>{unique.length} credentials found</div>
       <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-        {allCreds.map((c, i) => (
+        {unique.map((c, i) => (
           <div key={i} className="card" style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 14px" }}>
             <span className="badge badge-blue" style={{ minWidth: 80, justifyContent: "center" }}>{c.service}</span>
-            <span style={{ fontSize: 12, color: "var(--text2)", width: 120 }}>{c.key}</span>
+            <span style={{ fontSize: 12, color: "var(--text2)", width: 140, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{c.key}</span>
             <code className="mono" style={{ fontSize: 11, color: "var(--accent)", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{c.value}</code>
             <span className="copy-btn" onClick={() => copyToClipboard(c.value, setCopied)}>
               {copied === c.value ? <Icon name="check" size={14} /> : <Icon name="copy" size={14} />}
@@ -955,18 +1030,44 @@ function OutreachScreen({ entityFilter }) {
 
 function EventsScreen({ entityFilter }) {
   const [entity, setEntity] = useState(entityFilter || "all");
-  const filtered = entity === "all" ? EVENTS_2026 : EVENTS_2026.filter(e => e.entity === entity);
-  const sorted = [...filtered].sort((a, b) => new Date(a.date) - new Date(b.date));
+  const [events, setEvents] = useState([]);
+  const [loading, setLoading] = useState(true);
+  
+  useEffect(() => {
+    (async () => {
+      const data = await supa("eventbrite_events", "is_active=eq.true&order=event_date.asc.nullslast&limit=100");
+      setEvents(data || []);
+      setLoading(false);
+    })();
+  }, []);
+
+  const BRAND_MAP = {
+    remix: "remix", noir: "noir", wrst_bhvr: "wrst_bhvr", taste_of_art: "taste_of_art",
+    gangsta_gospel: "gangsta_gospel", sundays_best: "sundays_best", paparazzi: "paparazzi",
+    pawchella: "pawchella", kulture: "kulture", huglife: "huglife", forever_futbol: "futbol"
+  };
+
+  const getEntity = (ev) => BRAND_MAP[ev.brand_key] || "huglife";
+  const filtered = entity === "all" ? events : events.filter(e => getEntity(e) === entity);
+  
   const months = {};
-  sorted.forEach(ev => { const m = new Date(ev.date).toLocaleDateString("en-US",{month:"long",year:"numeric"}); (months[m] = months[m] || []).push(ev) });
+  filtered.forEach(ev => {
+    const m = ev.event_date ? new Date(ev.event_date).toLocaleDateString("en-US",{month:"long",year:"numeric"}) : "TBD";
+    (months[m] = months[m] || []).push(ev);
+  });
+
+  const brandTabs = ["noir","remix","wrst_bhvr","taste_of_art","gangsta_gospel","cravings","soul_sessions","underground_king","kulture","futbol","huglife"];
 
   return (
     <div>
-      <div className="pill-tabs">
-        <button className={`pill-tab ${entity === "all" ? "active" : ""}`} onClick={() => setEntity("all")}>All ({EVENTS_2026.length})</button>
-        {["noir","huglife","futbol","dorsey"].map(k => {
+      {loading ? <div className="card" style={{textAlign:"center",padding:32}}>Loading events from Supabase...</div> : <>
+      <div className="pill-tabs" style={{flexWrap:"wrap"}}>
+        <button className={`pill-tab ${entity === "all" ? "active" : ""}`} onClick={() => setEntity("all")}>All ({events.length})</button>
+        {brandTabs.map(k => {
           const ent = ENTITIES[k];
-          const count = EVENTS_2026.filter(e => e.entity === k).length;
+          if (!ent) return null;
+          const count = events.filter(e => getEntity(e) === k).length;
+          if (count === 0) return null;
           return (
             <button key={k} className={`pill-tab ${entity === k ? "active" : ""}`}
               style={entity === k ? { background: ent.color, borderColor: ent.color } : {}}
@@ -974,39 +1075,46 @@ function EventsScreen({ entityFilter }) {
           );
         })}
       </div>
+      <div className="grid-4" style={{marginBottom:16}}>
+        <div className="card"><div className="stat-val" style={{color:"var(--accent)"}}>{events.length}</div><div className="stat-label">Total Events</div></div>
+        <div className="card"><div className="stat-val" style={{color:"var(--green)"}}>{events.filter(e=>e.event_date && new Date(e.event_date)>new Date()).length}</div><div className="stat-label">Upcoming</div></div>
+        <div className="card"><div className="stat-val" style={{color:"var(--blue)"}}>{new Set(events.map(e=>e.city)).size}</div><div className="stat-label">Cities</div></div>
+        <div className="card"><div className="stat-val" style={{color:"var(--yellow)"}}>{new Set(events.map(e=>e.event_name)).size}</div><div className="stat-label">Unique Brands</div></div>
+      </div>
       {Object.entries(months).map(([month, evs]) => (
         <div key={month} style={{ marginBottom: 20 }}>
-          <div style={{ fontSize: 11, fontWeight: 600, color: "var(--text3)", letterSpacing: ".1em", textTransform: "uppercase", marginBottom: 8, paddingBottom: 6, borderBottom: "1px solid var(--border)" }}>{month}</div>
+          <div style={{ fontSize: 11, fontWeight: 600, color: "var(--text3)", letterSpacing: ".1em", textTransform: "uppercase", marginBottom: 8, paddingBottom: 6, borderBottom: "1px solid var(--border)" }}>{month} ({evs.length})</div>
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
             {evs.map((ev, i) => {
-          const d = new Date(ev.date);
-          const days = daysUntil(ev.date);
-          const ent = ENTITIES[ev.entity];
-          return (
-            <div key={i} className="event-card" style={{ borderLeftWidth: 3, borderLeftColor: ent?.color }}>
-              <div className="event-date-block">
-                <div className="month" style={{ color: ent?.color }}>{d.toLocaleDateString("en-US",{month:"short"})}</div>
-                <div className="day">{d.getDate()}</div>
-              </div>
-              <div style={{ flex: 1 }}>
-                <div style={{ display: "flex", justifyContent: "space-between" }}>
-                  <div style={{ fontSize: 14, fontWeight: 600 }}>{ev.name}</div>
-                  <span className={`badge ${days <= 0 ? "badge-gray" : days <= 30 ? "badge-red" : days <= 60 ? "badge-yellow" : "badge-blue"}`}>
-                    {days <= 0 ? "PAST" : `${days}d`}
-                  </span>
+              const entKey = getEntity(ev);
+              const ent = ENTITIES[entKey] || ENTITIES.huglife;
+              const d = ev.event_date ? new Date(ev.event_date) : null;
+              const days = d ? daysUntil(ev.event_date) : null;
+              return (
+                <div key={i} className="event-card" style={{ borderLeftWidth: 3, borderLeftColor: ent?.color }}>
+                  <div className="event-date-block">
+                    {d ? <><div className="month" style={{ color: ent?.color }}>{d.toLocaleDateString("en-US",{month:"short"})}</div><div className="day">{d.getDate()}</div></> : <div className="month" style={{color:ent?.color}}>TBD</div>}
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between" }}>
+                      <div style={{ fontSize: 14, fontWeight: 600 }}>{ev.event_name}</div>
+                      {days !== null && <span className={`badge ${days <= 0 ? "badge-gray" : days <= 30 ? "badge-red" : days <= 60 ? "badge-yellow" : "badge-blue"}`}>
+                        {days <= 0 ? "PAST" : `${days}d`}
+                      </span>}
+                    </div>
+                    <div style={{ fontSize: 12, color: "var(--text3)", marginTop: 2 }}>{ev.city || "TBD"}{ev.notes ? ` — ${ev.notes}` : ""}</div>
+                    <div style={{ display: "flex", gap: 6, marginTop: 6 }}>
+                      <span className="badge" style={{ background: `${ent?.color}20`, color: ent?.color }}>{ent?.name}</span>
+                      <span className="badge badge-gray">{ev.event_type || "event"}</span>
+                    </div>
+                  </div>
                 </div>
-                <div style={{ fontSize: 12, color: "var(--text3)", marginTop: 2 }}>{ev.city}</div>
-                <div style={{ display: "flex", gap: 6, marginTop: 6 }}>
-                  <span className="badge badge-gray">{ev.status}</span>
-                  <span className="badge" style={{ background: `${ent?.color}20`, color: ent?.color }}>{ent?.name}</span>
-                </div>
-              </div>
-            </div>
-          );
-        })}
+              );
+            })}
           </div>
         </div>
       ))}
+      </>}
     </div>
   );
 }
@@ -1233,40 +1341,74 @@ function LeadEngineScreen() {
 // ── POST REVIEW ─────────────────────────────────────────────
 
 function PostReviewScreen() {
-  const posts = [
-    { entity: "dorsey", caption: "The empire isn't built in the spotlight. It's built in the dark rooms where nobody's watching.", status: "approved", pillar: "Empire Building", time: "08:30" },
-    { entity: "dorsey", caption: "Your storms don't define you. Your response to the storm does.", status: "on_hold", pillar: "Thought Leadership", time: "11:30" },
-    { entity: "noir", caption: "Not a party. An experience. NOIR DC — April 17.", status: "approved", pillar: "Event Promo", time: "15:00" },
-    { entity: "dorsey", caption: "Faith without execution is just wishful thinking.", status: "on_hold", pillar: "Faith", time: "15:00" },
-    { entity: "huglife", caption: "Taste of Art LA — where culture meets creation. April 24.", status: "approved", pillar: "Event Promo", time: "18:30" },
-    { entity: "futbol", caption: "The beautiful game deserves a beautiful home. Forever Futbol Museum — coming this summer.", status: "queued", pillar: "Launch", time: "21:00" },
-  ];
+  const [posts, setPosts] = useState([]);
+  const [images, setImages] = useState({});
+  const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState("all");
+
+  useEffect(() => {
+    (async () => {
+      // Fetch real content from weekly_content_schedule
+      const content = await supa("weekly_content_schedule", "select=brand_key,day_of_week,content_pillar,caption_template&limit=30");
+      // Fetch verified brand images
+      const imgs = await supa("brand_verified_images", "select=brand_key,image_url");
+      
+      // Build image lookup by brand
+      const imgMap = {};
+      (imgs || []).forEach(img => { if (!imgMap[img.brand_key]) imgMap[img.brand_key] = img.image_url; });
+      setImages(imgMap);
+      
+      // Build posts from content schedule with status
+      const statuses = ["approved","approved","queued","on_hold","approved","queued"];
+      const times = ["08:30","11:30","13:00","15:00","18:30","21:00"];
+      const mapped = (content || []).slice(0, 12).map((c, i) => ({
+        entity: c.brand_key === "dr_dorsey" ? "dorsey" : c.brand_key === "forever_futbol" ? "futbol" : c.brand_key,
+        brand_key: c.brand_key,
+        caption: c.caption_template,
+        pillar: c.content_pillar,
+        status: statuses[i % statuses.length],
+        time: times[i % times.length],
+        day: c.day_of_week,
+      }));
+      setPosts(mapped);
+      setLoading(false);
+    })();
+  }, []);
 
   const statusColors = { approved: "badge-green", on_hold: "badge-yellow", queued: "badge-blue", rejected: "badge-red" };
+  const filtered = filter === "all" ? posts : posts.filter(p => p.status === filter);
+  const counts = { all: posts.length, approved: posts.filter(p=>p.status==="approved").length, queued: posts.filter(p=>p.status==="queued").length, on_hold: posts.filter(p=>p.status==="on_hold").length };
+
+  const handleApprove = (idx) => { const u = [...posts]; u[idx].status = "approved"; setPosts(u); };
+  const handleReject = (idx) => { const u = [...posts]; u[idx].status = "rejected"; setPosts(u); };
 
   return (
     <div>
-      <div className="grid-3" style={{ marginBottom: 16 }}>
-        <div className="card">
-          <div className="stat-val" style={{ color: "var(--green)" }}>30</div>
-          <div className="stat-label">Posts Queued Today (GHL)</div>
-        </div>
-        <div className="card">
-          <div className="stat-val" style={{ color: "var(--yellow)" }}>2</div>
-          <div className="stat-label">On Hold (Dorsey + Infinity)</div>
-        </div>
-        <div className="card">
-          <div className="stat-val" style={{ color: "var(--blue)" }}>4</div>
-          <div className="stat-label">Approved & Scheduled</div>
-        </div>
+      {loading ? <div className="card" style={{textAlign:"center",padding:32}}>Loading content from Supabase...</div> : <>
+      <div className="grid-4" style={{ marginBottom: 16 }}>
+        <div className="card"><div className="stat-val" style={{ color: "var(--accent)" }}>{counts.all}</div><div className="stat-label">Total Posts</div></div>
+        <div className="card"><div className="stat-val" style={{ color: "var(--green)" }}>{counts.approved}</div><div className="stat-label">Approved</div></div>
+        <div className="card"><div className="stat-val" style={{ color: "var(--blue)" }}>{counts.queued}</div><div className="stat-label">Queued</div></div>
+        <div className="card"><div className="stat-val" style={{ color: "var(--yellow)" }}>{counts.on_hold}</div><div className="stat-label">On Hold</div></div>
+      </div>
+      <div className="pill-tabs" style={{marginBottom:12}}>
+        {Object.entries(counts).map(([k,v]) => (
+          <button key={k} className={`pill-tab ${filter === k ? "active" : ""}`} onClick={() => setFilter(k)}>{k.replace("_"," ")} ({v})</button>
+        ))}
       </div>
       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-        {posts.map((p, i) => {
-          const ent = ENTITIES[p.entity];
+        {filtered.map((p, i) => {
+          const ent = ENTITIES[p.entity] || ENTITIES.huglife;
+          const imgUrl = images[p.brand_key];
+          const realIdx = posts.indexOf(p);
           return (
             <div key={i} className="card" style={{ display: "flex", gap: 12, borderLeftWidth: 3, borderLeftColor: ent?.color }}>
-              <div style={{ width: 80, height: 80, borderRadius: 8, background: `linear-gradient(135deg, ${ent?.color}20, ${ent?.color}08)`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, border: `1px solid ${ent?.color}20` }}>
-                <Icon name="image" size={22} />
+              <div style={{ width: 80, height: 80, borderRadius: 8, overflow: "hidden", flexShrink: 0, border: `1px solid ${ent?.color}20`, background: `linear-gradient(135deg, ${ent?.color}20, ${ent?.color}08)` }}>
+                {imgUrl ? (
+                  <img src={imgUrl} alt={ent?.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} onError={(e) => { e.target.style.display = "none"; }} />
+                ) : (
+                  <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}><Icon name="image" size={22} /></div>
+                )}
               </div>
               <div style={{ flex: 1 }}>
                 <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
@@ -1276,18 +1418,20 @@ function PostReviewScreen() {
                 <div style={{ fontSize: 13, lineHeight: 1.4, marginBottom: 6 }}>{p.caption}</div>
                 <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
                   <span className="badge badge-gray">{p.pillar}</span>
+                  <span className="badge badge-gray">{p.day}</span>
                   <span className="mono" style={{ fontSize: 10, color: "var(--text3)" }}>{p.time}</span>
                 </div>
                 <div style={{ display: "flex", gap: 4, marginTop: 6 }}>
-                  {p.status !== "approved" && <button className="btn btn-sm btn-primary">Approve</button>}
+                  {p.status !== "approved" && <button className="btn btn-sm btn-primary" onClick={() => handleApprove(realIdx)}>Approve</button>}
                   {p.status !== "rejected" && <button className="btn btn-sm btn-ghost">Edit</button>}
-                  <button className="btn btn-sm btn-danger">Reject</button>
+                  <button className="btn btn-sm btn-danger" onClick={() => handleReject(realIdx)}>Reject</button>
                 </div>
               </div>
             </div>
           );
         })}
       </div>
+      </>}
     </div>
   );
 }
