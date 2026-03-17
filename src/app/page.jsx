@@ -667,51 +667,77 @@ function HomeScreen({ navigate }) {
 
 function CommandsScreen() {
   const [selectedEntity, setSelectedEntity] = useState("all");
+  const [running, setRunning] = useState(null);
+  const [results, setResults] = useState({});
+
+  const N8N_BASE = "https://dorsey.app.n8n.cloud/webhook";
+  const TASK_ROUTER = "AetfFm74ipOBpvXc";
+  const LINDA_DISPATCH = "bZ4QrBi5QmqICSR8";
+
   const commands = [
-    { cmd: "dept33 intake", desc: "Submit task to Dept 33 queue", entity: "all" },
-    { cmd: "dept33 daily_memo", desc: "Generate executive daily briefing", entity: "all" },
-    { cmd: "dept33 war_room", desc: "Activate war room for event", entity: "all" },
-    { cmd: "dept33 status", desc: "Get system-wide status check", entity: "all" },
-    { cmd: "dept33 prioritize", desc: "Rerank all active tasks", entity: "all" },
-    { cmd: "dept33 generate_prompt", desc: "Generate visual prompt from template", entity: "all" },
-    { cmd: "dept33 get_agent_sop", desc: "Pull agent SOP by dept/agent", entity: "all" },
-    { cmd: "dept33 ops_status", desc: "Full operational status report", entity: "all" },
-    { cmd: "dept33 run_checklist", desc: "Run daily ops checklist", entity: "all" },
-    { cmd: "dept33 get_visual_direction", desc: "Get brand visual direction", entity: "all" },
-    { cmd: "content factory", desc: "Trigger content generation pipeline", entity: "all" },
-    { cmd: "dispatch linda", desc: "Send task to Linda via VA dispatch", entity: "all" },
-    { cmd: "pr pitch [entity]", desc: "Generate PR pitch + auto-followup", entity: "all" },
-    { cmd: "sponsor outreach [event]", desc: "Run sponsor outreach engine", entity: "huglife" },
-    { cmd: "influencer outreach [city]", desc: "Run influencer discovery + DM", entity: "huglife" },
-    { cmd: "newsletter [entity]", desc: "Generate + send newsletter", entity: "all" },
-    { cmd: "ig comments [entity]", desc: "Auto-comment engine for entity", entity: "all" },
-    { cmd: "social dms [entity]", desc: "Generate + queue DMs", entity: "all" },
-    { cmd: "content calendar", desc: "Build viral content calendar", entity: "dorsey" },
+    { cmd: "dept33 intake", desc: "Submit task to Dept 33 queue", entity: "all", webhook: TASK_ROUTER, payload: { action: "intake" } },
+    { cmd: "dept33 daily_memo", desc: "Generate executive daily briefing", entity: "all", webhook: TASK_ROUTER, payload: { action: "daily_memo" } },
+    { cmd: "dept33 war_room", desc: "Activate war room for event", entity: "all", webhook: TASK_ROUTER, payload: { action: "war_room" } },
+    { cmd: "dept33 status", desc: "Get system-wide status check", entity: "all", webhook: TASK_ROUTER, payload: { action: "status" } },
+    { cmd: "dept33 ops_status", desc: "Full operational status report", entity: "all", webhook: TASK_ROUTER, payload: { action: "ops_status" } },
+    { cmd: "dept33 run_checklist", desc: "Run daily ops checklist", entity: "all", webhook: TASK_ROUTER, payload: { action: "run_checklist" } },
+    { cmd: "content factory", desc: "Trigger content generation", entity: "all", workflow: "T7ZOnFaSEvcYvwbM" },
+    { cmd: "dispatch linda", desc: "Send task to Linda via VA dispatch", entity: "all", webhook: LINDA_DISPATCH, payload: { action: "dispatch" } },
+    { cmd: "sponsor outreach", desc: "Run sponsor outreach engine", entity: "huglife", workflow: "ThKwcVTGnpXIoOEE" },
+    { cmd: "influencer outreach", desc: "Run influencer discovery + DM", entity: "huglife", workflow: "0paDyU807bccvZYQ" },
+    { cmd: "ig comments", desc: "Auto-comment engine", entity: "all", workflow: "tyQSD2mJl8W9VDm0" },
+    { cmd: "social dms", desc: "Generate + queue DMs", entity: "all", workflow: "zn2uHhkUROJqKzEG" },
+    { cmd: "pr pitch", desc: "Generate PR pitch + auto-followup", entity: "all", workflow: "bGdwLiVFcqP0FcIG" },
+    { cmd: "newsletter", desc: "Generate + send newsletter", entity: "all", workflow: "LOuffRVoxtPHsCuZ" },
+    { cmd: "content calendar", desc: "Build viral content calendar", entity: "dorsey", workflow: "jKRUMxAPh85KA3NH" },
   ];
+
+  const runCommand = async (cmd, idx) => {
+    setRunning(idx);
+    try {
+      const wfId = cmd.workflow || cmd.webhook;
+      const url = `${N8N_BASE}/${wfId}`;
+      const body = cmd.payload || { command: cmd.cmd, entity: selectedEntity, timestamp: new Date().toISOString() };
+      const r = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+      const ok = r.ok;
+      setResults(prev => ({ ...prev, [idx]: ok ? "success" : "error" }));
+      // Also log to khg_tasks
+      if (ok) await supaInsert("khg_tasks", { task: `CMD: ${cmd.cmd}`, entity: selectedEntity === "all" ? "all" : selectedEntity, assignee: "System", priority: "low", status: "completed", department: "Commands", notes: `Executed via dashboard at ${new Date().toLocaleTimeString()}` });
+    } catch {
+      setResults(prev => ({ ...prev, [idx]: "error" }));
+    }
+    setRunning(null);
+  };
 
   const filtered = selectedEntity === "all" ? commands : commands.filter(c => c.entity === "all" || c.entity === selectedEntity);
 
   return (
     <div>
-      <div className="pill-tabs">
+      <div className="pill-tabs" style={{flexWrap:"wrap"}}>
         <button className={`pill-tab ${selectedEntity === "all" ? "active" : ""}`} onClick={() => setSelectedEntity("all")}>All</button>
-        {Object.entries(ENTITIES).slice(0, 6).map(([k, e]) => (
-          <button key={k} className={`pill-tab ${selectedEntity === k ? "active" : ""}`}
+        {["huglife","casper","noir","futbol","dorsey","umbrella"].map(k => {
+          const e = ENTITIES[k]; if (!e) return null;
+          return (<button key={k} className={`pill-tab ${selectedEntity === k ? "active" : ""}`}
             style={selectedEntity === k ? { background: e.color, borderColor: e.color } : {}}
-            onClick={() => setSelectedEntity(k)}>{e.name}</button>
-        ))}
+            onClick={() => setSelectedEntity(k)}>{e.name}</button>);
+        })}
       </div>
       <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
         {filtered.map((c, i) => (
           <div key={i} className="card card-glow" style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 14px" }}>
-            <div style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--surface3)" }} />
-            <code className="mono" style={{ color: "var(--accent)", fontSize: 12, minWidth: 220, fontWeight: 500 }}>{c.cmd}</code>
+            <div style={{ width: 6, height: 6, borderRadius: "50%", background: results[i] === "success" ? "var(--green)" : results[i] === "error" ? "var(--red)" : "var(--surface3)" }} />
+            <code className="mono" style={{ color: "var(--accent)", fontSize: 12, minWidth: 180, fontWeight: 500 }}>{c.cmd}</code>
             <span style={{ fontSize: 12, color: "var(--text2)", flex: 1 }}>{c.desc}</span>
             <span className="badge badge-gray">{c.entity}</span>
-            <button className="btn btn-sm btn-primary"><Icon name="play" size={10} /> Run</button>
+            <button className="btn btn-sm btn-primary" disabled={running === i} onClick={() => runCommand(c, i)}>
+              {running === i ? "..." : <><Icon name="play" size={10} /> Run</>}
+            </button>
           </div>
         ))}
       </div>
+      {Object.keys(results).length > 0 && <div style={{marginTop:12,fontSize:11,color:"var(--text3)"}}>
+        {Object.values(results).filter(r=>r==="success").length} commands executed successfully
+      </div>}
     </div>
   );
 }
@@ -964,63 +990,83 @@ function DirectoryScreen() {
 
 function OutreachScreen({ entityFilter }) {
   const [entity, setEntity] = useState(entityFilter || "all");
+  const [running, setRunning] = useState(null);
+  const [queueStats, setQueueStats] = useState({});
+  const [loading, setLoading] = useState(true);
+
+  const N8N_BASE = "https://dorsey.app.n8n.cloud/webhook";
+
+  useEffect(() => {
+    (async () => {
+      // Get real queue stats from contact_action_queue
+      const data = await supa("contact_action_queue", "select=action_type&limit=5000");
+      if (data) {
+        const counts = {};
+        data.forEach(d => { counts[d.action_type] = (counts[d.action_type] || 0) + 1; });
+        setQueueStats(counts);
+      }
+      setLoading(false);
+    })();
+  }, []);
+
   const outreachTypes = [
-    { type: "Sponsor", workflow: "ThKwcVTGnpXIoOEE", entities: ["huglife","noir","futbol"], status: "active", runs: 89 },
-    { type: "Influencer", workflow: "0paDyU807bccvZYQ", entities: ["huglife","noir","dorsey"], status: "active", runs: 156 },
-    { type: "PR Pitch", workflow: "bGdwLiVFcqP0FcIG", entities: ["all"], status: "active", runs: 203 },
-    { type: "PR Enrich", workflow: "LQRDE7gsrTVm7rms", entities: ["all"], status: "active", runs: 178 },
-    { type: "Newsletter", workflow: "LOuffRVoxtPHsCuZ", entities: ["all"], status: "active", runs: 234 },
-    { type: "Cold Email", workflow: "3jDssrDbi21CLhn6", entities: ["casper","umbrella","futbol"], status: "active", runs: 847 },
-    { type: "IG Comments", workflow: "tyQSD2mJl8W9VDm0", entities: ["all"], status: "active", runs: 1205 },
-    { type: "Social DMs", workflow: "zn2uHhkUROJqKzEG", entities: ["all"], status: "active", runs: 563 },
+    { type: "Sponsor", workflow: "ThKwcVTGnpXIoOEE", entities: ["huglife","noir","futbol"], status: "active" },
+    { type: "Influencer", workflow: "0paDyU807bccvZYQ", entities: ["huglife","noir","dorsey"], status: "active" },
+    { type: "PR Pitch", workflow: "bGdwLiVFcqP0FcIG", entities: ["all"], status: "active" },
+    { type: "PR Enrich", workflow: "LQRDE7gsrTVm7rms", entities: ["all"], status: "active" },
+    { type: "Newsletter", workflow: "LOuffRVoxtPHsCuZ", entities: ["all"], status: "active" },
+    { type: "Cold Email", workflow: "3jDssrDbi21CLhn6", entities: ["casper","umbrella","futbol"], status: "active" },
+    { type: "IG Comments", workflow: "tyQSD2mJl8W9VDm0", entities: ["all"], status: "active" },
+    { type: "Social DMs", workflow: "zn2uHhkUROJqKzEG", entities: ["all"], status: "active" },
   ];
+
+  const runWorkflow = async (wf, idx) => {
+    setRunning(idx);
+    try {
+      await fetch(`${N8N_BASE}/${wf.workflow}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ entity, type: wf.type, triggered_from: "dashboard" }) });
+      await supaInsert("khg_tasks", { task: `Outreach: ${wf.type} triggered`, entity: entity, assignee: "System", priority: "low", status: "completed", department: "Outreach" });
+    } catch {}
+    setRunning(null);
+  };
 
   const filtered = entity === "all" ? outreachTypes : outreachTypes.filter(o => o.entities.includes("all") || o.entities.includes(entity));
 
   return (
     <div>
-      <div className="pill-tabs">
+      <div className="pill-tabs" style={{flexWrap:"wrap"}}>
         <button className={`pill-tab ${entity === "all" ? "active" : ""}`} onClick={() => setEntity("all")}>All</button>
-        {Object.entries(ENTITIES).slice(0, 7).map(([k, e]) => (
-          <button key={k} className={`pill-tab ${entity === k ? "active" : ""}`}
+        {["huglife","casper","noir","futbol","dorsey","umbrella","bodegea"].map(k => {
+          const e = ENTITIES[k]; if(!e) return null;
+          return (<button key={k} className={`pill-tab ${entity === k ? "active" : ""}`}
             style={entity === k ? { background: e.color, borderColor: e.color } : {}}
-            onClick={() => setEntity(k)}>{e.name}</button>
-        ))}
+            onClick={() => setEntity(k)}>{e.name}</button>);
+        })}
       </div>
+      {!loading && Object.keys(queueStats).length > 0 && (
+        <div className="grid-4" style={{marginBottom:16}}>
+          <div className="card"><div className="stat-val" style={{color:"var(--accent)"}}>{Object.values(queueStats).reduce((a,b)=>a+b,0).toLocaleString()}</div><div className="stat-label">Total Queue</div></div>
+          <div className="card"><div className="stat-val" style={{color:"var(--blue)"}}>{(queueStats.email||0).toLocaleString()}</div><div className="stat-label">Emails</div></div>
+          <div className="card"><div className="stat-val" style={{color:"var(--green)"}}>{(queueStats.dm||0).toLocaleString()}</div><div className="stat-label">DMs</div></div>
+          <div className="card"><div className="stat-val" style={{color:"var(--yellow)"}}>{(queueStats.comment||0).toLocaleString()}</div><div className="stat-label">Comments</div></div>
+        </div>
+      )}
       <div className="grid-2">
         {filtered.map((o, i) => (
           <div key={i} className="card card-glow">
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
               <span style={{ fontSize: 14, fontWeight: 600 }}>{o.type}</span>
-              <span className={`badge ${o.status === "active" ? "badge-green" : "badge-gray"}`}>{o.status}</span>
+              <span className="badge badge-green">{o.status}</span>
             </div>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
-              <code className="mono" style={{ fontSize: 10, color: "var(--text3)" }}>{o.workflow}</code>
-              <span style={{ fontSize: 10, color: "var(--text3)" }}>{o.runs?.toLocaleString()} runs</span>
-            </div>
+            <code className="mono" style={{ fontSize: 10, color: "var(--text3)", display: "block", marginBottom: 10 }}>{o.workflow}</code>
             <div style={{ display: "flex", gap: 6, marginTop: 8 }}>
-              <button className="btn btn-sm btn-primary"><Icon name="play" size={12} /> Run</button>
+              <button className="btn btn-sm btn-primary" disabled={running===i} onClick={() => runWorkflow(o,i)}>
+                {running===i ? "Running..." : <><Icon name="play" size={12} /> Run</>}
+              </button>
               <button className="btn btn-sm btn-ghost">Config</button>
               <button className="btn btn-sm btn-ghost">Logs</button>
             </div>
           </div>
         ))}
-      </div>
-      <div className="divider" />
-      <div className="section-title">Data Sources</div>
-      <div className="grid-3">
-        <div className="card">
-          <div className="card-subtitle">PR Database</div>
-          <code className="mono" style={{ fontSize: 10, color: "var(--accent)" }}>18FbI4m-...yd38</code>
-        </div>
-        <div className="card">
-          <div className="card-subtitle">Master Contacts</div>
-          <code className="mono" style={{ fontSize: 10, color: "var(--accent)" }}>1fW3R0h...pKM</code>
-        </div>
-        <div className="card">
-          <div className="card-subtitle">Social Outreach CC</div>
-          <code className="mono" style={{ fontSize: 10, color: "var(--accent)" }}>1-CFQeoT...4h</code>
-        </div>
       </div>
     </div>
   );
@@ -1464,26 +1510,97 @@ function PostReviewScreen() {
 
 function InstagramDMsScreen() {
   const [selectedTemplate, setSelectedTemplate] = useState(0);
+  const [dmQueue, setDmQueue] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [sending, setSending] = useState(false);
+  const [customDM, setCustomDM] = useState({ handle: "", message: "", entity: "huglife" });
+
+  const N8N_BASE = "https://dorsey.app.n8n.cloud/webhook";
+
+  useEffect(() => {
+    (async () => {
+      // Pull DM queue from contact_action_queue
+      const data = await supa("contact_action_queue", "action_type=eq.dm&select=*&limit=20&order=created_at.desc");
+      if (data && data.length > 0) {
+        setDmQueue(data.map(d => ({
+          handle: d.target_handle || d.contact_name || "Unknown",
+          entity: d.brand_key || "huglife",
+          template: d.message_template || "Custom DM",
+          status: d.status || "queued",
+          message: d.message_body || "",
+          id: d.id
+        })));
+      } else {
+        // Fallback if no queue data
+        setDmQueue([
+          { handle: "@venue_prospect_1", entity: "huglife", template: "Cold Intro - Venue", status: "queued" },
+          { handle: "@sponsor_brand", entity: "noir", template: "Sponsor Outreach", status: "queued" },
+          { handle: "@collab_creator", entity: "dorsey", template: "Collab Pitch", status: "sent" },
+        ]);
+      }
+      setLoading(false);
+    })();
+  }, []);
+
+  const sendAllQueued = async () => {
+    setSending(true);
+    try {
+      await fetch(`${N8N_BASE}/zn2uHhkUROJqKzEG`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "send_all_queued", source: "dashboard" }) });
+      setDmQueue(prev => prev.map(d => d.status === "queued" ? { ...d, status: "sent" } : d));
+      await supaInsert("khg_tasks", { task: "DM Queue: Sent all queued DMs", entity: "all", assignee: "System", priority: "low", status: "completed", department: "Social" });
+    } catch {}
+    setSending(false);
+  };
+
+  const sendCustomDM = async () => {
+    if (!customDM.handle || !customDM.message) return;
+    setSending(true);
+    try {
+      await fetch(`${N8N_BASE}/zn2uHhkUROJqKzEG`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "send_single", handle: customDM.handle, message: customDM.message, entity: customDM.entity }) });
+      setDmQueue(prev => [{ handle: customDM.handle, entity: customDM.entity, template: "Custom", status: "sent" }, ...prev]);
+      setCustomDM({ handle: "", message: "", entity: "huglife" });
+    } catch {}
+    setSending(false);
+  };
+
   return (
     <div>
+      {loading ? <div className="card" style={{textAlign:"center",padding:32}}>Loading DM queue...</div> : <>
+      <div className="grid-3" style={{marginBottom:16}}>
+        <div className="card"><div className="stat-val" style={{color:"var(--accent)"}}>{dmQueue.length}</div><div className="stat-label">Total in Queue</div></div>
+        <div className="card"><div className="stat-val" style={{color:"var(--blue)"}}>{dmQueue.filter(d=>d.status==="queued").length}</div><div className="stat-label">Ready to Send</div></div>
+        <div className="card"><div className="stat-val" style={{color:"var(--green)"}}>{dmQueue.filter(d=>d.status==="sent").length}</div><div className="stat-label">Sent</div></div>
+      </div>
+
+      {/* Custom DM Composer */}
+      <div className="card" style={{marginBottom:16}}>
+        <div className="card-title" style={{marginBottom:10}}>Send Custom DM</div>
+        <div style={{display:"flex",gap:8,marginBottom:8}}>
+          <input className="input" placeholder="@instagram_handle" value={customDM.handle} onChange={e => setCustomDM({...customDM, handle: e.target.value})} style={{flex:1}} />
+          <select className="input" value={customDM.entity} onChange={e => setCustomDM({...customDM, entity: e.target.value})} style={{width:120}}>
+            {["huglife","noir","dorsey","futbol","casper"].map(k => <option key={k} value={k}>{ENTITIES[k]?.name}</option>)}
+          </select>
+        </div>
+        <textarea className="input" placeholder="Message body..." value={customDM.message} onChange={e => setCustomDM({...customDM, message: e.target.value})} style={{minHeight:60,resize:"vertical"}} />
+        <button className="btn btn-primary btn-sm" style={{marginTop:8}} disabled={sending} onClick={sendCustomDM}>
+          {sending ? "Sending..." : <><Icon name="send" size={12} /> Send DM</>}
+        </button>
+      </div>
+
       <div className="grid-2" style={{ marginBottom: 16 }}>
         <div className="card">
           <div className="card-title" style={{ marginBottom: 10 }}>DM Queue</div>
-          {[
-            { handle: "@venue_atl_1", entity: "huglife", template: "Cold Intro - Venue", status: "queued" },
-            { handle: "@sponsor_brand_2", entity: "noir", template: "Cold Intro - Sponsor", status: "queued" },
-            { handle: "@collab_creator_3", entity: "dorsey", template: "Collab Pitch", status: "sent" },
-            { handle: "@follow_up_4", entity: "futbol", template: "Follow-Up - Warm", status: "queued" },
-            { handle: "@post_event_5", entity: "huglife", template: "Thank You - Post Event", status: "sent" },
-          ].map((dm, i) => (
+          {dmQueue.map((dm, i) => (
             <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 0", borderBottom: "1px solid var(--border)" }}>
-              <span className="entity-dot" style={{ background: ENTITIES[dm.entity]?.color }} />
+              <span className="entity-dot" style={{ background: ENTITIES[dm.entity]?.color || "#888" }} />
               <span style={{ fontSize: 12, fontWeight: 500, flex: 1 }}>{dm.handle}</span>
               <span className="badge badge-gray" style={{ fontSize: 9 }}>{dm.template}</span>
               <span className={`badge ${dm.status === "sent" ? "badge-green" : "badge-blue"}`}>{dm.status}</span>
             </div>
           ))}
-          <button className="btn btn-primary btn-sm" style={{ marginTop: 10, width: "100%" }}><Icon name="send" size={12} /> Send All Queued</button>
+          <button className="btn btn-primary btn-sm" style={{ marginTop: 10, width: "100%" }} disabled={sending} onClick={sendAllQueued}>
+            {sending ? "Sending..." : <><Icon name="send" size={12} /> Send All Queued ({dmQueue.filter(d=>d.status==="queued").length})</>}
+          </button>
         </div>
         <div className="card">
           <div className="card-title" style={{ marginBottom: 10 }}>DM Templates</div>
@@ -1497,25 +1614,14 @@ function InstagramDMsScreen() {
               {selectedTemplate === i && (
                 <div style={{ fontSize: 11, color: "var(--text3)", marginTop: 6, lineHeight: 1.5, padding: 8, background: "var(--surface2)", borderRadius: 6 }}>
                   {t.body}
+                  <button className="btn btn-sm btn-ghost" style={{marginTop:6}} onClick={() => setCustomDM({...customDM, message: t.body})}>Use Template</button>
                 </div>
               )}
             </div>
           ))}
         </div>
       </div>
-      <div className="section-title">Workflows</div>
-      <div className="grid-2">
-        <div className="card">
-          <div style={{ fontSize: 13, fontWeight: 500 }}>Social Send DMs</div>
-          <code className="mono" style={{ fontSize: 10, color: "var(--text3)" }}>zn2uHhkUROJqKzEG</code>
-          <span className="badge badge-green" style={{ marginTop: 4 }}>active</span>
-        </div>
-        <div className="card">
-          <div style={{ fontSize: 13, fontWeight: 500 }}>Social Message Gen</div>
-          <code className="mono" style={{ fontSize: 10, color: "var(--text3)" }}>8geOg9hei00b2Dxu</code>
-          <span className="badge badge-green" style={{ marginTop: 4 }}>active</span>
-        </div>
-      </div>
+      </>}
     </div>
   );
 }
