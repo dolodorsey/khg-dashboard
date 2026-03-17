@@ -1266,12 +1266,49 @@ function TasksScreen() {
 
 function SocialScreen({ entityFilter }) {
   const [entity, setEntity] = useState(entityFilter || "dorsey");
+  const [content, setContent] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [posting, setPosting] = useState(false);
+  const [customPost, setCustomPost] = useState("");
   const ent = ENTITIES[entity];
   const socials = ent?.socials || {};
+  const N8N_BASE = "https://dorsey.app.n8n.cloud/webhook";
+
+  useEffect(() => {
+    (async () => {
+      const brand = entity === "dorsey" ? "dr_dorsey" : entity === "futbol" ? "forever_futbol" : entity;
+      const data = await supa("weekly_content_schedule", `brand_key=eq.${brand}&select=brand_key,day_of_week,content_pillar,caption_template&limit=14`);
+      setContent(data || []);
+      setLoading(false);
+    })();
+  }, [entity]);
+
+  const queuePost = async (caption) => {
+    if (!caption) return;
+    setPosting(true);
+    try {
+      await supaInsert("contact_action_queue", { brand_key: entity === "dorsey" ? "dr_dorsey" : entity, action_type: "post", message_body: caption, status: "queued" });
+      await fetch(`${N8N_BASE}/WK0PGRlUwaOQBslh`, { method: "POST", headers: {"Content-Type":"application/json"}, body: JSON.stringify({ action: "queue_post", brand: entity, caption, source: "dashboard" }) }).catch(()=>{});
+    } catch {}
+    setPosting(false);
+    setCustomPost("");
+  };
+
+  const triggerDMs = async () => {
+    setPosting(true);
+    try { await fetch(`${N8N_BASE}/zn2uHhkUROJqKzEG`, { method: "POST", headers: {"Content-Type":"application/json"}, body: JSON.stringify({ entity, action: "send_dms", source: "dashboard" }) }); } catch {}
+    setPosting(false);
+  };
+
+  const triggerComments = async () => {
+    setPosting(true);
+    try { await fetch(`${N8N_BASE}/tyQSD2mJl8W9VDm0`, { method: "POST", headers: {"Content-Type":"application/json"}, body: JSON.stringify({ entity, action: "auto_comment", source: "dashboard" }) }); } catch {}
+    setPosting(false);
+  };
 
   return (
     <div>
-      <div className="pill-tabs">
+      <div className="pill-tabs" style={{flexWrap:"wrap"}}>
         {Object.entries(ENTITIES).map(([k, e]) => (
           Object.keys(e.socials || {}).length > 0 && (
             <button key={k} className={`pill-tab ${entity === k ? "active" : ""}`}
@@ -1289,49 +1326,45 @@ function SocialScreen({ entityFilter }) {
                 <div style={{ fontSize: 14, fontWeight: 600, color: ent.color }}>{handle}</div>
               </div>
               <div style={{ display: "flex", gap: 4 }}>
-                <button className="btn btn-sm btn-ghost"><Icon name="dm" size={12} /> DM Queue</button>
-                <button className="btn btn-sm btn-ghost"><Icon name="send" size={12} /> Post</button>
+                <button className="btn btn-sm btn-ghost" onClick={triggerDMs} disabled={posting}><Icon name="dm" size={12} /> DM</button>
+                <button className="btn btn-sm btn-ghost" onClick={triggerComments} disabled={posting}><Icon name="zap" size={12} /> Comment</button>
               </div>
             </div>
           </div>
         ))}
       </div>
-      {entity === "dorsey" && (
-        <div className="card">
-          <div className="card-title" style={{ marginBottom: 10 }}>Posting Schedule</div>
-          <div className="grid-2">
-            <div>
-              <div className="section-title">Feed Times</div>
-              <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
-                {POSTING_SCHEDULE.dorsey.feed.map((t, i) => <span key={i} className="badge badge-orange">{t}</span>)}
+
+      {/* Content from weekly_content_schedule */}
+      {!loading && content.length > 0 && (
+        <div className="card" style={{marginBottom:16}}>
+          <div className="card-title" style={{marginBottom:10}}>Content Schedule ({content.length} posts loaded)</div>
+          <div style={{display:"flex",flexDirection:"column",gap:6,maxHeight:300,overflowY:"auto"}}>
+            {content.map((c,i) => (
+              <div key={i} style={{display:"flex",alignItems:"center",gap:8,padding:"6px 0",borderBottom:"1px solid var(--border)"}}>
+                <span className="badge badge-gray" style={{fontSize:9,minWidth:60,textAlign:"center"}}>{c.day_of_week}</span>
+                <span className="badge badge-gray" style={{fontSize:9,minWidth:80}}>{c.content_pillar?.slice(0,20)}</span>
+                <span style={{fontSize:12,flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{c.caption_template}</span>
+                <button className="btn btn-sm btn-primary" onClick={() => queuePost(c.caption_template)} disabled={posting}>Queue</button>
               </div>
-            </div>
-            <div>
-              <div className="section-title">Story Times</div>
-              <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
-                {POSTING_SCHEDULE.dorsey.stories.map((t, i) => <span key={i} className="badge badge-gray">{t}</span>)}
-              </div>
-            </div>
-          </div>
-          <div style={{ marginTop: 12 }}>
-            <div className="section-title">Content Pillars</div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-              {Object.entries(POSTING_SCHEDULE.dorsey.pillars).map(([k, v]) => (
-                <div key={k} style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <div style={{ width: `${v * 3}px`, height: 5, borderRadius: 3, background: "linear-gradient(90deg, var(--accent), var(--accent2))" }} />
-                  <span style={{ fontSize: 12, color: "var(--text2)" }}>{v}% {k}</span>
-                </div>
-              ))}
-            </div>
+            ))}
           </div>
         </div>
       )}
-      <div className="divider" />
+
+      {/* Custom post */}
+      <div className="card" style={{marginBottom:16}}>
+        <div className="card-title" style={{marginBottom:8}}>Quick Post</div>
+        <textarea className="input" placeholder="Write a caption..." value={customPost} onChange={e => setCustomPost(e.target.value)} style={{minHeight:60,resize:"vertical",marginBottom:8}} />
+        <button className="btn btn-primary" onClick={() => queuePost(customPost)} disabled={posting || !customPost} style={{width:"100%",justifyContent:"center"}}>
+          {posting ? "Queuing..." : <><Icon name="send" size={14} /> Queue Post</>}
+        </button>
+      </div>
+
       <div className="section-title">Quick Actions</div>
       <div className="grid-3">
-        <button className="btn btn-primary" style={{ width: "100%", justifyContent: "center" }}><Icon name="send" size={14} /> Queue Post</button>
-        <button className="btn btn-ghost" style={{ width: "100%", justifyContent: "center" }}><Icon name="dm" size={14} /> Send DMs</button>
-        <button className="btn btn-ghost" style={{ width: "100%", justifyContent: "center" }}><Icon name="zap" size={14} /> Auto Comment</button>
+        <button className="btn btn-primary" onClick={() => queuePost(content[0]?.caption_template)} disabled={posting} style={{ width: "100%", justifyContent: "center" }}><Icon name="send" size={14} /> Queue Next Post</button>
+        <button className="btn btn-ghost" onClick={triggerDMs} disabled={posting} style={{ width: "100%", justifyContent: "center" }}><Icon name="dm" size={14} /> Send DMs</button>
+        <button className="btn btn-ghost" onClick={triggerComments} disabled={posting} style={{ width: "100%", justifyContent: "center" }}><Icon name="zap" size={14} /> Auto Comment</button>
       </div>
     </div>
   );
@@ -1341,9 +1374,38 @@ function SocialScreen({ entityFilter }) {
 
 function LeadEngineScreen() {
   const [city, setCity] = useState("Atlanta");
-  const cities = ["Atlanta","Houston","Los Angeles","Washington DC","Charlotte","Miami","Las Vegas","New York"];
+  const cities = ["Atlanta","Houston","Los Angeles","Washington DC","Charlotte","Miami","Dallas","New York","Phoenix","Scottsdale"];
   const niches = ["Venues","Restaurants","Bars/Lounges","Hotels","Event Spaces","Catering","Retail","Fitness"];
   const [selectedNiches, setSelectedNiches] = useState(["Venues","Restaurants"]);
+  const [stats, setStats] = useState({ total: 0, withEmail: 0, withPhone: 0, cities: 0 });
+  const [prospects, setProspects] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [searching, setSearching] = useState(false);
+
+  useEffect(() => {
+    (async () => {
+      // Get real counts from casper_venue_prospects
+      const data = await supa("casper_venue_prospects", "select=city,email,phone&limit=500");
+      if (data && data.length > 0) {
+        setStats({
+          total: data.length,
+          withEmail: data.filter(d => d.email).length,
+          withPhone: data.filter(d => d.phone).length,
+          cities: new Set(data.map(d => d.city)).size
+        });
+      }
+      // Also check contact_action_queue size
+      const queue = await supa("contact_action_queue", "select=id&limit=1&order=id.desc");
+      setLoading(false);
+    })();
+  }, []);
+
+  const sourcLeads = async () => {
+    setSearching(true);
+    const data = await supa("casper_venue_prospects", `city=ilike.*${city}*&select=venue_name,city,email,phone,category&limit=20`);
+    setProspects(data || []);
+    setSearching(false);
+  };
 
   return (
     <div>
@@ -1352,7 +1414,7 @@ function LeadEngineScreen() {
         <div className="grid-2">
           <div>
             <label style={{ fontSize: 11, color: "var(--text3)", marginBottom: 4, display: "block" }}>Target City</label>
-            <div className="pill-tabs">
+            <div className="pill-tabs" style={{flexWrap:"wrap"}}>
               {cities.map(c => (
                 <button key={c} className={`pill-tab ${city === c ? "active" : ""}`} onClick={() => setCity(c)}>{c}</button>
               ))}
@@ -1360,7 +1422,7 @@ function LeadEngineScreen() {
           </div>
           <div>
             <label style={{ fontSize: 11, color: "var(--text3)", marginBottom: 4, display: "block" }}>Niches</label>
-            <div className="pill-tabs">
+            <div className="pill-tabs" style={{flexWrap:"wrap"}}>
               {niches.map(n => (
                 <button key={n} className={`pill-tab ${selectedNiches.includes(n) ? "active" : ""}`}
                   onClick={() => setSelectedNiches(prev => prev.includes(n) ? prev.filter(x => x !== n) : [...prev, n])}>{n}</button>
@@ -1369,29 +1431,38 @@ function LeadEngineScreen() {
           </div>
         </div>
         <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
-          <button className="btn btn-primary"><Icon name="search" size={14} /> Source Leads</button>
+          <button className="btn btn-primary" onClick={sourcLeads} disabled={searching}>
+            {searching ? "Searching..." : <><Icon name="search" size={14} /> Source Leads ({city})</>}
+          </button>
           <button className="btn btn-ghost"><Icon name="zap" size={14} /> Enrich Existing</button>
           <button className="btn btn-ghost"><Icon name="target" size={14} /> Score & Qualify</button>
         </div>
       </div>
       <div className="grid-4">
-        <div className="card stat-card fade-in fade-d1">
-          <div className="stat-val" style={{ color: "var(--accent)" }}>112K</div>
-          <div className="stat-label">Total Contacts</div>
-        </div>
-        <div className="card stat-card fade-in fade-d2">
-          <div className="stat-val" style={{ color: "var(--green)" }}>2,075</div>
-          <div className="stat-label">Personal Contacts</div>
-        </div>
-        <div className="card stat-card fade-in fade-d3">
-          <div className="stat-val" style={{ color: "var(--yellow)" }}>455</div>
-          <div className="stat-label">Seed Targets</div>
-        </div>
-        <div className="card stat-card fade-in fade-d4">
-          <div className="stat-val" style={{ color: "var(--blue)" }}>86</div>
-          <div className="stat-label">Brand Links</div>
-        </div>
+        <div className="card"><div className="stat-val" style={{ color: "var(--accent)" }}>{loading ? "..." : stats.total}</div><div className="stat-label">Total Prospects</div></div>
+        <div className="card"><div className="stat-val" style={{ color: "var(--green)" }}>{loading ? "..." : stats.withEmail}</div><div className="stat-label">With Email</div></div>
+        <div className="card"><div className="stat-val" style={{ color: "var(--yellow)" }}>{loading ? "..." : stats.withPhone}</div><div className="stat-label">With Phone</div></div>
+        <div className="card"><div className="stat-val" style={{ color: "var(--blue)" }}>{loading ? "..." : stats.cities}</div><div className="stat-label">Cities</div></div>
       </div>
+
+      {/* Search results */}
+      {prospects.length > 0 && (
+        <div style={{marginTop:16}}>
+          <div className="section-title">Results: {prospects.length} prospects in {city}</div>
+          <div style={{display:"flex",flexDirection:"column",gap:4}}>
+            {prospects.map((p,i) => (
+              <div key={i} className="card" style={{display:"flex",alignItems:"center",gap:12,padding:"8px 14px"}}>
+                <span style={{fontSize:13,fontWeight:500,flex:1}}>{p.venue_name || "Unknown"}</span>
+                <span className="badge badge-gray">{p.category || "—"}</span>
+                <span className="badge badge-gray">{p.city}</span>
+                {p.email && <span className="badge badge-green" style={{fontSize:9}}>email</span>}
+                {p.phone && <span className="badge badge-blue" style={{fontSize:9}}>phone</span>}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       <div className="divider" />
       <div className="section-title">Active Pipelines</div>
       <div className="grid-2">
@@ -1630,7 +1701,26 @@ function InstagramDMsScreen() {
 
 function EmailScreen() {
   const [selectedMailbox, setSelectedMailbox] = useState(0);
+  const [composing, setComposing] = useState(false);
+  const [sending, setSending] = useState(false);
+  const [email, setEmail] = useState({ to: "", subject: "", body: "" });
   const mailboxes = EMAIL_ROUTING;
+  const N8N_BASE = "https://dorsey.app.n8n.cloud/webhook";
+
+  const sendEmail = async (type) => {
+    setSending(true);
+    const wfMap = { compose: "3jDssrDbi21CLhn6", newsletter: "LOuffRVoxtPHsCuZ", pr: "bGdwLiVFcqP0FcIG" };
+    try {
+      await fetch(`${N8N_BASE}/${wfMap[type] || wfMap.compose}`, { method: "POST", headers: {"Content-Type":"application/json"}, body: JSON.stringify({
+        action: type, from: mailboxes[selectedMailbox].email, to: email.to || mailboxes[selectedMailbox].email,
+        subject: email.subject, body: email.body, source: "dashboard"
+      })});
+      await supaInsert("khg_tasks", { task: `Email: ${type} sent to ${email.to || "queue"}`, entity: "all", assignee: "System", priority: "low", status: "completed", department: "Outreach" });
+      setEmail({ to: "", subject: "", body: "" });
+      setComposing(false);
+    } catch {}
+    setSending(false);
+  };
 
   return (
     <div>
@@ -1650,11 +1740,29 @@ function EmailScreen() {
         <div className="card">
           <div className="card-title" style={{ marginBottom: 10 }}>{mailboxes[selectedMailbox].dest}</div>
           <div className="mono" style={{ fontSize: 12, color: "var(--accent)", marginBottom: 12 }}>{mailboxes[selectedMailbox].email}</div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            <button className="btn btn-primary" style={{ width: "100%", justifyContent: "center" }}><Icon name="mail" size={14} /> Compose</button>
-            <button className="btn btn-ghost" style={{ width: "100%", justifyContent: "center" }}><Icon name="send" size={14} /> Newsletter</button>
-            <button className="btn btn-ghost" style={{ width: "100%", justifyContent: "center" }}><Icon name="zap" size={14} /> PR Pitch</button>
-          </div>
+          
+          {composing ? (
+            <div style={{display:"flex",flexDirection:"column",gap:8}}>
+              <input className="input" placeholder="To: email@example.com" value={email.to} onChange={e => setEmail({...email, to: e.target.value})} />
+              <input className="input" placeholder="Subject" value={email.subject} onChange={e => setEmail({...email, subject: e.target.value})} />
+              <textarea className="input" placeholder="Email body..." value={email.body} onChange={e => setEmail({...email, body: e.target.value})} style={{minHeight:100,resize:"vertical"}} />
+              <div style={{display:"flex",gap:8}}>
+                <button className="btn btn-primary" onClick={() => sendEmail("compose")} disabled={sending}>{sending ? "Sending..." : "Send Email"}</button>
+                <button className="btn btn-ghost" onClick={() => setComposing(false)}>Cancel</button>
+              </div>
+            </div>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              <button className="btn btn-primary" style={{ width: "100%", justifyContent: "center" }} onClick={() => setComposing(true)}><Icon name="mail" size={14} /> Compose</button>
+              <button className="btn btn-ghost" style={{ width: "100%", justifyContent: "center" }} onClick={() => sendEmail("newsletter")} disabled={sending}>
+                {sending ? "Triggering..." : <><Icon name="send" size={14} /> Newsletter</>}
+              </button>
+              <button className="btn btn-ghost" style={{ width: "100%", justifyContent: "center" }} onClick={() => sendEmail("pr")} disabled={sending}>
+                {sending ? "Triggering..." : <><Icon name="zap" size={14} /> PR Pitch</>}
+              </button>
+            </div>
+          )}
+          
           <div className="divider" />
           <div className="section-title">Email Engine Workflows</div>
           <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
@@ -1678,41 +1786,49 @@ function EmailScreen() {
 // ── OUTPUTS ─────────────────────────────────────────────────
 
 function OutputsScreen() {
-  const outputs = [
-    { name: "NOIR DC Sponsor Deck", type: "PDF", entity: "noir", status: "complete", url: "#" },
-    { name: "Forever Futbol Lookbook", type: "HTML", entity: "futbol", status: "in_progress", url: "#" },
-    { name: "KHG Enterprise Dashboard", type: "React App", entity: "all", status: "complete", url: "#" },
-    { name: "Remotion Video Studio", type: "GitHub Repo", entity: "all", status: "pending_push", url: "https://github.com/dolodorsey/khg-remotion-studio" },
-    { name: "Playwright MCP Server", type: "GitHub Repo", entity: "all", status: "pending_push", url: "https://github.com/dolodorsey/khg-playwright-server" },
-    { name: "Dr. Dorsey Quote Cards", type: "Graphics", entity: "dorsey", status: "generating", url: "#" },
-    { name: "GHL Social Login SOP", type: "Document", entity: "all", status: "complete", url: "#" },
-  ];
+  const [assets, setAssets] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    (async () => {
+      const data = await supa("brand_asset_files", "select=entity_id,file_name,asset_type,file_url,usage_context,is_approved&order=created_at.desc&limit=30");
+      setAssets(data || []);
+      setLoading(false);
+    })();
+  }, []);
+
+  const typeIcon = { logo: "image", animation: "play", flyer: "image", "product-shot": "image", lifestyle: "image", mascot: "image", food: "image" };
 
   return (
     <div>
+      {loading ? <div className="card" style={{textAlign:"center",padding:32}}>Loading assets from Supabase...</div> : <>
+      <div className="grid-3" style={{marginBottom:16}}>
+        <div className="card"><div className="stat-val" style={{color:"var(--accent)"}}>{assets.length}</div><div className="stat-label">Total Assets</div></div>
+        <div className="card"><div className="stat-val" style={{color:"var(--green)"}}>{assets.filter(a=>a.is_approved).length}</div><div className="stat-label">Approved</div></div>
+        <div className="card"><div className="stat-val" style={{color:"var(--blue)"}}>{new Set(assets.map(a=>a.entity_id)).size}</div><div className="stat-label">Brands</div></div>
+      </div>
       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-        {outputs.map((o, i) => {
-          const ent = o.entity === "all" ? null : ENTITIES[o.entity];
+        {assets.map((a, i) => {
+          const ent = ENTITIES[a.entity_id];
           return (
             <div key={i} className="card" style={{ display: "flex", alignItems: "center", gap: 12 }}>
-              <div style={{ width: 40, height: 40, borderRadius: 8, background: "var(--surface2)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                <Icon name="output" size={18} />
+              <div style={{ width: 40, height: 40, borderRadius: 8, background: "var(--surface2)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, overflow: "hidden" }}>
+                {a.file_url ? <img src={a.file_url} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}} onError={e=>{e.target.style.display="none"}} /> : <Icon name="output" size={18} />}
               </div>
               <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 13, fontWeight: 600 }}>{o.name}</div>
+                <div style={{ fontSize: 13, fontWeight: 600 }}>{a.file_name}</div>
                 <div style={{ display: "flex", gap: 6, marginTop: 4 }}>
-                  <span className="badge badge-gray">{o.type}</span>
+                  <span className="badge badge-gray">{a.asset_type}</span>
                   {ent && <span className="badge" style={{ background: `${ent.color}20`, color: ent.color }}>{ent.name}</span>}
-                  <span className={`badge ${o.status === "complete" ? "badge-green" : o.status === "in_progress" || o.status === "generating" ? "badge-blue" : "badge-yellow"}`}>
-                    {o.status.replace("_", " ")}
-                  </span>
+                  {a.is_approved && <span className="badge badge-green">approved</span>}
                 </div>
               </div>
-              <button className="btn btn-sm btn-ghost"><Icon name="link" size={12} /> Open</button>
+              {a.file_url && <a href={a.file_url} target="_blank" rel="noopener" className="btn btn-sm btn-ghost"><Icon name="link" size={12} /> Open</a>}
             </div>
           );
         })}
       </div>
+      </>}
     </div>
   );
 }
@@ -1794,8 +1910,32 @@ function TextSchedulerScreen() {
 // ── TEAM ────────────────────────────────────────────────────
 
 function TeamScreen() {
+  const [dispatching, setDispatching] = useState(null);
+  const [taskText, setTaskText] = useState("");
+  const N8N_BASE = "https://dorsey.app.n8n.cloud/webhook";
+
+  const dispatchTask = async (member) => {
+    if (!taskText) return;
+    setDispatching(member.name);
+    try {
+      if (member.dispatch) {
+        // Linda VA dispatch
+        await fetch(`${N8N_BASE}/${member.dispatch}`, { method: "POST", headers: {"Content-Type":"application/json"}, body: JSON.stringify({ task: taskText, assignee: member.name, source: "dashboard" }) });
+      }
+      await supaInsert("khg_tasks", { task: taskText, assignee: member.name, entity: member.entities?.[0] || "all", priority: "medium", status: "pending", department: "Operations" });
+      setTaskText("");
+    } catch {}
+    setDispatching(null);
+  };
+
   return (
     <div>
+      <div className="card" style={{marginBottom:16}}>
+        <div className="card-title" style={{marginBottom:8}}>Quick Dispatch</div>
+        <div style={{display:"flex",gap:8}}>
+          <input className="input" placeholder="Task to assign..." value={taskText} onChange={e => setTaskText(e.target.value)} style={{flex:1}} />
+        </div>
+      </div>
       <div className="grid-2">
         {TEAM.map((m, i) => (
           <div key={i} className="card">
@@ -1808,10 +1948,18 @@ function TeamScreen() {
                 <div style={{ fontSize: 11, color: "var(--text3)" }}>{m.role}</div>
               </div>
             </div>
-            <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
+            <div style={{ display: "flex", gap: 4, flexWrap: "wrap", marginBottom: 8 }}>
               {m.entities.map((e, j) => <span key={j} className="badge badge-gray">{e}</span>)}
             </div>
-            {m.dispatch && <div className="mono" style={{ fontSize: 10, color: "var(--text3)", marginTop: 6 }}>Dispatch: {m.dispatch}</div>}
+            {m.dispatch && <div className="mono" style={{ fontSize: 10, color: "var(--text3)", marginBottom: 6 }}>Dispatch: {m.dispatch}</div>}
+            <div style={{display:"flex",gap:4}}>
+              <button className="btn btn-sm btn-primary" disabled={!taskText || dispatching===m.name} onClick={() => dispatchTask(m)}>
+                {dispatching===m.name ? "Sending..." : <><Icon name="send" size={10} /> Assign Task</>}
+              </button>
+              {m.dispatch && <button className="btn btn-sm btn-ghost" onClick={() => dispatchTask(m)}>
+                <Icon name="zap" size={10} /> VA Dispatch
+              </button>}
+            </div>
           </div>
         ))}
       </div>
