@@ -1123,48 +1123,67 @@ function EventsScreen({ entityFilter }) {
 
 function TasksScreen() {
   const [groupBy, setGroupBy] = useState("entity");
-  const tasks = [
-    { task: "Replace 455 placeholder seed targets", entity: "all", assignee: "Linda", priority: "high", status: "in_progress" },
-    { task: "Complete 16 GHL OAuth connections", entity: "all", assignee: "Linda", priority: "high", status: "in_progress" },
-    { task: "Fix Viral Content Calendar API key", entity: "dorsey", assignee: "System", priority: "high", status: "blocked" },
-    { task: "Build venue scraper for Good Times", entity: "innercircle", assignee: "System", priority: "medium", status: "todo" },
-    { task: "Seed remaining 18 dept SOPs", entity: "all", assignee: "System", priority: "medium", status: "todo" },
-    { task: "Push Playwright repo to GitHub", entity: "all", assignee: "System", priority: "low", status: "todo" },
-    { task: "Push Remotion repo to GitHub", entity: "all", assignee: "System", priority: "low", status: "todo" },
-    { task: "Wire autonomous ops to n8n crons", entity: "all", assignee: "System", priority: "medium", status: "todo" },
-    { task: "Fix Google Contacts sync", entity: "dorsey", assignee: "System", priority: "high", status: "blocked" },
-    { task: "NOIR DC sponsor deck", entity: "noir", assignee: "Bax", priority: "high", status: "in_progress" },
-    { task: "Forever Futbol partner outreach", entity: "futbol", assignee: "Brittany", priority: "high", status: "in_progress" },
-    { task: "Casper Group social content batch", entity: "casper", assignee: "Alandra", priority: "medium", status: "todo" },
-  ];
+  const [tasks, setTasks] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [showAdd, setShowAdd] = useState(false);
+  const [newTask, setNewTask] = useState({ task: "", assignee: "", priority: "medium", entity: "all", department: "" });
+
+  const loadTasks = async () => {
+    const data = await supa("khg_tasks", "select=*&order=created_at.desc&limit=50");
+    setTasks(data || []);
+    setLoading(false);
+  };
+  useEffect(() => { loadTasks(); }, []);
+
+  const addTask = async () => {
+    if (!newTask.task) return;
+    await supaInsert("khg_tasks", { ...newTask, status: "pending" });
+    setNewTask({ task: "", assignee: "", priority: "medium", entity: "all", department: "" });
+    setShowAdd(false);
+    loadTasks();
+  };
+
+  const updateStatus = async (id, status) => {
+    const extra = status === "completed" ? { completed_at: new Date().toISOString() } : {};
+    await supaUpdate("khg_tasks", `id=eq.${id}`, { status, updated_at: new Date().toISOString(), ...extra });
+    loadTasks();
+  };
 
   const groups = groupBy === "entity"
-    ? Object.entries(tasks.reduce((acc, t) => { (acc[t.entity] = acc[t.entity] || []).push(t); return acc; }, {}))
-    : Object.entries(tasks.reduce((acc, t) => { (acc[t.assignee] = acc[t.assignee] || []).push(t); return acc; }, {}));
+    ? Object.entries(tasks.reduce((acc, t) => { (acc[t.entity || "all"] = acc[t.entity || "all"] || []).push(t); return acc; }, {}))
+    : Object.entries(tasks.reduce((acc, t) => { (acc[t.assignee || "Unassigned"] = acc[t.assignee || "Unassigned"] || []).push(t); return acc; }, {}));
 
-  const priorityColor = { high: "badge-red", medium: "badge-yellow", low: "badge-gray" };
-  const statusColor = { in_progress: "badge-blue", todo: "badge-gray", blocked: "badge-red", done: "badge-green" };
+  const priorityColor = { high: "badge-red", critical: "badge-red", medium: "badge-yellow", low: "badge-gray" };
+  const statusColor = { in_progress: "badge-blue", pending: "badge-gray", blocked: "badge-red", completed: "badge-green", cancelled: "badge-gray" };
+  const active = tasks.filter(t => t.status !== "completed" && t.status !== "cancelled");
 
   return (
     <div>
-      <div className="grid-3" style={{ marginBottom: 16 }}>
-        <div className="card stat-card fade-in fade-d1">
-          <div className="stat-val" style={{ color: "var(--blue)" }}>{tasks.filter(t => t.status === "in_progress").length}</div>
-          <div className="stat-label">In Progress</div>
-        </div>
-        <div className="card stat-card fade-in fade-d2">
-          <div className="stat-val" style={{ color: "var(--red)" }}>{tasks.filter(t => t.status === "blocked").length}</div>
-          <div className="stat-label">Blocked</div>
-        </div>
-        <div className="card stat-card fade-in fade-d3">
-          <div className="stat-val" style={{ color: "var(--text3)" }}>{tasks.filter(t => t.status === "todo").length}</div>
-          <div className="stat-label">To Do</div>
-        </div>
+      {loading ? <div className="card" style={{textAlign:"center",padding:32}}>Loading tasks from Supabase...</div> : <>
+      <div className="grid-4" style={{ marginBottom: 16 }}>
+        <div className="card"><div className="stat-val" style={{ color: "var(--accent)" }}>{active.length}</div><div className="stat-label">Active Tasks</div></div>
+        <div className="card"><div className="stat-val" style={{ color: "var(--blue)" }}>{tasks.filter(t => t.status === "in_progress").length}</div><div className="stat-label">In Progress</div></div>
+        <div className="card"><div className="stat-val" style={{ color: "var(--red)" }}>{tasks.filter(t => t.status === "blocked").length}</div><div className="stat-label">Blocked</div></div>
+        <div className="card"><div className="stat-val" style={{ color: "var(--green)" }}>{tasks.filter(t => t.status === "completed").length}</div><div className="stat-label">Completed</div></div>
       </div>
-      <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
+      <div style={{ display: "flex", gap: 8, marginBottom: 16, flexWrap: "wrap" }}>
         <button className={`btn btn-sm ${groupBy === "entity" ? "btn-primary" : "btn-ghost"}`} onClick={() => setGroupBy("entity")}>By Entity</button>
-        <button className={`btn btn-sm ${groupBy === "assignee" ? "btn-primary" : "btn-ghost"}`} onClick={() => setGroupBy("assignee")}>By Team Member</button>
+        <button className={`btn btn-sm ${groupBy === "assignee" ? "btn-primary" : "btn-ghost"}`} onClick={() => setGroupBy("assignee")}>By Assignee</button>
+        <button className="btn btn-sm btn-primary" onClick={() => setShowAdd(!showAdd)} style={{marginLeft:"auto"}}>+ Add Task</button>
       </div>
+      {showAdd && (
+        <div className="card" style={{marginBottom:16,display:"flex",flexDirection:"column",gap:8}}>
+          <input className="input" placeholder="Task description..." value={newTask.task} onChange={e => setNewTask({...newTask, task: e.target.value})} />
+          <div style={{display:"flex",gap:8}}>
+            <input className="input" placeholder="Assignee" value={newTask.assignee} onChange={e => setNewTask({...newTask, assignee: e.target.value})} style={{flex:1}} />
+            <select className="input" value={newTask.priority} onChange={e => setNewTask({...newTask, priority: e.target.value})} style={{width:120}}>
+              <option value="low">Low</option><option value="medium">Medium</option><option value="high">High</option><option value="critical">Critical</option>
+            </select>
+            <input className="input" placeholder="Entity key" value={newTask.entity} onChange={e => setNewTask({...newTask, entity: e.target.value})} style={{width:100}} />
+          </div>
+          <button className="btn btn-primary" onClick={addTask}>Create Task</button>
+        </div>
+      )}
       {groups.map(([group, items]) => (
         <div key={group} style={{ marginBottom: 16 }}>
           <div className="section-title" style={{ display: "flex", alignItems: "center", gap: 6 }}>
@@ -1173,21 +1192,26 @@ function TasksScreen() {
             <span style={{ color: "var(--text3)", fontWeight: 400 }}>({items.length})</span>
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-            {items.map((t, i) => (
-              <div key={i} className="card" style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 14px",
-                borderLeft: `3px solid ${t.status === "blocked" ? "var(--red)" : t.status === "in_progress" ? "var(--blue)" : "var(--surface3)"}` }}>
-                <div style={{ width: 18, height: 18, borderRadius: 5, border: `1.5px solid ${t.status === "blocked" ? "var(--red)" : "var(--border2)"}`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+            {items.map((t) => (
+              <div key={t.id} className="card" style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 14px",
+                borderLeft: `3px solid ${t.status === "blocked" ? "var(--red)" : t.status === "in_progress" ? "var(--blue)" : t.status === "completed" ? "var(--green)" : "var(--surface3)"}` }}>
+                <div onClick={() => updateStatus(t.id, t.status === "completed" ? "pending" : "completed")} style={{ width: 18, height: 18, borderRadius: 5, border: `1.5px solid ${t.status === "completed" ? "var(--green)" : t.status === "blocked" ? "var(--red)" : "var(--border2)"}`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, cursor: "pointer" }}>
+                  {t.status === "completed" && <Icon name="check" size={12} />}
                   {t.status === "in_progress" && <div style={{ width: 8, height: 8, borderRadius: 2, background: "var(--blue)" }} />}
                 </div>
-                <span style={{ fontSize: 13, flex: 1 }}>{t.task}</span>
+                <span style={{ fontSize: 13, flex: 1, textDecoration: t.status === "completed" ? "line-through" : "none", opacity: t.status === "completed" ? 0.5 : 1 }}>{t.task}</span>
                 <span className={`badge ${priorityColor[t.priority]}`}>{t.priority}</span>
-                <span className={`badge ${statusColor[t.status]}`}>{t.status.replace("_"," ")}</span>
+                <span className={`badge ${statusColor[t.status]}`} style={{cursor:"pointer"}} onClick={() => {
+                  const next = { pending: "in_progress", in_progress: "completed", completed: "pending", blocked: "in_progress" };
+                  updateStatus(t.id, next[t.status] || "pending");
+                }}>{(t.status || "pending").replace("_"," ")}</span>
                 {groupBy === "entity" && <span style={{ fontSize: 11, color: "var(--text3)", minWidth: 60 }}>{t.assignee}</span>}
               </div>
             ))}
           </div>
         </div>
       ))}
+      </>}
     </div>
   );
 }
