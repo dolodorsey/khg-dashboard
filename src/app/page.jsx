@@ -49,10 +49,10 @@ const ENTITIES = {
   },
   casper: {
     name: "Casper Group", division: "Food", color: "#E74C3C",
-    email: "Thecaspergroup@gmail.com", ig: "@the.casper.group",
+    email: "Thecaspergroup@gmail.com", ig: "@thecaspergroupworldwide",
     ghl: "IPP6mHiRgKtIAHOOueHS",
     brands: ["Angel Wings","Pasta Bish","Taco Yaki","Patty Daddy","The Espresso Co.","Morning After","Toss'd","Sweet Tooth","Mojo Juice","Mr. Oyster"],
-    socials: { ig: "@the.casper.group", tiktok: "@caspergroupworldwide", fb: "The Casper Group" }
+    socials: { ig: "@thecaspergroupworldwide", tiktok: "@caspergroupworldwide", fb: "The Casper Group" }
   },
   umbrella: {
     name: "Umbrella Group", division: "Services", color: "#3498DB",
@@ -63,10 +63,10 @@ const ENTITIES = {
   },
   futbol: {
     name: "Forever Futbol", division: "Museums", color: "#C9A96E",
-    email: "FOREVERFUTBOLMUSEUM@GMAIL.COM", ig: "@foreverfutbolmuseum",
+    email: "FOREVERFUTBOLMUSEUM@GMAIL.COM", ig: "@foreverfutbol.museum",
     ghl: "GbG9KQGmgIDSvPuYIUf9",
     events: ["ATL May 29-Jul 6 (Fri/Sat/Sun Noon-9PM)"],
-    socials: { ig: "@foreverfutbolmuseum", tiktok: "@foreverfutbolmuseum", fb: "Forever Futbol" }
+    socials: { ig: "@foreverfutbol.museum", tiktok: "@foreverfutbol77", fb: "Forever Futbol" }
   },
   dorsey: {
     name: "Dr. Dorsey", division: "Personal", color: "#C9A96E",
