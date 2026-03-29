@@ -42,31 +42,31 @@ const supaUpdate = async (table, match, data) => {
 const ENTITIES = {
   huglife: {
     name: "HugLife", division: "Events", color: "#FF6B35", 
-    email: "justhuglife.forever@gmail.com", ig: "@justhuglife",
+    email: "HUGLIFECREATIVEGROUP@GMAIL.COM", ig: "@just.huglife",
     ghl: "tGbC7nJkOkH5G3RiyjKR",
     events: ["NOIR","Gangsta Gospel","Sunday's Best","Paparazzi","Pawchella","Black Ball","Beauty & The Beast","Haunted House","Monster's Ball","Snow Ball","Winter Wonderland","Taste of Art","REMIX","WRST BHVR: Napkin Wars","CINCO DE DRINKO"],
-    socials: { ig: "@justhuglife", tiktok: "@justhuglife", fb: "JustHugLife" }
+    socials: { ig: "@just.huglife", tiktok: "@huglife.forever", fb: "The Huglife" }
   },
   casper: {
     name: "Casper Group", division: "Food", color: "#E74C3C",
-    email: "info@caspergroupworldwide.com", ig: "@caspergroupworldwide",
+    email: "Thecaspergroup@gmail.com", ig: "@the.casper.group",
     ghl: "IPP6mHiRgKtIAHOOueHS",
     brands: ["Angel Wings","Pasta Bish","Taco Yaki","Patty Daddy","The Espresso Co.","Morning After","Toss'd","Sweet Tooth","Mojo Juice","Mr. Oyster"],
-    socials: { ig: "@caspergroupworldwide", tiktok: "@caspergroup", fb: "CasperGroupWorldwide" }
+    socials: { ig: "@the.casper.group", tiktok: "@caspergroupworldwide", fb: "The Casper Group" }
   },
   umbrella: {
     name: "Umbrella Group", division: "Services", color: "#3498DB",
-    email: "theumbrellagroupworldwide@gmail.com", ig: "@umbrella",
+    email: "THEUMBRELLAGROUPWORLDWIDE@GMAIL.COM", ig: "@theumbrella.group",
     ghl: "78C8jSFZhpH9MxiKUtFc",
     brands: ["Auto Exchange","Injury Network","Realty Group","Clean Services","The People's Dept.","Accounting","Brand Studio","Automation Office","Mind Studio","Legal & Compliance"],
-    socials: { ig: "@theumbrellagroupworldwide", tiktok: "@umbrellagroup", fb: "UmbrellaGroup" }
+    socials: { ig: "@theumbrella.group", tiktok: "@theumbrellagroupofficial", fb: "The Umbrella Group" }
   },
   futbol: {
     name: "Forever Futbol", division: "Museums", color: "#C9A96E",
-    email: "foreverfutbolmuseum@gmail.com", ig: "@foreverfutbolmuseum",
-    ghl: "tGbC7nJkOkH5G3RiyjKR",
-    events: ["ATL Jun 11-Jul 19","HOU Jun 11-Jul 19","LA Jun 11-Jul 19"],
-    socials: { ig: "@foreverfutbolmuseum", tiktok: "@foreverfutbol", fb: "ForeverFutbol" }
+    email: "FOREVERFUTBOLMUSEUM@GMAIL.COM", ig: "@foreverfutbolmuseum",
+    ghl: "GbG9KQGmgIDSvPuYIUf9",
+    events: ["ATL May 29-Jul 6 (Fri/Sat/Sun Noon-9PM)"],
+    socials: { ig: "@foreverfutbolmuseum", tiktok: "@foreverfutbolmuseum", fb: "Forever Futbol" }
   },
   dorsey: {
     name: "Dr. Dorsey", division: "Personal", color: "#C9A96E",
@@ -76,8 +76,9 @@ const ENTITIES = {
   },
   noir: {
     name: "NOIR", division: "Events", color: "#C9A96E",
-    email: "justhuglife.forever@gmail.com", ig: "@noirseries",
-    socials: { ig: "@noirseries", tiktok: "@noirseries" }
+    email: "Info@noirworldwide.com", ig: "@thenoir.worldwide",
+    ghl: "1yiAb0veXWoJ2cH49RKJ",
+    socials: { ig: "@thenoir.worldwide" }
   },
   bodegea: {
     name: "BODEGEA", division: "Products", color: "#FF9500",
@@ -99,12 +100,12 @@ const ENTITIES = {
     brands: ["Sole Exchange","Let's Talk About It"],
     socials: { ig: "@playmakerssportsassociation" }
   },
-  remix: { name: "REMIX", division: "Events", color: "#B6E03E", socials: { ig: "@remixmashup" } },
-  wrst_bhvr: { name: "WRST BHVR", division: "Events", color: "#BB2C35", socials: { ig: "@wrstbhvr" } },
-  taste_of_art: { name: "Taste of Art", division: "Events", color: "#A75C43", socials: { ig: "@tasteofartshow" } },
-  gangsta_gospel: { name: "Gangsta Gospel", division: "Events", color: "#3C5B8A", socials: { ig: "@gangstagospel" } },
-  sundays_best: { name: "Sunday's Best", division: "Events", color: "#D8BA7C", socials: { ig: "@sundaysbest" } },
-  paparazzi: { name: "Paparazzi", division: "Events", color: "#B73A4B", socials: { ig: "@paparazzi" } },
+  remix: { name: "REMIX", division: "Events", color: "#B6E03E", email: "notyouraveragerremix@gmail.com", ghl: "Q0APYnBlqUKicOQBPxqH", socials: { ig: "@notyouraveragerremix" } },
+  wrst_bhvr: { name: "WRST BHVR", division: "Events", color: "#BB2C35", email: "Info@thewrstbhvr.com", ghl: "kZ5kUYsuk97EUxxNrwnq", socials: { ig: "@thewrstbhvr" } },
+  taste_of_art: { name: "Taste of Art", division: "Events", color: "#A75C43", email: "Info@thatasteofart.com", ghl: "CupYucSXDHojTO36Ouqf", socials: { ig: "@thetasteofart" } },
+  gangsta_gospel: { name: "Gangsta Gospel", division: "Events", color: "#3C5B8A", email: "thegangstagospel@gmail.com", ghl: "5ZJEQEjSG9WtteH5Koa7", socials: { ig: "@thegangstagospel" } },
+  sundays_best: { name: "Sunday's Best", division: "Events", color: "#D8BA7C", email: "Info@yoursundaysbest.com", ghl: "9k7uVVKEd2pVWZY4HPrH", socials: { ig: "@the.sundays.best" } },
+  paparazzi: { name: "Paparazzi", division: "Events", color: "#B73A4B", email: "thepaparazzipopup@gmail.com", ghl: "OMWnsG9bJsPAtBfdGFol", socials: { ig: "@thepaparazzipopup" } },
   pawchella: { name: "Pawchella", division: "Events", color: "#4A8A3A", socials: { ig: "@pawchella" } },
   kulture: { name: "The Kulture", division: "Events", color: "#D9B44A", socials: { ig: "@thekulture" } },
   soul_sessions: { name: "Soul Sessions", division: "Events", color: "#D947A8", socials: { ig: "@soulsessions" } },
@@ -128,7 +129,7 @@ const EVENTS_2026 = [
   { name: "NOIR LA", date: "2026-05-29", entity: "noir", city: "Los Angeles", status: "planning" },
   { name: "Paparazzi LA", date: "2026-05-31", entity: "huglife", city: "Los Angeles", status: "planning" },
   { name: "NOIR Charlotte", date: "2026-06-05", entity: "noir", city: "Charlotte", status: "planning" },
-  { name: "World Cup ATL Opens", date: "2026-06-11", entity: "futbol", city: "Atlanta", status: "active_build" },
+  { name: "Forever Futbol ATL Opens", date: "2026-05-29", entity: "futbol", city: "Atlanta", status: "active_build" },
   { name: "Taste of Art DC", date: "2026-06-12", entity: "huglife", city: "Washington DC", status: "planning" },
   { name: "Paparazzi LA (BET)", date: "2026-06-14", entity: "huglife", city: "Los Angeles", status: "planning" },
   { name: "Gangsta Gospel ATL", date: "2026-06-19", entity: "huglife", city: "Atlanta", status: "planning" },
@@ -173,7 +174,7 @@ const WORKFLOWS = [
   { id: "bZ4QrBi5QmqICSR8", name: "Linda VA Dispatch", status: "active", dept: "Ops" },
   { id: "7rf75NwxA5swZInA", name: "MCP Gateway Core", status: "active", dept: "System" },
   { id: "qgAIBhDCKN49JNXQ", name: "MCP Dashboard API", status: "active", dept: "System" },
-  { id: "jKRUMxAPh85KA3NH", name: "Viral Content Calendar", status: "error", dept: "Content", error: "REPLACE_WITH_ANTHROPIC_KEY" },
+  { id: "jKRUMxAPh85KA3NH", name: "Viral Content Calendar", status: "inactive", dept: "Content" },
 ];
 
 const CREDENTIALS = [
@@ -329,7 +330,7 @@ const Icon = ({ name, size = 16 }) => {
 
 const daysUntil = (dateStr) => {
   const d = new Date(dateStr);
-  const now = new Date("2026-03-12");
+  const now = new Date();
   return Math.ceil((d - now) / (1000 * 60 * 60 * 24));
 };
 
