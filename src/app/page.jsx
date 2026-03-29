@@ -2,9 +2,8 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 
 // ═══════════════════════════════════════════════════════════
-// KHG ENTERPRISE COMMAND CENTER v5.0 — ELITE BUILD
+// KHG ENTERPRISE COMMAND CENTER v3.0 — ELITE BUILD
 // Carbon Dark + Orange Pulse • Animated • Signature Design
-// Updated: 2026-03-28 — Directory Hub + Execution Dashboard upgrade
 // ═══════════════════════════════════════════════════════════
 
 // ── DATA LAYER ──────────────────────────────────────────────
@@ -64,17 +63,10 @@ const ENTITIES = {
   },
   futbol: {
     name: "Forever Futbol", division: "Museums", color: "#C9A96E",
-    email: "foreverfutbolmuseum@gmail.com", ig: "@foreverfutbol.museum",
-    ghl: "GbG9KQGmgIDSvPuYIUf9",
-    events: ["ATL May 29-Jul 6 (Fri/Sat/Sun Noon-9PM)"],
-    socials: { ig: "@foreverfutbol.museum", tiktok: "@foreverfutbol", fb: "ForeverFutbol" }
-  },
-  mind_studio: {
-    name: "Mind Studio", division: "Wellness", color: "#7B68EE",
-    email: "mindstudiowellness@gmail.com", ig: "@mindstudiowellness",
-    ghl: "6h8pNMs7vPOnStVlvGvJ",
-    brands: ["3-Entity MSO","Clinic Pipeline (20 stages)","Consumer Pipeline (9)","PI Pipeline (8)"],
-    socials: { ig: "@mindstudiowellness" }
+    email: "foreverfutbolmuseum@gmail.com", ig: "@foreverfutbolmuseum",
+    ghl: "tGbC7nJkOkH5G3RiyjKR",
+    events: ["ATL Jun 11-Jul 19","HOU Jun 11-Jul 19","LA Jun 11-Jul 19"],
+    socials: { ig: "@foreverfutbolmuseum", tiktok: "@foreverfutbol", fb: "ForeverFutbol" }
   },
   dorsey: {
     name: "Dr. Dorsey", division: "Personal", color: "#C9A96E",
@@ -99,29 +91,8 @@ const ENTITIES = {
   },
   innercircle: {
     name: "The Inner Circle", division: "Apps", color: "#2ECC71",
-    brands: ["S.O.S Roadside","On Call"],
+    brands: ["Good Times","S.O.S Roadside","On Call"],
     socials: {}
-  },
-  good_times: {
-    name: "Good Times", division: "Apps", color: "#4A9FD5",
-    ghl: "jbm4vUg0J1llNkK8q6Lt",
-    brands: ["837 venues","10 cities","121 daily events"],
-    socials: {}
-  },
-  infinity_water: {
-    name: "Infinity Water", division: "Products", color: "#00BCD4",
-    ghl: "OQcKgzwCYdUYLSjZnRBE",
-    socials: { ig: "@watertoinfinity" }
-  },
-  pronto_energy: {
-    name: "Pronto Energy", division: "Products", color: "#FF5722",
-    ghl: "P3Xk1DXrNRFozNsGQeJ8",
-    socials: { ig: "@prontoenergy" }
-  },
-  stush: {
-    name: "Stush", division: "Products", color: "#E91E63",
-    ghl: "2rlQ89TGyca6NZaFugHN",
-    socials: { ig: "@stushusa" }
   },
   playmakers: {
     name: "Playmakers Sports", division: "Non-Profit", color: "#E67E22",
@@ -157,7 +128,7 @@ const EVENTS_2026 = [
   { name: "NOIR LA", date: "2026-05-29", entity: "noir", city: "Los Angeles", status: "planning" },
   { name: "Paparazzi LA", date: "2026-05-31", entity: "huglife", city: "Los Angeles", status: "planning" },
   { name: "NOIR Charlotte", date: "2026-06-05", entity: "noir", city: "Charlotte", status: "planning" },
-  { name: "World Cup ATL Opens", date: "2026-05-29", entity: "futbol", city: "Atlanta", status: "active_build" },
+  { name: "World Cup ATL Opens", date: "2026-06-11", entity: "futbol", city: "Atlanta", status: "active_build" },
   { name: "Taste of Art DC", date: "2026-06-12", entity: "huglife", city: "Washington DC", status: "planning" },
   { name: "Paparazzi LA (BET)", date: "2026-06-14", entity: "huglife", city: "Los Angeles", status: "planning" },
   { name: "Gangsta Gospel ATL", date: "2026-06-19", entity: "huglife", city: "Atlanta", status: "planning" },
@@ -188,13 +159,6 @@ const EVENTS_2026 = [
 ];
 
 const WORKFLOWS = [
-  { id: "oWAp1njam9bgKhSa", name: "Social Poster (every 15m)", status: "active", dept: "Social" },
-  { id: "WK0PGRlUwaOQBslh", name: "Daily Content Gen (8:30AM)", status: "active", dept: "Content" },
-  { id: "UCdfaw1hy8oaMbqN", name: "Content Replenish (6AM)", status: "active", dept: "Content" },
-  { id: "dSY76AIxMZhfckIK", name: "Ops Daily Digest (7AM+6PM)", status: "active", dept: "Ops" },
-  { id: "euBl3YlLy2bUknlR", name: "Events Scraper (Wed 6AM)", status: "active", dept: "Events" },
-  { id: "8L518Ss7cbtDaGu5", name: "KHG Form Submit Handler", status: "active", dept: "Ops" },
-  { id: "AetfFm74ipOBpvXc", name: "Master Task Router", status: "active", dept: "System" },
   { id: "3jDssrDbi21CLhn6", name: "Email Send Throttle", status: "active", dept: "Outreach" },
   { id: "LOuffRVoxtPHsCuZ", name: "Newsletter Engine", status: "active", dept: "Content" },
   { id: "tyQSD2mJl8W9VDm0", name: "IG Comment Engine", status: "active", dept: "Social" },
@@ -209,7 +173,6 @@ const WORKFLOWS = [
   { id: "bZ4QrBi5QmqICSR8", name: "Linda VA Dispatch", status: "active", dept: "Ops" },
   { id: "7rf75NwxA5swZInA", name: "MCP Gateway Core", status: "active", dept: "System" },
   { id: "qgAIBhDCKN49JNXQ", name: "MCP Dashboard API", status: "active", dept: "System" },
-  { id: "qpXDZwbXU2hXrjv8", name: "Dolo Directory Enrichment", status: "needs_auth", dept: "Directory", error: "Google Contacts OAuth needs re-auth" },
   { id: "jKRUMxAPh85KA3NH", name: "Viral Content Calendar", status: "error", dept: "Content", error: "REPLACE_WITH_ANTHROPIC_KEY" },
 ];
 
@@ -366,7 +329,7 @@ const Icon = ({ name, size = 16 }) => {
 
 const daysUntil = (dateStr) => {
   const d = new Date(dateStr);
-  const now = new Date();
+  const now = new Date("2026-03-12");
   return Math.ceil((d - now) / (1000 * 60 * 60 * 24));
 };
 
@@ -704,152 +667,77 @@ function HomeScreen({ navigate }) {
 
 function CommandsScreen() {
   const [selectedEntity, setSelectedEntity] = useState("all");
-  const [selectedCat, setSelectedCat] = useState("all");
   const [running, setRunning] = useState(null);
   const [results, setResults] = useState({});
-  const [cmdInput, setCmdInput] = useState("");
 
   const N8N_BASE = "https://dorsey.app.n8n.cloud/webhook";
+  const TASK_ROUTER = "AetfFm74ipOBpvXc";
+  const LINDA_DISPATCH = "bZ4QrBi5QmqICSR8";
 
   const commands = [
-    // ── EXECUTIVE ──
-    { cmd: "dept33 intake", desc: "Submit task to Dept 33 queue", entity: "all", cat: "executive", wf: "AetfFm74ipOBpvXc", payload: { action: "intake" } },
-    { cmd: "dept33 daily_memo", desc: "Generate executive daily briefing", entity: "all", cat: "executive", wf: "AetfFm74ipOBpvXc", payload: { action: "daily_memo" } },
-    { cmd: "dept33 war_room", desc: "Activate war room for event", entity: "all", cat: "executive", wf: "AetfFm74ipOBpvXc", payload: { action: "war_room" } },
-    { cmd: "dept33 status", desc: "System-wide status check", entity: "all", cat: "executive", wf: "AetfFm74ipOBpvXc", payload: { action: "status" } },
-    { cmd: "dept33 ops_status", desc: "Full operational status report", entity: "all", cat: "executive", wf: "AetfFm74ipOBpvXc", payload: { action: "ops_status" } },
-    { cmd: "dept33 run_checklist", desc: "Run daily ops checklist", entity: "all", cat: "executive", wf: "AetfFm74ipOBpvXc", payload: { action: "run_checklist" } },
-    { cmd: "dispatch linda", desc: "Send task to Linda (VA dispatch)", entity: "all", cat: "executive", wf: "bZ4QrBi5QmqICSR8", payload: { action: "dispatch" } },
-    // ── CONTENT & SOCIAL ──
-    { cmd: "social poster", desc: "Post ready content (runs every 15m)", entity: "all", cat: "content", wf: "oWAp1njam9bgKhSa" },
-    { cmd: "daily content gen", desc: "Generate daily content batch (8:30AM)", entity: "all", cat: "content", wf: "WK0PGRlUwaOQBslh" },
-    { cmd: "content replenish", desc: "Replenish content queue (6AM daily)", entity: "all", cat: "content", wf: "UCdfaw1hy8oaMbqN" },
-    { cmd: "content factory", desc: "Trigger content generation engine", entity: "all", cat: "content", wf: "T7ZOnFaSEvcYvwbM" },
-    { cmd: "content calendar", desc: "Build viral content calendar", entity: "dorsey", cat: "content", wf: "jKRUMxAPh85KA3NH" },
-    { cmd: "ig comments", desc: "Auto-comment engine", entity: "all", cat: "content", wf: "tyQSD2mJl8W9VDm0" },
-    { cmd: "social dms", desc: "Generate + queue DMs", entity: "all", cat: "content", wf: "zn2uHhkUROJqKzEG" },
-    { cmd: "social msg gen", desc: "Generate social messages batch", entity: "all", cat: "content", wf: "8geOg9hei00b2Dxu" },
-    // ── OUTREACH & EMAIL ──
-    { cmd: "sponsor outreach", desc: "Run sponsor outreach engine", entity: "huglife", cat: "outreach", wf: "ThKwcVTGnpXIoOEE" },
-    { cmd: "influencer outreach", desc: "Influencer discovery + DM", entity: "huglife", cat: "outreach", wf: "0paDyU807bccvZYQ" },
-    { cmd: "pr pitch", desc: "PR pitch + auto-followup", entity: "all", cat: "outreach", wf: "bGdwLiVFcqP0FcIG" },
-    { cmd: "pr enrich", desc: "PR enrich + lead scoring", entity: "all", cat: "outreach", wf: "LQRDE7gsrTVm7rms" },
-    { cmd: "newsletter", desc: "Generate + send newsletter", entity: "all", cat: "outreach", wf: "LOuffRVoxtPHsCuZ" },
-    { cmd: "email send throttle", desc: "Throttled email sending engine", entity: "all", cat: "outreach", wf: "3jDssrDbi21CLhn6" },
-    { cmd: "outreach command", desc: "Outreach Command Center engine", entity: "all", cat: "outreach", wf: "szlivCBfrDzjoaYx" },
-    // ── OPS & SYSTEM ──
-    { cmd: "daily digest", desc: "Ops notifications digest (7AM+6PM)", entity: "all", cat: "ops", wf: "dSY76AIxMZhfckIK" },
-    { cmd: "events scraper", desc: "Scrape events (Wed 6AM)", entity: "all", cat: "ops", wf: "euBl3YlLy2bUknlR" },
-    { cmd: "khg form submit", desc: "Process KHG form submissions", entity: "all", cat: "ops", wf: "8L518Ss7cbtDaGu5" },
-    { cmd: "mcp gateway", desc: "MCP Gateway Core", entity: "all", cat: "ops", wf: "7rf75NwxA5swZInA" },
-    { cmd: "mcp dashboard api", desc: "MCP Dashboard data endpoint", entity: "all", cat: "ops", wf: "qgAIBhDCKN49JNXQ" },
-    // ── DIRECTORY & GHL ──
-    { cmd: "dolo search", desc: "Search Dolo Directory contacts", entity: "dorsey", cat: "directory", api: "supabase", action: "dolo_search" },
-    { cmd: "dolo guestlist", desc: "Pull guestlist by tier/city", entity: "dorsey", cat: "directory", api: "supabase", action: "dolo_guestlist" },
-    { cmd: "dolo textable", desc: "Pull all contacts with phone numbers", entity: "dorsey", cat: "directory", api: "supabase", action: "dolo_textable" },
-    { cmd: "ghl email send", desc: "Send email via GHL API (PIT token)", entity: "all", cat: "ghl", api: "ghl", action: "email" },
-    { cmd: "ghl sms send", desc: "Send SMS via GHL API", entity: "all", cat: "ghl", api: "ghl", action: "sms" },
-    { cmd: "ghl social post", desc: "Post to social via GHL", entity: "all", cat: "ghl", api: "ghl", action: "social_post" },
+    { cmd: "dept33 intake", desc: "Submit task to Dept 33 queue", entity: "all", webhook: TASK_ROUTER, payload: { action: "intake" } },
+    { cmd: "dept33 daily_memo", desc: "Generate executive daily briefing", entity: "all", webhook: TASK_ROUTER, payload: { action: "daily_memo" } },
+    { cmd: "dept33 war_room", desc: "Activate war room for event", entity: "all", webhook: TASK_ROUTER, payload: { action: "war_room" } },
+    { cmd: "dept33 status", desc: "Get system-wide status check", entity: "all", webhook: TASK_ROUTER, payload: { action: "status" } },
+    { cmd: "dept33 ops_status", desc: "Full operational status report", entity: "all", webhook: TASK_ROUTER, payload: { action: "ops_status" } },
+    { cmd: "dept33 run_checklist", desc: "Run daily ops checklist", entity: "all", webhook: TASK_ROUTER, payload: { action: "run_checklist" } },
+    { cmd: "content factory", desc: "Trigger content generation", entity: "all", workflow: "T7ZOnFaSEvcYvwbM" },
+    { cmd: "dispatch linda", desc: "Send task to Linda via VA dispatch", entity: "all", webhook: LINDA_DISPATCH, payload: { action: "dispatch" } },
+    { cmd: "sponsor outreach", desc: "Run sponsor outreach engine", entity: "huglife", workflow: "ThKwcVTGnpXIoOEE" },
+    { cmd: "influencer outreach", desc: "Run influencer discovery + DM", entity: "huglife", workflow: "0paDyU807bccvZYQ" },
+    { cmd: "ig comments", desc: "Auto-comment engine", entity: "all", workflow: "tyQSD2mJl8W9VDm0" },
+    { cmd: "social dms", desc: "Generate + queue DMs", entity: "all", workflow: "zn2uHhkUROJqKzEG" },
+    { cmd: "pr pitch", desc: "Generate PR pitch + auto-followup", entity: "all", workflow: "bGdwLiVFcqP0FcIG" },
+    { cmd: "newsletter", desc: "Generate + send newsletter", entity: "all", workflow: "LOuffRVoxtPHsCuZ" },
+    { cmd: "content calendar", desc: "Build viral content calendar", entity: "dorsey", workflow: "jKRUMxAPh85KA3NH" },
   ];
-
-  const CATS = [
-    { id: "all", label: "All", color: "var(--accent)" },
-    { id: "executive", label: "Executive", color: "#C9A96E" },
-    { id: "content", label: "Content & Social", color: "#B6E03E" },
-    { id: "outreach", label: "Outreach & Email", color: "#3498DB" },
-    { id: "ops", label: "Ops & System", color: "#9B59B6" },
-    { id: "directory", label: "Directory", color: "#2ECC71" },
-    { id: "ghl", label: "GHL Direct", color: "#E74C3C" },
-  ];
-
-  const ENTITY_TABS = ["huglife","casper","noir","futbol","dorsey","umbrella","mind_studio","infinity_water","pronto_energy","stush","taste_of_art","remix","wrst_bhvr","gangsta_gospel","sundays_best","paparazzi","good_times","forever_futbol"];
 
   const runCommand = async (cmd, idx) => {
     setRunning(idx);
     try {
-      if (cmd.api === "supabase") {
-        // Supabase-based commands (directory queries)
-        let q = "";
-        if (cmd.action === "dolo_search" && cmdInput) q = `full_name=ilike.*${cmdInput}*&limit=20`;
-        else if (cmd.action === "dolo_guestlist") q = "relationship_tier=eq.DOLO&limit=50&order=full_name.asc";
-        else if (cmd.action === "dolo_textable") q = "phone=not.is.null&limit=50&order=full_name.asc";
-        const data = await supa("dolo_directory", q);
-        setResults(prev => ({ ...prev, [idx]: data && data.length > 0 ? "success" : "empty" }));
-      } else if (cmd.api === "ghl") {
-        setResults(prev => ({ ...prev, [idx]: "info" }));
-      } else {
-        const wfId = cmd.wf;
-        const url = `${N8N_BASE}/${wfId}`;
-        const body = cmd.payload || { command: cmd.cmd, entity: selectedEntity, timestamp: new Date().toISOString() };
-        const r = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
-        setResults(prev => ({ ...prev, [idx]: r.ok ? "success" : "error" }));
-        if (r.ok) await supaInsert("khg_tasks", { task: `CMD: ${cmd.cmd}`, entity: selectedEntity === "all" ? "all" : selectedEntity, assignee: "System", priority: "low", status: "completed", department: "Commands", notes: `Executed via dashboard at ${new Date().toLocaleTimeString()}` });
-      }
+      const wfId = cmd.workflow || cmd.webhook;
+      const url = `${N8N_BASE}/${wfId}`;
+      const body = cmd.payload || { command: cmd.cmd, entity: selectedEntity, timestamp: new Date().toISOString() };
+      const r = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+      const ok = r.ok;
+      setResults(prev => ({ ...prev, [idx]: ok ? "success" : "error" }));
+      // Also log to khg_tasks
+      if (ok) await supaInsert("khg_tasks", { task: `CMD: ${cmd.cmd}`, entity: selectedEntity === "all" ? "all" : selectedEntity, assignee: "System", priority: "low", status: "completed", department: "Commands", notes: `Executed via dashboard at ${new Date().toLocaleTimeString()}` });
     } catch {
       setResults(prev => ({ ...prev, [idx]: "error" }));
     }
     setRunning(null);
   };
 
-  const filtered = commands.filter(c => {
-    const catMatch = selectedCat === "all" || c.cat === selectedCat;
-    const entMatch = selectedEntity === "all" || c.entity === "all" || c.entity === selectedEntity;
-    return catMatch && entMatch;
-  });
-
-  const resultDot = (r) => r === "success" ? "var(--green)" : r === "error" ? "var(--red)" : r === "info" ? "var(--blue)" : r === "empty" ? "var(--yellow)" : "var(--surface3)";
-  const catColor = (catId) => (CATS.find(c => c.id === catId) || {}).color || "var(--text3)";
+  const filtered = selectedEntity === "all" ? commands : commands.filter(c => c.entity === "all" || c.entity === selectedEntity);
 
   return (
     <div>
-      {/* Category filter */}
-      <div className="pill-tabs" style={{flexWrap:"wrap",marginBottom:8}}>
-        {CATS.map(c => (
-          <button key={c.id} className={`pill-tab ${selectedCat === c.id ? "active" : ""}`}
-            style={selectedCat === c.id ? { background: c.color, borderColor: c.color, color: "#000" } : {}}
-            onClick={() => setSelectedCat(c.id)}>{c.label}</button>
-        ))}
-      </div>
-      {/* Entity filter */}
-      <div className="pill-tabs" style={{flexWrap:"wrap",marginBottom:12}}>
-        <button className={`pill-tab ${selectedEntity === "all" ? "active" : ""}`} onClick={() => setSelectedEntity("all")}>All Entities</button>
-        {ENTITY_TABS.map(k => {
+      <div className="pill-tabs" style={{flexWrap:"wrap"}}>
+        <button className={`pill-tab ${selectedEntity === "all" ? "active" : ""}`} onClick={() => setSelectedEntity("all")}>All</button>
+        {["huglife","casper","noir","futbol","dorsey","umbrella"].map(k => {
           const e = ENTITIES[k]; if (!e) return null;
           return (<button key={k} className={`pill-tab ${selectedEntity === k ? "active" : ""}`}
-            style={selectedEntity === k ? { background: e.color, borderColor: e.color, color: "#000" } : {}}
+            style={selectedEntity === k ? { background: e.color, borderColor: e.color } : {}}
             onClick={() => setSelectedEntity(k)}>{e.name}</button>);
         })}
       </div>
-      {/* Search input for directory commands */}
-      {selectedCat === "directory" && (
-        <input className="input" placeholder="Search name for Dolo Directory..." value={cmdInput} onChange={e => setCmdInput(e.target.value)} style={{ marginBottom: 12 }} />
-      )}
-      {/* Stats bar */}
-      <div style={{display:"flex",gap:16,marginBottom:12,fontSize:11,color:"var(--text3)"}}>
-        <span><b style={{color:"var(--accent)"}}>{filtered.length}</b> commands</span>
-        <span><b style={{color:"var(--green)"}}>{Object.values(results).filter(r=>r==="success").length}</b> executed</span>
-        <span><b style={{color:"var(--red)"}}>{Object.values(results).filter(r=>r==="error").length}</b> errors</span>
-      </div>
-      {/* Commands list */}
       <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-        {filtered.map((c, i) => {
-          const globalIdx = commands.indexOf(c);
-          return (
-            <div key={globalIdx} className="card card-glow" style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px" }}>
-              <div style={{ width: 7, height: 7, borderRadius: "50%", background: resultDot(results[globalIdx]), flexShrink: 0 }} />
-              <code className="mono" style={{ color: "var(--accent)", fontSize: 12, minWidth: 170, fontWeight: 500 }}>{c.cmd}</code>
-              <span style={{ fontSize: 12, color: "var(--text2)", flex: 1 }}>{c.desc}</span>
-              <span className="badge" style={{ background: `${catColor(c.cat)}18`, color: catColor(c.cat), fontSize: 9, letterSpacing: "0.06em" }}>{c.cat}</span>
-              <span className="badge badge-gray" style={{ fontSize: 9 }}>{c.entity}</span>
-              <button className="btn btn-sm btn-primary" disabled={running === globalIdx} onClick={() => runCommand(c, globalIdx)}
-                style={{ minWidth: 54 }}>
-                {running === globalIdx ? "..." : <><Icon name="play" size={10} /> Run</>}
-              </button>
-            </div>
-          );
-        })}
+        {filtered.map((c, i) => (
+          <div key={i} className="card card-glow" style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 14px" }}>
+            <div style={{ width: 6, height: 6, borderRadius: "50%", background: results[i] === "success" ? "var(--green)" : results[i] === "error" ? "var(--red)" : "var(--surface3)" }} />
+            <code className="mono" style={{ color: "var(--accent)", fontSize: 12, minWidth: 180, fontWeight: 500 }}>{c.cmd}</code>
+            <span style={{ fontSize: 12, color: "var(--text2)", flex: 1 }}>{c.desc}</span>
+            <span className="badge badge-gray">{c.entity}</span>
+            <button className="btn btn-sm btn-primary" disabled={running === i} onClick={() => runCommand(c, i)}>
+              {running === i ? "..." : <><Icon name="play" size={10} /> Run</>}
+            </button>
+          </div>
+        ))}
       </div>
-      {filtered.length === 0 && <div style={{textAlign:"center",color:"var(--text3)",padding:"40px 20px",fontSize:12}}>No commands match this filter</div>}
+      {Object.keys(results).length > 0 && <div style={{marginTop:12,fontSize:11,color:"var(--text3)"}}>
+        {Object.values(results).filter(r=>r==="success").length} commands executed successfully
+      </div>}
     </div>
   );
 }
@@ -1000,7 +888,7 @@ function SystemScreen() {
               <span className="entity-dot" style={{ background: "var(--green)", boxShadow: "0 0 8px var(--green)" }} />
               <span style={{ fontSize: 13, fontWeight: 600 }}>Healthy</span>
             </div>
-            <div style={{ fontSize: 11, color: "var(--text3)", marginTop: 4 }}>532 tables · 72 views · 240 functions</div>
+            <div style={{ fontSize: 11, color: "var(--text3)", marginTop: 4 }}>220+ tables · 112K contacts</div>
           </div>
           <div className="card">
             <div className="card-subtitle">n8n</div>
@@ -1013,10 +901,10 @@ function SystemScreen() {
           <div className="card">
             <div className="card-subtitle">GHL</div>
             <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 6 }}>
-              <span className="entity-dot" style={{ background: "var(--green)" }} />
-              <span style={{ fontSize: 13, fontWeight: 600 }}>22 Locations</span>
+              <span className="entity-dot" style={{ background: "var(--yellow)" }} />
+              <span style={{ fontSize: 13, fontWeight: 600 }}>Partial</span>
             </div>
-            <div style={{ fontSize: 11, color: "var(--text3)", marginTop: 4 }}>All PITs active · Direct API confirmed</div>
+            <div style={{ fontSize: 11, color: "var(--text3)", marginTop: 4 }}>16 locations need OAuth</div>
           </div>
           <div className="card">
             <div className="card-subtitle">MCP Gateway</div>
@@ -1051,19 +939,12 @@ function SystemScreen() {
 function DirectoryScreen() {
   const [copied, setCopied] = useState(null);
   const [filter, setFilter] = useState("");
-  const [tab, setTab] = useState("credentials");
   const [creds, setCreds] = useState(CREDENTIALS);
   const [loading, setLoading] = useState(true);
-  const [doloContacts, setDoloContacts] = useState([]);
-  const [doloFilter, setDoloFilter] = useState("");
-  const [doloTier, setDoloTier] = useState("all");
-  const [doloCat, setDoloCat] = useState("all");
-  const [ghlLocs, setGhlLocs] = useState([]);
 
   useEffect(() => {
     (async () => {
-      // Load credentials
-      const data = await supa("credentials", "is_active=eq.true&select=credential_key,credential_value,service_name&order=service_name.asc&limit=150");
+      const data = await supa("credentials", "is_active=eq.true&select=credential_key,credential_value,service_name&order=service_name.asc&limit=50");
       if (data && data.length > 0) {
         const mapped = data.map(c => ({
           service: c.service_name || c.credential_key.split("_")[0],
@@ -1073,297 +954,34 @@ function DirectoryScreen() {
         }));
         setCreds([...mapped, ...CREDENTIALS]);
       }
-      // Load GHL locations
-      const locs = await supa("ghl_locations", "select=brand_key,location_name,location_id,pit_token&order=location_name.asc");
-      if (locs) setGhlLocs(locs);
       setLoading(false);
     })();
   }, []);
 
-  // Lazy-load Dolo contacts when tab opens
-  useEffect(() => {
-    if (tab === "dolo" && doloContacts.length === 0) {
-      (async () => {
-        const d = await supa("dolo_directory", "select=id,full_name,category,relationship_tier,city,phone,email,instagram,sub_category&order=full_name.asc&limit=500");
-        if (d) setDoloContacts(d);
-      })();
-    }
-  }, [tab]);
-
-  // Dedup credentials
-  const allCreds = creds.filter(c => !filter || c.service.toLowerCase().includes(filter.toLowerCase()) || c.key.toLowerCase().includes(filter.toLowerCase()));
+  const allCreds = creds.filter(c =>
+    !filter || c.service.toLowerCase().includes(filter.toLowerCase()) || c.key.toLowerCase().includes(filter.toLowerCase())
+  );
+  // Deduplicate by key
   const seen = new Set();
   const unique = allCreds.filter(c => { const k = c.key + c.value; if (seen.has(k)) return false; seen.add(k); return true; });
 
-  // Dolo filtering
-  const filteredDolo = doloContacts.filter(c => {
-    const nameMatch = !doloFilter || (c.full_name || "").toLowerCase().includes(doloFilter.toLowerCase()) || (c.instagram || "").toLowerCase().includes(doloFilter.toLowerCase());
-    const tierMatch = doloTier === "all" || c.relationship_tier === doloTier;
-    const catMatch = doloCat === "all" || c.category === doloCat;
-    return nameMatch && tierMatch && catMatch;
-  });
-
-  const doloStats = {
-    total: doloContacts.length || 2144,
-    phones: doloContacts.filter(c => c.phone).length,
-    emails: doloContacts.filter(c => c.email).length,
-    igs: doloContacts.filter(c => c.instagram).length,
-  };
-
-  const GHL_LOCS = ghlLocs.length > 0 ? ghlLocs : [
-    { brand_key: "huglife", location_name: "HUGLIFE", location_id: "tGbC7nJkOkH5G3RiyjKR" },
-    { brand_key: "casper_group", location_name: "CASPER GROUP", location_id: "IPP6mHiRgKtIAHOOueHS" },
-    { brand_key: "dr_dorsey", location_name: "DR DORSEY", location_id: "FTJ4gOGLsZazXuve0YSY" },
-    { brand_key: "mind_studio", location_name: "MIND STUDIO", location_id: "6h8pNMs7vPOnStVlvGvJ" },
-  ];
-
-  const WEBSITES = [
-    { name: "Dr. Dorsey", url: "doctordorsey.com", repo: "dolodorsey/dr-dorsey-website", status: "live" },
-    { name: "HugLife", url: "huglife.vercel.app", repo: "dolodorsey/huglife", status: "live" },
-    { name: "NOIR", url: "noir-series.vercel.app", repo: "dolodorsey/noir-event", status: "live" },
-    { name: "Casper Group", url: "casper-group.vercel.app", repo: "dolodorsey/casper-group", status: "live" },
-    { name: "Forever Futbol", url: "forever-futbol.vercel.app", repo: "dolodorsey/forever-futbol", status: "live" },
-    { name: "Infinity Water", url: "infinity-water.vercel.app", repo: "dolodorsey/infinity-water", status: "live" },
-    { name: "Pronto Energy", url: "pronto-energy.vercel.app", repo: "dolodorsey/pronto-energy", status: "live" },
-    { name: "Mind Studio", url: "mind-studio-legal.vercel.app", repo: "dolodorsey/mind-studio-legal", status: "live" },
-    { name: "Good Times", url: "good-times-app.vercel.app", repo: "dolodorsey/good-times-app", status: "live" },
-    { name: "WRST BHVR", url: "wrst-bhvr-event.vercel.app", repo: "dolodorsey/wrst-bhvr-event", status: "live" },
-    { name: "REMIX", url: "remix-event.vercel.app", repo: "dolodorsey/remix-event", status: "live" },
-    { name: "Taste of Art", url: "taste-of-art-event.vercel.app", repo: "dolodorsey/taste-of-art-event", status: "live" },
-    { name: "Secret Society", url: "secret-society-event.vercel.app", repo: "dolodorsey/secret-society-event", status: "live" },
-    { name: "The Kulture", url: "the-kulture-event.vercel.app", repo: "dolodorsey/the-kulture-event", status: "live" },
-    { name: "Soul Sessions", url: "soul-sessions-event.vercel.app", repo: "dolodorsey/soul-sessions-event", status: "live" },
-    { name: "Underground King", url: "underground-king-event.vercel.app", repo: "dolodorsey/underground-king-event", status: "live" },
-    { name: "Cravings", url: "cravings-event.vercel.app", repo: "dolodorsey/cravings-event", status: "live" },
-    { name: "Angel Wings", url: "angel-wings-brand.vercel.app", repo: "dolodorsey/angel-wings-brand", status: "live" },
-    { name: "Espresso Co.", url: "espresso-co-brand.vercel.app", repo: "dolodorsey/espresso-co-brand", status: "live" },
-    { name: "MAGA (Shopify)", url: "makeatlantagreatagain.myshopify.com", repo: "dolodorsey/maga-shopify", status: "live" },
-    { name: "Stush (Shopify)", url: "stushusa.myshopify.com", repo: "dolodorsey/stush-shopify", status: "live" },
-    { name: "Bodega (Shopify)", url: "bodegabodegbodega.myshopify.com", repo: "dolodorsey/bodega-shopify", status: "live" },
-    { name: "KHG Dashboard", url: "khg-dashboard.vercel.app", repo: "dolodorsey/khg-dashboard", status: "live" },
-    { name: "KHG Mobile", url: "khg-mcp-mobile.vercel.app", repo: "dolodorsey/khg-mcp-mobile", status: "live" },
-  ];
-
-  const SKILLS = [
-    { name: "kollective-sop", desc: "Enterprise operating manual — 34 depts, 198 agents, 50+ brands", ver: "5.0", status: "active" },
-    { name: "superpowers", desc: "Auto-enforced excellence protocol — 12 superpowers", ver: "2.0", status: "active" },
-    { name: "khg-automation-ops", desc: "n8n, Supabase, GHL, MCP automation patterns", ver: "1.0", status: "active" },
-    { name: "khg-creative-ops", desc: "Multi-step project management, queue, approvals", ver: "1.0", status: "active" },
-    { name: "khg-brand-voice", desc: "Voice DNA per brand — copy, captions, emails, pitches", ver: "1.0", status: "active" },
-    { name: "khg-website-build-system", desc: "10-agent website production — Next.js + Vercel + GSAP", ver: "1.0", status: "active" },
-    { name: "khg-design-system", desc: "50+ brands design intelligence — FF V3 quality bar", ver: "1.0", status: "active" },
-    { name: "nmcp", desc: "Node Mastery — 1,000+ n8n nodes, production workflows", ver: "1.0", status: "active" },
-    { name: "uiux-pro-max", desc: "50 UI styles, 729 palettes, anti-generic-AI rules", ver: "1.0", status: "active" },
-    { name: "gsd", desc: "Goal → Execution sprint engine", ver: "1.0", status: "active" },
-    { name: "khg-flow-sprint", desc: "Timed sprint phases, checkpoints, zero drift", ver: "1.0", status: "active" },
-    { name: "obsidian", desc: "Second brain — knowledge capture, Zettelkasten", ver: "1.0", status: "active" },
-    { name: "clawed-memory", desc: "Persistent memory across sessions", ver: "1.0", status: "active" },
-    { name: "ruflo-orchestration", desc: "Multi-agent swarm orchestration — 87 MCP tools", ver: "1.0", status: "active" },
-    { name: "skill-creator", desc: "Create, edit, benchmark skills", ver: "1.0", status: "active" },
-    { name: "frontend-design", desc: "Production-grade frontend interfaces", ver: "1.0", status: "public" },
-    { name: "docx", desc: "Word document creation and manipulation", ver: "1.0", status: "public" },
-    { name: "pptx", desc: "PowerPoint creation and editing", ver: "1.0", status: "public" },
-    { name: "xlsx", desc: "Spreadsheet creation and manipulation", ver: "1.0", status: "public" },
-    { name: "pdf", desc: "PDF creation, merge, split, watermark", ver: "1.0", status: "public" },
-  ];
-
-  const SHOPIFY = [
-    { store: "MAGA", domain: "makeatlantagreatagain.myshopify.com", products: 92, collections: 6, status: "active" },
-    { store: "Stush", domain: "stushusa.myshopify.com", products: 0, collections: 0, status: "setup" },
-    { store: "Bodega", domain: "bodegabodegbodega.myshopify.com", products: 0, collections: 0, status: "setup" },
-    { store: "Her Halloween", domain: "herhalloween.myshopify.com", products: 0, collections: 0, status: "setup" },
-  ];
-
-  const TABS = [
-    { id: "credentials", label: "Credentials", count: unique.length },
-    { id: "dolo", label: "DOLO Directory", count: doloStats.total },
-    { id: "ghl", label: "GHL Locations", count: GHL_LOCS.length },
-    { id: "websites", label: "Websites", count: WEBSITES.length },
-    { id: "skills", label: "Skills", count: SKILLS.length },
-    { id: "shopify", label: "Shopify", count: SHOPIFY.length },
-  ];
-
-  const tierColor = (t) => t === "DOLO" ? "#C9A96E" : t === "INDUSTRY" ? "#3498DB" : "#2ECC71";
-
   return (
     <div>
-      {/* Tab bar */}
-      <div className="pill-tabs" style={{flexWrap:"wrap",marginBottom:12}}>
-        {TABS.map(t => (
-          <button key={t.id} className={`pill-tab ${tab === t.id ? "active" : ""}`} onClick={() => setTab(t.id)}>
-            {t.label} <span style={{opacity:0.6,marginLeft:4,fontSize:10}}>({t.count})</span>
-          </button>
+      <input className="input" placeholder="Filter credentials..." value={filter} onChange={e => setFilter(e.target.value)} style={{ marginBottom: 16 }} />
+      {loading && <div style={{fontSize:11,color:"var(--text3)",marginBottom:8}}>Loading from Supabase credentials table...</div>}
+      <div style={{fontSize:11,color:"var(--text3)",marginBottom:12}}>{unique.length} credentials found</div>
+      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+        {unique.map((c, i) => (
+          <div key={i} className="card" style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 14px" }}>
+            <span className="badge badge-blue" style={{ minWidth: 80, justifyContent: "center" }}>{c.service}</span>
+            <span style={{ fontSize: 12, color: "var(--text2)", width: 140, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{c.key}</span>
+            <code className="mono" style={{ fontSize: 11, color: "var(--accent)", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{c.value}</code>
+            <span className="copy-btn" onClick={() => copyToClipboard(c.value, setCopied)}>
+              {copied === c.value ? <Icon name="check" size={14} /> : <Icon name="copy" size={14} />}
+            </span>
+          </div>
         ))}
       </div>
-
-      {/* ── CREDENTIALS TAB ── */}
-      {tab === "credentials" && (
-        <div>
-          <input className="input" placeholder="Filter credentials..." value={filter} onChange={e => setFilter(e.target.value)} style={{ marginBottom: 12 }} />
-          {loading && <div style={{fontSize:11,color:"var(--text3)",marginBottom:8}}>Loading from Supabase...</div>}
-          <div style={{fontSize:11,color:"var(--text3)",marginBottom:12}}>{unique.length} credentials</div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            {unique.slice(0, 80).map((c, i) => (
-              <div key={i} className="card" style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 12px" }}>
-                <span className="badge badge-blue" style={{ minWidth: 72, justifyContent: "center", fontSize: 9 }}>{c.service}</span>
-                <span style={{ fontSize: 11, color: "var(--text2)", width: 130, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{c.key}</span>
-                <code className="mono" style={{ fontSize: 10, color: "var(--accent)", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{c.value}</code>
-                <span className="copy-btn" onClick={() => copyToClipboard(c.value, setCopied)}>
-                  {copied === c.value ? <Icon name="check" size={14} /> : <Icon name="copy" size={14} />}
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* ── DOLO DIRECTORY TAB ── */}
-      {tab === "dolo" && (
-        <div>
-          {/* Stats */}
-          <div className="grid-4" style={{marginBottom:12}}>
-            <div className="card stat-card"><div className="stat-val" style={{color:"var(--accent)"}}>{doloStats.total}</div><div className="stat-label">Contacts</div></div>
-            <div className="card stat-card"><div className="stat-val" style={{color:"var(--green)"}}>{doloStats.phones || 1039}</div><div className="stat-label">Phones</div></div>
-            <div className="card stat-card"><div className="stat-val" style={{color:"var(--blue)"}}>{doloStats.igs || 533}</div><div className="stat-label">Instagram</div></div>
-            <div className="card stat-card"><div className="stat-val" style={{color:"var(--yellow)"}}>{doloStats.emails || 152}</div><div className="stat-label">Emails</div></div>
-          </div>
-          {/* Filters */}
-          <input className="input" placeholder="Search by name or @handle..." value={doloFilter} onChange={e => setDoloFilter(e.target.value)} style={{ marginBottom: 8 }} />
-          <div className="pill-tabs" style={{flexWrap:"wrap",marginBottom:8}}>
-            {["all","DOLO","INDUSTRY","NETWORK"].map(t => (
-              <button key={t} className={`pill-tab ${doloTier === t ? "active" : ""}`}
-                style={doloTier !== "all" && doloTier === t ? { background: tierColor(t), borderColor: tierColor(t), color: "#000" } : {}}
-                onClick={() => setDoloTier(t)}>{t === "all" ? "All Tiers" : t} {t !== "all" && <span style={{opacity:0.6,fontSize:10}}>({t === "DOLO" ? 350 : t === "INDUSTRY" ? 814 : 980})</span>}</button>
-            ))}
-          </div>
-          <div className="pill-tabs" style={{flexWrap:"wrap",marginBottom:12}}>
-            {["all","personal","dj","artist","athlete","influencer","promoter","venue_contact","celebrity","business_associate"].map(c => (
-              <button key={c} className={`pill-tab ${doloCat === c ? "active" : ""}`} onClick={() => setDoloCat(c)}>{c === "all" ? "All Types" : c.replace("_"," ")}</button>
-            ))}
-          </div>
-          <div style={{fontSize:11,color:"var(--text3)",marginBottom:8}}>{filteredDolo.length} contacts {doloContacts.length === 0 && "(loading...)"}</div>
-          {/* Contact list */}
-          <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-            {filteredDolo.slice(0, 100).map((c) => (
-              <div key={c.id} className="card" style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 12px" }}>
-                <div style={{ width: 32, height: 32, borderRadius: "50%", background: `${tierColor(c.relationship_tier)}18`, display:"flex", alignItems:"center", justifyContent:"center", fontSize: 12, fontWeight: 700, color: tierColor(c.relationship_tier), flexShrink: 0 }}>
-                  {(c.full_name || "?")[0]}
-                </div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 13, fontWeight: 500, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{c.full_name}</div>
-                  <div style={{ fontSize: 10, color: "var(--text3)", display: "flex", gap: 8 }}>
-                    {c.city && <span>{c.city}</span>}
-                    {c.category && <span style={{color: tierColor(c.relationship_tier)}}>{c.category.replace("_"," ")}</span>}
-                  </div>
-                </div>
-                <span className="badge" style={{ background: `${tierColor(c.relationship_tier)}18`, color: tierColor(c.relationship_tier), fontSize: 9 }}>{c.relationship_tier}</span>
-                {c.phone && <span className="mono" style={{ fontSize: 10, color: "var(--green)", cursor: "pointer" }} onClick={() => copyToClipboard(c.phone, setCopied)}>{c.phone.slice(0,6)}...</span>}
-                {c.instagram && <span style={{ fontSize: 10, color: "var(--blue)", cursor: "pointer" }} onClick={() => copyToClipboard(c.instagram, setCopied)}>@{(c.instagram||"").replace("@","").slice(0,12)}</span>}
-                {c.email && <span className="copy-btn" onClick={() => copyToClipboard(c.email, setCopied)}><Icon name="mail" size={12} /></span>}
-                {c.phone && <span className="copy-btn" onClick={() => copyToClipboard(c.phone, setCopied)}>{copied === c.phone ? <Icon name="check" size={12} /> : <Icon name="copy" size={12} />}</span>}
-              </div>
-            ))}
-          </div>
-          {filteredDolo.length > 100 && <div style={{fontSize:11,color:"var(--text3)",textAlign:"center",padding:12}}>Showing 100 of {filteredDolo.length} — refine your search</div>}
-        </div>
-      )}
-
-      {/* ── GHL LOCATIONS TAB ── */}
-      {tab === "ghl" && (
-        <div>
-          <div style={{fontSize:11,color:"var(--text3)",marginBottom:8}}>22 GHL subaccounts — all with PIT tokens. API: services.leadconnectorhq.com</div>
-          <div className="grid-3" style={{marginBottom:16}}>
-            <div className="card stat-card"><div className="stat-val" style={{color:"var(--accent)"}}>{GHL_LOCS.length}</div><div className="stat-label">Locations</div></div>
-            <div className="card stat-card"><div className="stat-val" style={{color:"var(--green)"}}>{GHL_LOCS.filter(l=>l.pit_token).length || 22}</div><div className="stat-label">PIT Active</div></div>
-            <div className="card stat-card"><div className="stat-val" style={{color:"var(--blue)"}}>90K+</div><div className="stat-label">Total Contacts</div></div>
-          </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-            {GHL_LOCS.map((l, i) => (
-              <div key={i} className="card" style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px" }}>
-                <div style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--green)", boxShadow: "0 0 6px var(--green)", flexShrink: 0 }} />
-                <div style={{ minWidth: 140 }}>
-                  <div style={{ fontSize: 13, fontWeight: 600 }}>{l.location_name}</div>
-                  <div className="mono" style={{ fontSize: 10, color: "var(--text3)" }}>{l.brand_key}</div>
-                </div>
-                <code className="mono" style={{ fontSize: 10, color: "var(--accent)", flex: 1 }}>{l.location_id}</code>
-                <span className="badge badge-green" style={{fontSize:9}}>PIT</span>
-                <span className="copy-btn" onClick={() => copyToClipboard(l.location_id, setCopied)}>
-                  {copied === l.location_id ? <Icon name="check" size={14} /> : <Icon name="copy" size={14} />}
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* ── WEBSITES TAB ── */}
-      {tab === "websites" && (
-        <div>
-          <div style={{fontSize:11,color:"var(--text3)",marginBottom:12}}>{WEBSITES.length} deployed sites — Vercel team: team_TbL7iJTpBTe3gF5TwBLAzSbV</div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-            {WEBSITES.map((w, i) => (
-              <div key={i} className="card" style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 12px" }}>
-                <div style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--green)", flexShrink: 0 }} />
-                <span style={{ fontSize: 13, fontWeight: 500, minWidth: 120 }}>{w.name}</span>
-                <a href={`https://${w.url}`} target="_blank" rel="noreferrer" className="mono" style={{ fontSize: 11, color: "var(--accent)", flex: 1, textDecoration: "none" }}>{w.url}</a>
-                <code className="mono" style={{ fontSize: 10, color: "var(--text3)" }}>{w.repo}</code>
-                <span className="badge badge-green" style={{fontSize:9}}>{w.status}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* ── SKILLS TAB ── */}
-      {tab === "skills" && (
-        <div>
-          <div style={{fontSize:11,color:"var(--text3)",marginBottom:12}}>{SKILLS.length} skills loaded — {SKILLS.filter(s=>s.status==="active").length} custom + {SKILLS.filter(s=>s.status==="public").length} public</div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-            {SKILLS.map((s, i) => (
-              <div key={i} className="card" style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px" }}>
-                <Icon name="zap" size={14} />
-                <div style={{ minWidth: 170 }}>
-                  <code className="mono" style={{ fontSize: 12, color: "var(--accent)", fontWeight: 500 }}>{s.name}</code>
-                  <div style={{ fontSize: 10, color: "var(--text3)" }}>v{s.ver}</div>
-                </div>
-                <span style={{ fontSize: 11, color: "var(--text2)", flex: 1 }}>{s.desc}</span>
-                <span className={`badge ${s.status === "active" ? "badge-orange" : "badge-blue"}`} style={{fontSize:9}}>{s.status === "active" ? "custom" : "public"}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* ── SHOPIFY TAB ── */}
-      {tab === "shopify" && (
-        <div>
-          <div style={{fontSize:11,color:"var(--text3)",marginBottom:12}}>4 Shopify stores connected — Shopify MCP active since Mar 25</div>
-          <div className="grid-2">
-            {SHOPIFY.map((s, i) => (
-              <div key={i} className="card">
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-                  <div style={{ fontSize: 15, fontWeight: 600 }}>{s.store}</div>
-                  <span className={`badge ${s.status === "active" ? "badge-green" : "badge-yellow"}`} style={{fontSize:9}}>{s.status}</span>
-                </div>
-                <a href={`https://${s.domain}`} target="_blank" rel="noreferrer" className="mono" style={{ fontSize: 11, color: "var(--accent)", display: "block", marginBottom: 8, textDecoration: "none" }}>{s.domain}</a>
-                <div style={{ display: "flex", gap: 12, fontSize: 11, color: "var(--text3)" }}>
-                  <span><b style={{color:"var(--text2)"}}>{s.products}</b> products</span>
-                  <span><b style={{color:"var(--text2)"}}>{s.collections}</b> collections</span>
-                </div>
-                {s.store === "MAGA" && <div style={{ marginTop: 8, fontSize: 10, color: "var(--text3)" }}>POD: CJ Dropshipping + Gelato + Apliiq · ColorCycleCard deployed</div>}
-              </div>
-            ))}
-          </div>
-          <div className="card" style={{marginTop:12}}>
-            <div className="card-title" style={{marginBottom:8}}>POD / Dropship Integrations</div>
-            <div style={{display:"flex",flexDirection:"column",gap:4,fontSize:12,color:"var(--text2)"}}>
-              <div style={{display:"flex",gap:8,alignItems:"center"}}><span className="badge badge-green" style={{fontSize:9}}>API</span> CJ Dropshipping — CJ4926782@api format</div>
-              <div style={{display:"flex",gap:8,alignItems:"center"}}><span className="badge badge-green" style={{fontSize:9}}>API</span> Gelato — order.gelatoapis.com (X-API-KEY header)</div>
-              <div style={{display:"flex",gap:8,alignItems:"center"}}><span className="badge badge-yellow" style={{fontSize:9}}>MANUAL</span> Apliiq — requires direct contact</div>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
@@ -2620,7 +2238,7 @@ export default function KHGDashboard() {
     tasks: "Task Queue", social: "Social Media", outreach: "Outreach Engine",
     leads: "Lead Engine", posts: "Post Review", dms: "Instagram DMs",
     email: "Email Hub", texts: "Text Scheduler", outputs: "Outputs", team: "Team Directory",
-    system: "System Health", directory: "Enterprise Directory", settings: "Settings"
+    system: "System Health", directory: "Credentials Directory", settings: "Settings"
   };
 
   const renderScreen = () => {
