@@ -396,32 +396,92 @@ function OutreachScreen({ bk }) {
 }
 
 function SocialScreen({ bk }) {
-  const [sched, setSched] = useState([]); const [loading, setLoading] = useState(true);
-  useEffect(() => { (async () => { const bf=bk==="all"?"":"&brand_key=eq."+bk; const d=await supa("weekly_content_schedule",`select=*&is_active=eq.true${bf}&order=brand_key,day_of_week&limit=50`); setSched(d||[]); setLoading(false); })(); }, [bk]);
-  const days = ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"];
-  const byDay = days.map(d=>({day:d,posts:sched.filter(s=>s.day_of_week===d)}));
+  const [posts, setPosts] = useState([]); const [loading, setLoading] = useState(true);
+  const [tab, setTab] = useState("queued"); const [composing, setComposing] = useState(false);
+  const [preview, setPreview] = useState(null);
+  const [np, setNp] = useState({brand:bk==="all"?"huglife":bk, caption:"", platform:"instagram", type:"IMAGE", image:"", scheduledFor:""});
+  useEffect(() => { (async () => {
+    const bf = bk==="all"?"":"&brand_key=eq."+bk;
+    const d = await supa("ghl_social_posting_queue", `select=*${bf}&order=scheduled_for.desc.nullslast&limit=60`);
+    setPosts(d||[]); setLoading(false);
+  })(); }, [bk]);
+  const queued = posts.filter(p=>p.status==="queued"); const posted = posts.filter(p=>p.status==="posted"||p.status==="sent");
+  const approvePost = async (id) => { await supaUpdate("ghl_social_posting_queue",`id=eq.${id}`,{status:"approved"}); setPosts(p=>p.map(x=>x.id===id?{...x,status:"approved"}:x)); };
+  const rejectPost = async (id) => { await supaUpdate("ghl_social_posting_queue",`id=eq.${id}`,{status:"rejected"}); setPosts(p=>p.map(x=>x.id===id?{...x,status:"rejected"}:x)); };
+  const createPost = async () => {
+    const b = BRANDS[np.brand]||{}; 
+    await supaInsert("ghl_social_posting_queue", {brand_key:np.brand, ghl_location_id:b.ghl||"", platform:np.platform, content_type:np.type, caption:np.caption, image_url:np.image, scheduled_for:np.scheduledFor||null, status:"queued", pre_engagement_complete:false});
+    setNp({brand:np.brand,caption:"",platform:"instagram",type:"IMAGE",image:"",scheduledFor:""}); setComposing(false);
+    const d = await supa("ghl_social_posting_queue", `select=*&order=scheduled_for.desc.nullslast&limit=60`); setPosts(d||[]);
+  };
   return (<div>
     <div className="row fi" style={{justifyContent:"space-between",marginBottom:14}}>
-      <div><div style={{fontSize:16,fontWeight:700}}>Social Manager</div><div style={{fontSize:11,color:"var(--tx3)"}}>{sched.length} active slots</div></div>
+      <div><div style={{fontSize:16,fontWeight:700}}>Social Posts</div>
+        <div style={{fontSize:11,color:"var(--tx3)"}}>{posts.length} total · {queued.length} queued · {posted.length} posted</div></div>
       <div className="row" style={{gap:6}}>
-        <button className="btn btn-p btn-sm" onClick={()=>triggerN8n(WF.dailyPoster,{action:"run_now"})}><Ic d={P.zap} s={12} /> Run Poster</button>
+        <button className="btn btn-p" onClick={()=>setComposing(!composing)}><Ic d={P.plus} s={14} /> New Post</button>
+        <button className="btn btn-sm" onClick={()=>triggerN8n(WF.dailyPoster,{action:"run_now"})}><Ic d={P.zap} s={12} /> Post Now</button>
         <button className="btn btn-sm" onClick={()=>triggerN8n(WF.replenish,{action:"replenish"})}><Ic d={P.refresh} s={12} /> Replenish</button>
       </div>
     </div>
-    {loading ? <div className="card" style={{textAlign:"center",padding:32}}>Loading...</div> :
-    <div style={{display:"flex",flexDirection:"column",gap:10}}>{byDay.filter(d=>d.posts.length>0).map((d,di) => (
-      <div key={di} className="card fi">
-        <div className="row" style={{justifyContent:"space-between",marginBottom:8}}><div style={{fontSize:13,fontWeight:600}}>{d.day}</div><span className="badge bg-x">{d.posts.length} posts</span></div>
-        <div style={{display:"flex",flexDirection:"column",gap:4}}>{d.posts.map((p,pi) => { const b=BRANDS[p.brand_key]||{}; return (
-          <div key={pi} className="row" style={{padding:"6px 0",borderBottom:"1px solid var(--bd)",gap:8}}>
-            <span className="mono" style={{fontSize:10,color:"var(--tx3)",width:40}}>{p.post_time}</span>
-            <span className="dot" style={{background:b.color||"#888"}} /><span style={{fontSize:11,fontWeight:500,width:70}} className="trunc">{b.short||p.brand_key}</span>
-            <span className="badge bg-x" style={{fontSize:8}}>{p.content_pillar}</span><span className="badge bg-b" style={{fontSize:8}}>{p.visual_type}</span>
-            <span style={{flex:1,fontSize:11,color:"var(--tx2)"}} className="trunc">{p.caption_template}</span>
-          </div>);
-        })}</div>
+    {composing && <div className="card fi" style={{marginBottom:14,borderColor:"var(--ac)"}}>
+      <div className="ct">Compose Post</div>
+      <div className="g3" style={{gap:10}}>
+        <div><label style={{fontSize:10,color:"var(--tx3)",display:"block",marginBottom:4}}>Brand</label>
+          <select className="inp" value={np.brand} onChange={e=>setNp({...np,brand:e.target.value})}>{Object.entries(BRANDS).map(([k,b])=><option key={k} value={k}>{b.name}</option>)}</select></div>
+        <div><label style={{fontSize:10,color:"var(--tx3)",display:"block",marginBottom:4}}>Platform</label>
+          <select className="inp" value={np.platform} onChange={e=>setNp({...np,platform:e.target.value})}>{["instagram","facebook","tiktok"].map(p=><option key={p}>{p}</option>)}</select></div>
+        <div><label style={{fontSize:10,color:"var(--tx3)",display:"block",marginBottom:4}}>Schedule</label>
+          <input type="datetime-local" className="inp" value={np.scheduledFor} onChange={e=>setNp({...np,scheduledFor:e.target.value})} /></div>
       </div>
-    ))}</div>}
+      <div style={{marginTop:10}}><label style={{fontSize:10,color:"var(--tx3)",display:"block",marginBottom:4}}>Caption</label>
+        <textarea className="inp" value={np.caption} onChange={e=>setNp({...np,caption:e.target.value})} placeholder="Write your caption..." style={{minHeight:100,resize:"vertical"}} /></div>
+      <div style={{marginTop:10}}><label style={{fontSize:10,color:"var(--tx3)",display:"block",marginBottom:4}}>Image URL</label>
+        <input className="inp" value={np.image} onChange={e=>setNp({...np,image:e.target.value})} placeholder="https://..." /></div>
+      {np.image && <div style={{marginTop:8,borderRadius:8,overflow:"hidden",maxWidth:200}}><img src={np.image} alt="" style={{width:"100%",display:"block"}} onError={e=>{e.target.style.display="none"}} /></div>}
+      <div className="row" style={{gap:8,marginTop:10}}>
+        <button className="btn btn-p" onClick={createPost}>Queue Post</button>
+        <button className="btn" onClick={()=>setComposing(false)}>Cancel</button>
+      </div>
+    </div>}
+    <div className="pills fi"><button className={`pill ${tab==="queued"?"act":""}`} onClick={()=>setTab("queued")}>Queued ({queued.length})</button>
+      <button className={`pill ${tab==="all"?"act":""}`} onClick={()=>setTab("all")}>All ({posts.length})</button>
+      <button className={`pill ${tab==="posted"?"act":""}`} onClick={()=>setTab("posted")}>Posted ({posted.length})</button></div>
+    {loading ? <div className="card" style={{textAlign:"center",padding:32}}>Loading posts...</div> :
+    <div style={{display:"flex",flexDirection:"column",gap:8}}>
+      {(tab==="queued"?queued:tab==="posted"?posted:posts).map((p,i) => { const b=BRANDS[p.brand_key]||{}; return (
+        <div key={i} className="card fi" style={{borderLeft:`3px solid ${b.color||"var(--bd)"}`}}>
+          <div className="row" style={{gap:14}}>
+            {p.image_url && <div style={{width:64,height:64,borderRadius:8,overflow:"hidden",flexShrink:0,background:"var(--sf2)"}}>
+              <img src={p.image_url} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}} onError={e=>{e.target.style.display="none"}} /></div>}
+            <div style={{flex:1}}>
+              <div className="row" style={{justifyContent:"space-between",marginBottom:4}}>
+                <div className="row" style={{gap:6}}>
+                  <span className="badge" style={{background:`${b.color||"#888"}18`,color:b.color||"#888"}}>{b.short||p.brand_key}</span>
+                  <span className="badge bg-b">{p.platform}</span>
+                  <span className="badge bg-x">{p.content_type}</span>
+                  {p.pre_engagement_complete && <span className="badge bg-g">engaged</span>}
+                </div>
+                <span className={`badge ${p.status==="queued"?"bg-y":p.status==="posted"||p.status==="sent"?"bg-g":p.status==="approved"?"bg-b":"bg-r"}`}>{p.status}</span>
+              </div>
+              <div style={{fontSize:12,color:"var(--tx2)",lineHeight:1.5,whiteSpace:"pre-wrap",maxHeight:80,overflow:"hidden"}}>{p.caption}</div>
+              <div className="row" style={{gap:6,marginTop:6}}>
+                {p.scheduled_for && <span className="mono" style={{fontSize:10,color:"var(--tx3)"}}>{new Date(p.scheduled_for).toLocaleString("en-US",{month:"short",day:"numeric",hour:"numeric",minute:"2-digit"})}</span>}
+                {p.status==="queued" && <><button className="btn btn-g btn-sm" onClick={()=>approvePost(p.id)}><Ic d={P.check} s={11} c="#fff" /> Approve</button>
+                  <button className="btn btn-d btn-sm" onClick={()=>rejectPost(p.id)}><Ic d={P.x} s={11} c="#fff" /> Reject</button></>}
+                <button className="btn btn-sm" onClick={()=>setPreview(preview===i?null:i)}><Ic d={P.eye} s={11} /> {preview===i?"Close":"Preview"}</button>
+              </div>
+            </div>
+          </div>
+          {preview===i && <div style={{marginTop:12,padding:12,background:"var(--sf2)",borderRadius:8}}>
+            <div style={{fontSize:10,fontWeight:600,color:"var(--tx3)",textTransform:"uppercase",letterSpacing:".1em",marginBottom:6}}>Full Preview</div>
+            {p.image_url && <img src={p.image_url} alt="" style={{maxWidth:300,borderRadius:8,marginBottom:8}} onError={e=>{e.target.style.display="none"}} />}
+            <div style={{fontSize:13,lineHeight:1.6,whiteSpace:"pre-wrap"}}>{p.caption}</div>
+            <div style={{marginTop:8,fontSize:10,color:"var(--tx3)"}}>Platform: {p.platform} · Type: {p.content_type} · Brand: {b.name}{p.scheduled_for ? ` · Scheduled: ${new Date(p.scheduled_for).toLocaleString()}` : ""}</div>
+          </div>}
+        </div>);
+      })}
+    </div>}
   </div>);
 }
 
@@ -505,33 +565,166 @@ function DMScreen({ bk }) {
 }
 
 function EmailScreen({ bk }) {
+  const [emails, setEmails] = useState([]); const [loading, setLoading] = useState(true);
   const [composing, setComposing] = useState(false); const [sending, setSending] = useState(false);
-  const [email, setEmail] = useState({to:"",subject:"",body:""});
+  const [preview, setPreview] = useState(null);
+  const [email, setEmail] = useState({to:"",subject:"",body:"",brand:bk==="all"?"huglife":bk});
   const mbs = [{dest:"HugLife / Events",email:"justhuglife.forever@gmail.com",cc:"dolodorsey@gmail.com"},{dest:"Casper Group",email:"info@caspergroupworldwide.com"},{dest:"Umbrella Group",email:"theumbrellagroupworldwide@gmail.com"},{dest:"Forever Futbol",email:"foreverfutbolmuseum@gmail.com"},{dest:"Dr. Dorsey",email:"dolodorsey@gmail.com"},{dest:"Business",email:"thedoctordorsey@gmail.com"},{dest:"Ops",email:"drdorseyassistant@gmail.com"},{dest:"Company-wide",email:"thekollectivehospitality@gmail.com"}];
   const [sel, setSel] = useState(0);
-  const sendEmail = async () => { setSending(true); await triggerN8n(WF.emailThrottle,{action:"send",from:mbs[sel].email,to:email.to,subject:email.subject,body:email.body,brand:bk}); setEmail({to:"",subject:"",body:""}); setComposing(false); setSending(false); };
-  return (<div><div className="g2 fi">
-    <div className="card" style={{maxHeight:500,overflowY:"auto"}}><div className="ct">Mailboxes</div>
-      {mbs.map((m,i)=><div key={i} className="ptr" style={{padding:"10px 8px",borderBottom:"1px solid var(--bd)",background:sel===i?"var(--acBg)":"transparent",borderRadius:4}} onClick={()=>setSel(i)}>
-        <div style={{fontSize:12,fontWeight:sel===i?600:400,color:sel===i?"var(--ac)":"var(--tx)"}}>{m.dest}</div>
-        <div className="mono" style={{fontSize:10,color:"var(--tx3)"}}>{m.email}</div>
-      </div>)}
+  useEffect(() => { (async () => {
+    const bf = bk==="all"?"":"&brand_key=eq."+bk;
+    const d = await supa("email_approval_queue", `select=*${bf}&order=created_at.desc&limit=30`);
+    setEmails(d||[]); setLoading(false);
+  })(); }, [bk]);
+  const approveEmail = async (id) => { await supaUpdate("email_approval_queue",`id=eq.${id}`,{approved:true,approved_at:new Date().toISOString(),approved_by:"dr_dorsey"}); setEmails(p=>p.map(e=>e.id===id?{...e,approved:true}:e)); };
+  const sendTest = async (id) => { await supaUpdate("email_approval_queue",`id=eq.${id}`,{test_email_sent:true,test_email_sent_at:new Date().toISOString()}); setEmails(p=>p.map(e=>e.id===id?{...e,test_email_sent:true}:e)); await triggerN8n(WF.emailThrottle,{action:"send_test",email_id:id,to:"thedoctordorsey@gmail.com"}); };
+  const sendEmail = async () => { setSending(true); await triggerN8n(WF.emailThrottle,{action:"send",from:mbs[sel].email,to:email.to,subject:email.subject,body:email.body,brand:email.brand}); setEmail({to:"",subject:"",body:"",brand:email.brand}); setComposing(false); setSending(false); };
+  const pending = emails.filter(e=>!e.approved);
+  return (<div>
+    <div className="row fi" style={{justifyContent:"space-between",marginBottom:14}}>
+      <div><div style={{fontSize:16,fontWeight:700}}>Email Hub</div>
+        <div style={{fontSize:11,color:"var(--tx3)"}}>{pending.length} pending approval · {emails.filter(e=>e.approved).length} approved</div></div>
+      <button className="btn btn-p" onClick={()=>setComposing(!composing)}><Ic d={P.plus} s={14} /> Compose</button>
     </div>
-    <div className="card"><div className="ct">{mbs[sel].dest}</div><div className="mono" style={{fontSize:11,color:"var(--ac)",marginBottom:12}}>{mbs[sel].email}</div>
-      {composing ? <div style={{display:"flex",flexDirection:"column",gap:8}}>
-        <input className="inp" placeholder="To: email@example.com" value={email.to} onChange={e=>setEmail({...email,to:e.target.value})} />
-        <input className="inp" placeholder="Subject" value={email.subject} onChange={e=>setEmail({...email,subject:e.target.value})} />
-        <textarea className="inp" placeholder="Body..." value={email.body} onChange={e=>setEmail({...email,body:e.target.value})} style={{minHeight:120,resize:"vertical"}} />
-        <div className="row" style={{gap:8}}><button className="btn btn-p" onClick={sendEmail} disabled={sending}>{sending?"Sending...":"Send"}</button><button className="btn" onClick={()=>setComposing(false)}>Cancel</button></div>
-      </div> : <div style={{display:"flex",flexDirection:"column",gap:8}}>
-        <button className="btn btn-p" style={{width:"100%"}} onClick={()=>setComposing(true)}><Ic d={P.mail} s={14} /> Compose</button>
-        <button className="btn" style={{width:"100%"}} onClick={()=>triggerN8n(WF.newsletter,{action:"send"})}><Ic d={P.send} s={14} /> Newsletter</button>
-        <button className="btn" style={{width:"100%"}} onClick={()=>triggerN8n(WF.prPitch,{action:"send"})}><Ic d={P.zap} s={14} /> PR Pitch</button>
-      </div>}
-      <div className="divider" /><div className="sec-t">Warmup Rules</div>
-      <div style={{fontSize:11,color:"var(--tx3)",lineHeight:1.6}}>Day 1-3: 25/day → Day 4-7: 50 → Day 8-14: 100 → Day 15-21: 250 → Day 22+: 500/day</div>
+    {composing && <div className="card fi" style={{marginBottom:14,borderColor:"var(--ac)"}}>
+      <div className="ct">Compose Email</div>
+      <div className="g2" style={{gap:10,marginBottom:10}}>
+        <div><label style={{fontSize:10,color:"var(--tx3)",display:"block",marginBottom:4}}>From Mailbox</label>
+          <select className="inp" value={sel} onChange={e=>setSel(+e.target.value)}>{mbs.map((m,i)=><option key={i} value={i}>{m.dest} ({m.email})</option>)}</select></div>
+        <div><label style={{fontSize:10,color:"var(--tx3)",display:"block",marginBottom:4}}>Brand</label>
+          <select className="inp" value={email.brand} onChange={e=>setEmail({...email,brand:e.target.value})}>{Object.entries(BRANDS).map(([k,b])=><option key={k} value={k}>{b.name}</option>)}</select></div>
+      </div>
+      <input className="inp" placeholder="To: email@example.com" value={email.to} onChange={e=>setEmail({...email,to:e.target.value})} style={{marginBottom:8}} />
+      <input className="inp" placeholder="Subject line" value={email.subject} onChange={e=>setEmail({...email,subject:e.target.value})} style={{marginBottom:8}} />
+      <textarea className="inp" placeholder="Email body..." value={email.body} onChange={e=>setEmail({...email,body:e.target.value})} style={{minHeight:120,resize:"vertical"}} />
+      <div className="row" style={{gap:8,marginTop:10}}>
+        <button className="btn btn-p" onClick={sendEmail} disabled={sending}>{sending?"Sending...":"Send"}</button>
+        <button className="btn" onClick={()=>setComposing(false)}>Cancel</button>
+      </div>
+    </div>}
+    <div className="sec-t">Approval Queue ({pending.length})</div>
+    {loading ? <div className="card" style={{textAlign:"center",padding:32}}>Loading...</div> :
+    <div style={{display:"flex",flexDirection:"column",gap:8}}>
+      {emails.map((e,i) => { const b = BRANDS[e.brand_key]||{}; return (
+        <div key={i} className="card fi" style={{borderLeft:`3px solid ${e.approved?"var(--gn)":"var(--yl)"}`}}>
+          <div className="row" style={{justifyContent:"space-between",marginBottom:6}}>
+            <div className="row" style={{gap:8}}>
+              <span className="badge" style={{background:`${b.color||"#888"}18`,color:b.color||"#888"}}>{b.short||e.brand_key}</span>
+              <span style={{fontSize:13,fontWeight:600}}>{e.subject||"No Subject"}</span>
+            </div>
+            <span className={`badge ${e.approved?"bg-g":"bg-y"}`}>{e.approved?"APPROVED":"PENDING"}</span>
+          </div>
+          <div style={{fontSize:12,color:"var(--tx2)",lineHeight:1.5,marginBottom:8,maxHeight:60,overflow:"hidden"}}>{e.body_preview||"—"}</div>
+          <div className="row" style={{justifyContent:"space-between"}}>
+            <div className="row" style={{gap:6}}>
+              <span className="badge bg-x">{e.sequence_type}</span><span className="badge bg-x">Step {e.step_number}</span>
+              <span className="badge bg-b">{e.recipient_count||0} recipients</span>
+              {e.cta_text && <span className="badge bg-o">{e.cta_text}</span>}
+              {e.test_email_sent && <span className="badge bg-g">Test Sent</span>}
+            </div>
+            <div className="row" style={{gap:6}}>
+              {!e.test_email_sent && !e.approved && <button className="btn btn-sm" onClick={()=>sendTest(e.id)}><Ic d={P.mail} s={11} /> Test</button>}
+              <button className="btn btn-sm" onClick={()=>setPreview(preview===i?null:i)}><Ic d={P.eye} s={11} /> Preview</button>
+              {!e.approved && <button className="btn btn-g btn-sm" onClick={()=>approveEmail(e.id)}><Ic d={P.check} s={11} c="#fff" /> Approve</button>}
+            </div>
+          </div>
+          {preview===i && <div style={{marginTop:12,padding:16,background:"var(--sf2)",borderRadius:8,border:"1px solid var(--bd)"}}>
+            <div style={{fontSize:10,fontWeight:600,color:"var(--tx3)",textTransform:"uppercase",letterSpacing:".1em",marginBottom:8}}>Email Preview</div>
+            <div style={{fontSize:14,fontWeight:700,marginBottom:8}}>{e.subject}</div>
+            <div style={{fontSize:13,lineHeight:1.7,whiteSpace:"pre-wrap"}}>{e.body_preview}</div>
+            {e.cta_text && <div style={{marginTop:12}}><a href={e.cta_url||"#"} target="_blank" rel="noopener" style={{display:"inline-block",padding:"10px 24px",background:"var(--ac)",color:"#000",borderRadius:6,fontWeight:600,fontSize:12,textDecoration:"none"}}>{e.cta_text}</a></div>}
+            <div style={{marginTop:12,fontSize:10,color:"var(--tx3)"}}>Recipients: {e.recipient_count} · Sequence: {e.sequence_type} Step {e.step_number} · Brand: {b.name}</div>
+          </div>}
+        </div>);
+      })}
+    </div>}
+    <div className="divider" /><div className="sec-t">Warmup Schedule</div>
+    <div className="card"><div style={{fontSize:11,color:"var(--tx2)",lineHeight:1.8}}>Day 1-3: 25/day → Day 4-7: 50/day → Day 8-14: 100/day → Day 15-21: 250/day → Day 22+: 500/day<br/>All emails routed to thedoctordorsey@gmail.com for QA copy. Zero sends without approval.</div></div>
+  </div>);
+}
+
+function TextScreen() {
+  const [texts, setTexts] = useState([]); const [scheduled, setScheduled] = useState([]);
+  const [loading, setLoading] = useState(true); const [composing, setComposing] = useState(false);
+  const [nt, setNt] = useState({name:"",phone:"",message:"",scheduledFor:"",sendFrom:"linda"});
+  useEffect(() => { (async () => {
+    const [tq, st] = await Promise.all([
+      supa("text_message_queue", "select=*&order=created_at.desc&limit=30"),
+      supa("scheduled_texts", "select=*&order=scheduled_for.asc&limit=20"),
+    ]);
+    setTexts(tq||[]); setScheduled(st||[]); setLoading(false);
+  })(); }, []);
+  const sendText = async () => {
+    if(!nt.name||!nt.phone||!nt.message) return;
+    await supaInsert("text_message_queue", {recipient_name:nt.name,recipient_phone:nt.phone,message:nt.message,status:"queued",send_from:nt.sendFrom,scheduled_at:nt.scheduledFor||null});
+    setNt({name:"",phone:"",message:"",scheduledFor:"",sendFrom:"linda"});
+    setComposing(false);
+    const d = await supa("text_message_queue","select=*&order=created_at.desc&limit=30"); setTexts(d||[]);
+  };
+  const queued = texts.filter(t=>t.status==="queued"); const sent = texts.filter(t=>t.status==="sent");
+  return (<div>
+    <div className="row fi" style={{justifyContent:"space-between",marginBottom:14}}>
+      <div><div style={{fontSize:16,fontWeight:700}}>Text Messages</div>
+        <div style={{fontSize:11,color:"var(--tx3)"}}>{texts.length} total · {queued.length} queued · {sent.length} sent · {scheduled.length} scheduled</div></div>
+      <button className="btn btn-p" onClick={()=>setComposing(!composing)}><Ic d={P.plus} s={14} /> New Text</button>
     </div>
-  </div></div>);
+    {composing && <div className="card fi" style={{marginBottom:14,borderColor:"var(--ac)"}}>
+      <div className="ct">Compose Text</div>
+      <div className="g3" style={{gap:10}}>
+        <div><label style={{fontSize:10,color:"var(--tx3)",display:"block",marginBottom:4}}>Recipient</label>
+          <input className="inp" placeholder="Name" value={nt.name} onChange={e=>setNt({...nt,name:e.target.value})} /></div>
+        <div><label style={{fontSize:10,color:"var(--tx3)",display:"block",marginBottom:4}}>Phone</label>
+          <input className="inp" placeholder="+1 (404) 555-0000" value={nt.phone} onChange={e=>setNt({...nt,phone:e.target.value})} /></div>
+        <div><label style={{fontSize:10,color:"var(--tx3)",display:"block",marginBottom:4}}>Send From</label>
+          <select className="inp" value={nt.sendFrom} onChange={e=>setNt({...nt,sendFrom:e.target.value})}><option value="linda">Linda's Line</option><option value="system">System</option></select></div>
+      </div>
+      <div style={{marginTop:10}}><label style={{fontSize:10,color:"var(--tx3)",display:"block",marginBottom:4}}>Message</label>
+        <textarea className="inp" value={nt.message} onChange={e=>setNt({...nt,message:e.target.value})} placeholder="Type message..." style={{minHeight:80,resize:"vertical"}} /></div>
+      <div style={{marginTop:10}}><label style={{fontSize:10,color:"var(--tx3)",display:"block",marginBottom:4}}>Schedule (optional)</label>
+        <input type="datetime-local" className="inp" value={nt.scheduledFor} onChange={e=>setNt({...nt,scheduledFor:e.target.value})} style={{maxWidth:280}} /></div>
+      <div className="row" style={{gap:8,marginTop:10}}>
+        <button className="btn btn-p" onClick={sendText}>Queue Text</button>
+        <button className="btn" onClick={()=>setComposing(false)}>Cancel</button>
+      </div>
+    </div>}
+    <div className="sec-t">Text Queue</div>
+    {loading ? <div className="card" style={{textAlign:"center",padding:32}}>Loading...</div> :
+    <div style={{display:"flex",flexDirection:"column",gap:6}}>
+      {texts.map((t,i) => (
+        <div key={i} className="card fi row" style={{gap:10,borderLeft:`3px solid ${t.status==="sent"?"var(--gn)":t.status==="queued"?"var(--bl)":"var(--bd)"}`}}>
+          <div style={{flex:1}}>
+            <div className="row" style={{justifyContent:"space-between",marginBottom:4}}>
+              <div className="row" style={{gap:6}}>
+                <span style={{fontSize:13,fontWeight:600}}>{t.recipient_name||"Unknown"}</span>
+                <span className="mono" style={{fontSize:10,color:"var(--tx3)"}}>{t.recipient_phone}</span>
+              </div>
+              <span className={`badge ${t.status==="sent"?"bg-g":t.status==="queued"?"bg-b":"bg-x"}`}>{t.status}</span>
+            </div>
+            <div style={{fontSize:12,color:"var(--tx2)",lineHeight:1.5}}>{t.message}</div>
+            <div className="row" style={{gap:6,marginTop:4}}>
+              {t.send_from && <span className="badge bg-x">via {t.send_from}</span>}
+              {t.scheduled_at && <span className="mono" style={{fontSize:10,color:"var(--tx3)"}}>Scheduled: {new Date(t.scheduled_at).toLocaleString("en-US",{month:"short",day:"numeric",hour:"numeric",minute:"2-digit"})}</span>}
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>}
+    {scheduled.length > 0 && <><div className="divider" /><div className="sec-t">Scheduled ({scheduled.length})</div>
+    <div style={{display:"flex",flexDirection:"column",gap:6}}>
+      {scheduled.map((s,i) => (
+        <div key={i} className="card fi row" style={{gap:10}}>
+          <div style={{flex:1}}>
+            <div className="row" style={{gap:6}}><span style={{fontSize:13,fontWeight:600}}>{s.contact_name||"—"}</span><span className="mono" style={{fontSize:10,color:"var(--tx3)"}}>{s.phone_number}</span></div>
+            <div style={{fontSize:12,color:"var(--tx2)",marginTop:2}}>{s.message}</div>
+            <div className="row" style={{gap:6,marginTop:4}}>
+              <span className="badge bg-b">{s.status}</span>
+              {s.scheduled_for && <span className="mono" style={{fontSize:10,color:"var(--tx3)"}}>{new Date(s.scheduled_for).toLocaleString("en-US",{month:"short",day:"numeric",hour:"numeric",minute:"2-digit"})}</span>}
+            </div>
+          </div>
+        </div>
+      ))}
+    </div></>}
+  </div>);
 }
 
 function TasksScreen() {
@@ -625,9 +818,10 @@ export default function KHGDashboard() {
     ]},
     { title: "Channels", items: [
       { id:"outreach", label:"Outreach Engine", icon:P.send },
-      { id:"social", label:"Social Manager", icon:P.social },
+      { id:"social", label:"Social Posts", icon:P.social },
       { id:"dms", label:"DM Center", icon:P.dm },
       { id:"email", label:"Email Hub", icon:P.mail },
+      { id:"texts", label:"Texts", icon:P.dm },
     ]},
     { title: "Ops", items: [
       { id:"events", label:"Event Rollouts", icon:P.calendar },
@@ -636,7 +830,7 @@ export default function KHGDashboard() {
       { id:"directory", label:"Brand Directory", icon:P.globe },
     ]},
   ];
-  const titles = {home:"Marketing HQ",campaigns:"Campaigns",approvals:"Approvals",outreach:"Outreach Engine",social:"Social Manager",dms:"DM Center",email:"Email Hub",events:"Event Rollouts",tasks:"Tasks",team:"Team Dispatch",directory:"Brand Directory"};
+  const titles = {home:"Marketing HQ",campaigns:"Campaigns",approvals:"Approvals",outreach:"Outreach Engine",social:"Social Posts",dms:"DM Center",email:"Email Hub",texts:"Text Messages",events:"Event Rollouts",tasks:"Tasks",team:"Team Dispatch",directory:"Brand Directory"};
   const renderScreen = () => {
     switch(screen) {
       case "home": return <MarketingHQ brand={brand} bk={bk} navigate={navigate} />;
@@ -647,6 +841,7 @@ export default function KHGDashboard() {
       case "events": return <EventsScreen bk={bk} />;
       case "dms": return <DMScreen bk={bk} />;
       case "email": return <EmailScreen bk={bk} />;
+      case "texts": return <TextScreen />;
       case "tasks": return <TasksScreen />;
       case "team": return <TeamScreen />;
       case "directory": return <BrandDirectory />;
