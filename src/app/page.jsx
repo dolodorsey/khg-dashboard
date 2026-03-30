@@ -53,6 +53,16 @@ const BRANDS = {
 };
 
 const DIVS = ["All","Events","Food","Products","Commerce","Services","Museums","Personal","Apps"];
+const MOTHERS = [
+  { key: "all", name: "ALL BRANDS", color: "#FF6B35" },
+  { key: "huglife", name: "HUGLIFE × ICONIC", color: "#FF6B35", children: ["huglife","noir","taste_of_art","paparazzi","gangsta_gospel","sundays_best","wrst_bhvr","remix","pawchella","secret_society","beauty_beast","black_ball","snow_ball","monsters_ball","kulture","soul_sessions","underground_king","crvngs","cinco_de_mayo","block_party","parking_lot_pimpin"] },
+  { key: "casper_group", name: "CASPER GROUP", color: "#E74C3C", children: ["casper_group"] },
+  { key: "forever_futbol", name: "FOREVER FUTBOL", color: "#2E8B57", children: ["forever_futbol"] },
+  { key: "umbrella", name: "UMBRELLA GROUP", color: "#3498DB", children: ["umbrella","mind_studio"] },
+  { key: "commerce", name: "COMMERCE", color: "#C41E3A", children: ["maga","stush","bodegea","infinity_water","pronto_energy"] },
+  { key: "dr_dorsey", name: "DR. DORSEY", color: "#C9A96E", children: ["dr_dorsey"] },
+  { key: "apps", name: "APPS", color: "#4A9FD5", children: ["good_times"] },
+];
 const DNS = ["paparazzi","sundays_best","gangsta_gospel","noir"];
 const TEAM = [
   { name: "Linda", role: "VA", focus: "All", dispatch: "bZ4QrBi5QmqICSR8" },
@@ -384,12 +394,16 @@ function OutreachScreen({ bk }) {
         <div className="ct" style={{margin:0}}>Queue</div>
         <div className="pills" style={{margin:0}}><button className={`pill ${view==="queue"?"act":""}`} onClick={()=>setView("queue")}>Queued</button><button className={`pill ${view==="sent"?"act":""}`} onClick={()=>setView("sent")}>Sent</button></div>
       </div>
-      <table className="tbl"><thead><tr><th>Contact</th><th>Brand</th><th>Type</th><th>Segment</th><th>City</th><th>Status</th></tr></thead>
-      <tbody>{queue.filter(q=>view==="queue"?q.status!=="sent":q.status==="sent").slice(0,20).map((q,i) => { const b=BRANDS[q.brand_key]||{}; return (
+      <table className="tbl"><thead><tr><th>Contact</th><th>Brand</th><th>Type</th><th>Segment</th><th>City</th><th>Status</th><th>Actions</th></tr></thead>
+      <tbody>{queue.filter(q=>view==="queue"?q.status!=="sent":q.status==="sent").slice(0,25).map((q,i) => { const b=BRANDS[q.brand_key]||{}; return (
         <tr key={i}><td style={{fontWeight:500}}>{q.contact_name||q.ig_handle||q.contact_email||"—"}</td>
         <td><span className="badge" style={{background:`${b.color||"#888"}18`,color:b.color||"#888"}}>{b.short||q.brand_key}</span></td>
         <td><span className="badge bg-x">{q.action_type}</span></td><td style={{fontSize:11}}>{q.segment_type||"—"}</td><td style={{fontSize:11}}>{q.contact_city||"—"}</td>
-        <td><span className={`badge ${q.status==="sent"?"bg-g":q.status==="queued"?"bg-b":"bg-x"}`}>{q.status}</span></td></tr>);
+        <td><span className={`badge ${q.status==="sent"?"bg-g":q.status==="queued"?"bg-b":q.status==="approved"?"bg-g":"bg-x"}`}>{q.status}</span></td>
+        <td>{q.status==="queued"&&<div className="row" style={{gap:4}}>
+          <button className="btn btn-g btn-sm" style={{padding:"2px 6px"}} onClick={async()=>{await supaUpdate("contact_action_queue",`id=eq.${q.id}`,{status:"approved"});setQueue(p=>p.map(x=>x.id===q.id?{...x,status:"approved"}:x))}}><Ic d={P.check} s={10} c="#fff" /></button>
+          <button className="btn btn-d btn-sm" style={{padding:"2px 6px"}} onClick={async()=>{await supaUpdate("contact_action_queue",`id=eq.${q.id}`,{status:"rejected"});setQueue(p=>p.filter(x=>x.id!==q.id))}}><Ic d={P.x} s={10} c="#fff" /></button>
+        </div>}</td></tr>);
       })}</tbody></table>
     </div>
   </div>);
@@ -487,37 +501,84 @@ function SocialScreen({ bk }) {
 
 function EventsScreen({ bk }) {
   const [events, setEvents] = useState([]); const [loading, setLoading] = useState(true);
-  useEffect(() => { (async () => { const d=await supa("eventbrite_events",`select=*&is_active=eq.true&event_date=gte.${new Date().toISOString().split("T")[0]}&order=event_date.asc&limit=40`); setEvents(d||[]); setLoading(false); })(); }, []);
-  const filtered = bk==="all"?events:events.filter(e=>e.brand_key===bk);
+  const [expanded, setExpanded] = useState(null);
+  useEffect(() => { (async () => { const d=await supa("eventbrite_events",`select=*&is_active=eq.true&event_date=gte.${new Date().toISOString().split("T")[0]}&order=event_date.asc&limit=50`); setEvents(d||[]); setLoading(false); })(); }, []);
+  const filtered = bk==="all"?events:events.filter(e=>e.brand_key===bk||(MOTHERS.find(m=>m.children?.includes(bk))?.children||[]).includes(e.brand_key));
   const byMonth = {}; filtered.forEach(ev => { const m=new Date(ev.event_date+"T12:00:00").toLocaleDateString("en-US",{month:"long",year:"numeric"}); if(!byMonth[m])byMonth[m]=[]; byMonth[m].push(ev); });
   return (<div>
     <div className="row fi" style={{justifyContent:"space-between",marginBottom:14}}>
-      <div style={{fontSize:16,fontWeight:700}}>Event Rollouts</div>
+      <div><div style={{fontSize:16,fontWeight:700}}>Event Rollouts</div><div style={{fontSize:11,color:"var(--tx3)"}}>Full campaign detail — dates, venues, flyers, tickets, outreach status</div></div>
       <span className="badge bg-o" style={{padding:"5px 12px",fontSize:11}}>{filtered.length} upcoming</span>
     </div>
     {loading ? <div className="card" style={{textAlign:"center",padding:32}}>Loading...</div> :
     Object.entries(byMonth).map(([month,evs]) => (
-      <div key={month} style={{marginBottom:20}}>
-        <div className="sec-t">{month} ({evs.length})</div>
-        <div style={{display:"flex",flexDirection:"column",gap:8}}>{evs.map((ev,i) => { const b=BRANDS[ev.brand_key]||{}; const d=daysUntil(ev.event_date); return (
-          <div key={i} className="card fi row" style={{gap:14,borderLeft:`3px solid ${b.color||"var(--bd)"}`}}>
-            <div style={{width:48,textAlign:"center",flexShrink:0}}>
-              <div style={{fontSize:9,fontWeight:600,textTransform:"uppercase",letterSpacing:".1em",color:b.color||"var(--tx3)"}}>{fmtDate(ev.event_date).split(" ")[0]}</div>
-              <div className="mono" style={{fontSize:22,fontWeight:700,lineHeight:1.2}}>{new Date(ev.event_date+"T12:00:00").getDate()}</div>
-            </div>
-            <div style={{flex:1}}>
-              <div style={{fontSize:13,fontWeight:600}}>{ev.event_name}</div>
-              <div className="row" style={{gap:6,marginTop:4}}>
-                <span className="badge" style={{background:`${b.color||"#888"}18`,color:b.color||"#888"}}>{b.short||ev.brand_key}</span>
-                <span className="badge bg-x">{ev.city}</span>
-                {ev.event_type && <span className="badge bg-b">{ev.event_type.replace(/_/g," ")}</span>}
-                <span className={`badge ${d<=14?"bg-r":d<=30?"bg-y":"bg-g"}`}>{d}d</span>
+      <div key={month} style={{marginBottom:24}}>
+        <div style={{fontSize:12,fontWeight:700,letterSpacing:".1em",textTransform:"uppercase",color:"var(--tx3)",marginBottom:10,paddingBottom:6,borderBottom:"1px solid var(--bd)"}}>{month} ({evs.length} events)</div>
+        <div style={{display:"flex",flexDirection:"column",gap:10}}>{evs.map((ev,i) => { const b=BRANDS[ev.brand_key]||{}; const d=daysUntil(ev.event_date); const isExp=expanded===ev.event_date+ev.event_name; return (
+          <div key={i} className="card fi" style={{borderLeft:`3px solid ${b.color||"var(--bd)"}`,overflow:"hidden"}}>
+            <div className="row" style={{gap:14}}>
+              {ev.image_url && <div style={{width:72,height:72,borderRadius:8,overflow:"hidden",flexShrink:0,background:"var(--sf2)"}}>
+                <img src={ev.image_url} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}} onError={e=>{e.target.parentElement.style.display="none"}} /></div>}
+              <div style={{flex:1}}>
+                <div className="row" style={{justifyContent:"space-between",marginBottom:4}}>
+                  <div style={{fontSize:14,fontWeight:700}}>{ev.event_name}</div>
+                  <span className={`badge ${d<=7?"bg-r":d<=14?"bg-o":d<=30?"bg-y":"bg-g"}`} style={{fontSize:10}}>{d}d</span>
+                </div>
+                <div className="row" style={{gap:8,marginBottom:6,flexWrap:"wrap"}}>
+                  <span className="badge" style={{background:`${b.color||"#888"}18`,color:b.color||"#888"}}>{b.short||ev.brand_key}</span>
+                  <span className="badge bg-b">{ev.city}</span>
+                  <span className="badge bg-x">{ev.event_type?.replace(/_/g," ")||"event"}</span>
+                  <span className="mono" style={{fontSize:10,color:"var(--tx3)"}}>{fmtDate(ev.event_date)} · {ev.event_time||"TBD"}</span>
+                </div>
+                <div className="row" style={{gap:6,flexWrap:"wrap"}}>
+                  {ev.venue_name && <span style={{fontSize:11,color:"var(--tx2)"}}>{ev.venue_name}</span>}
+                  {ev.venue_address && <span style={{fontSize:10,color:"var(--tx3)"}}>· {ev.venue_address}</span>}
+                </div>
               </div>
             </div>
-            <div className="row" style={{gap:6}}>
-              {ev.eventbrite_url && <a href={ev.eventbrite_url} target="_blank" rel="noopener" className="btn btn-sm"><Ic d={P.link} s={12} /> Tickets</a>}
-              <button className="btn btn-p btn-sm"><Ic d={P.campaign} s={12} /> Campaign</button>
+            <div className="row" style={{gap:6,marginTop:10,flexWrap:"wrap"}}>
+              {ev.eventbrite_url && <a href={ev.eventbrite_url} target="_blank" rel="noopener" className="btn btn-p btn-sm"><Ic d={P.link} s={11} /> Tickets</a>}
+              <button className="btn btn-sm" onClick={()=>setExpanded(isExp?null:ev.event_date+ev.event_name)}><Ic d={P.eye} s={11} /> {isExp?"Close":"Details"}</button>
+              <button className="btn btn-sm"><Ic d={P.campaign} s={11} /> Campaign</button>
+              <button className="btn btn-sm"><Ic d={P.send} s={11} /> Outreach</button>
+              {!ev.eventbrite_url && <span className="badge bg-r" style={{marginLeft:"auto"}}>NO TICKET LINK</span>}
+              {!ev.venue_name && <span className="badge bg-y" style={{marginLeft:!ev.eventbrite_url?0:"auto"}}>VENUE TBD</span>}
+              {!ev.image_url && <span className="badge bg-y">NO FLYER</span>}
             </div>
+            {isExp && <div style={{marginTop:12,padding:14,background:"var(--sf2)",borderRadius:8}}>
+              <div className="g2" style={{gap:16}}>
+                <div>
+                  <div className="sec-t">Event Details</div>
+                  <div style={{fontSize:12,lineHeight:1.8}}>
+                    <div><strong>Date:</strong> {new Date(ev.event_date+"T12:00:00").toLocaleDateString("en-US",{weekday:"long",month:"long",day:"numeric",year:"numeric"})}</div>
+                    <div><strong>Time:</strong> {ev.event_time||"TBD"}</div>
+                    <div><strong>City:</strong> {ev.city}</div>
+                    <div><strong>Venue:</strong> {ev.venue_name||"TBD"}</div>
+                    <div><strong>Address:</strong> {ev.venue_address||"TBD"}</div>
+                    <div><strong>Type:</strong> {ev.event_type?.replace(/_/g," ")||"—"}</div>
+                    <div><strong>Brand:</strong> {b.name} ({b.ig||"no IG"})</div>
+                    <div><strong>Brand Email:</strong> {b.email||"—"}</div>
+                    {b.site && <div><strong>Website:</strong> <a href={"https://"+b.site} target="_blank" rel="noopener" style={{color:"var(--ac)"}}>{b.site}</a></div>}
+                    {ev.eventbrite_url && <div><strong>Tickets:</strong> <a href={ev.eventbrite_url} target="_blank" rel="noopener" style={{color:"var(--ac)"}}>Eventbrite</a></div>}
+                  </div>
+                </div>
+                {ev.image_url && <div>
+                  <div className="sec-t">Flyer</div>
+                  <img src={ev.image_url} alt="" style={{width:"100%",maxWidth:280,borderRadius:8}} onError={e=>{e.target.style.display="none"}} />
+                </div>}
+              </div>
+              <div style={{marginTop:12}}>
+                <div className="sec-t">Rollout Checklist</div>
+                <div style={{display:"flex",flexDirection:"column",gap:4}}>
+                  {[{label:"Flyer uploaded",done:!!ev.image_url},{label:"Eventbrite live",done:!!ev.eventbrite_url},{label:"Venue confirmed",done:!!ev.venue_name},{label:"Social campaign started",done:false},{label:"Email blast sent",done:false},{label:"DM outreach sent",done:false},{label:"PR pitch sent",done:false}].map((item,idx)=>(
+                    <div key={idx} className="row" style={{gap:8,fontSize:12}}>
+                      <span style={{color:item.done?"var(--gn)":"var(--tx3)"}}>{item.done?"✓":"○"}</span>
+                      <span style={{color:item.done?"var(--tx)":"var(--tx3)"}}>{item.label}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>}
           </div>);
         })}</div>
       </div>
@@ -855,7 +916,7 @@ export default function KHGDashboard() {
         <div className="sbh" onClick={()=>setSbOpen(!sbOpen)}><div className="logo">K</div><span>111 ATL</span></div>
         <div className="bsw"><select value={activeBrand} onChange={e=>setActiveBrand(e.target.value)}>
           <option value="all">ALL BRANDS</option>
-          {DIVS.filter(d=>d!=="All").map(div=><optgroup key={div} label={div}>{Object.entries(BRANDS).filter(([,b])=>b.div===div).map(([k,b])=><option key={k} value={k}>{b.name}{b.dns?" ⛔":""}</option>)}</optgroup>)}
+          {MOTHERS.filter(m=>m.key!=="all").map(m=><optgroup key={m.key} label={m.name}>{(m.children||[]).map(k=>{const b=BRANDS[k]; return b?<option key={k} value={k}>{b.name}{b.dns?" ⛔":""}</option>:null})}</optgroup>)}
         </select></div>
         {brand && <div className="bpill"><div className="dot" style={{background:brand.color}} /><span style={{fontWeight:500,color:"var(--tx2)"}}>{brand.name}</span>
           {brand.dns && <span className="badge bg-r" style={{marginLeft:"auto"}}>DNS</span>}
@@ -872,6 +933,9 @@ export default function KHGDashboard() {
           <div className="ptr" onClick={()=>setSbOpen(!sbOpen)}><Ic d={P.menu} s={18} /></div>
           <div className="tb-t">{titles[screen]}</div>
           {brand && <span className="badge" style={{background:`${brand.color}18`,color:brand.color,padding:"3px 10px",fontSize:11}}>{brand.name}</span>}
+          <div style={{display:"flex",gap:4,marginLeft:8,overflowX:"auto"}}>
+            {MOTHERS.map(m=><button key={m.key} className="ptr" onClick={()=>{if(m.key==="all")setActiveBrand("all");else if(m.children?.length===1)setActiveBrand(m.children[0]);else setActiveBrand(m.key==="huglife"?"huglife":m.children?.[0]||"all")}} style={{padding:"3px 10px",borderRadius:12,fontSize:9,fontWeight:700,letterSpacing:".05em",border:`1px solid ${(activeBrand==="all"&&m.key==="all")||(m.children||[]).includes(activeBrand)?"transparent":"var(--bd)"}`,background:(activeBrand==="all"&&m.key==="all")||(m.children||[]).includes(activeBrand)?m.color+"20":"transparent",color:(activeBrand==="all"&&m.key==="all")||(m.children||[]).includes(activeBrand)?m.color:"var(--tx3)",whiteSpace:"nowrap",cursor:"pointer",transition:"all .15s"}}>{m.name}</button>)}
+          </div>
           <div className="tb-r">
             <span className="tb-s">{new Date().toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"})}</span>
             <div className="row" style={{gap:4}}><div style={{width:6,height:6,borderRadius:"50%",background:"var(--gn)",boxShadow:"0 0 8px var(--gn)"}} /><span style={{fontSize:9,fontWeight:600,color:"var(--gn)",letterSpacing:".06em"}}>LIVE</span></div>
