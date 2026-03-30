@@ -171,7 +171,7 @@ function MarketingHQ({ brand, bk, navigate }) {
       const [q, ev, tk, eq, pq] = await Promise.all([
         supa("contact_action_queue", `select=status${bf}&limit=5000`),
         supa("eventbrite_events", `select=event_name,brand_key,event_date,city&is_active=eq.true&event_date=gte.${new Date().toISOString().split("T")[0]}&order=event_date.asc&limit=8`),
-        supa("khg_master_tasks", "select=task_key,title,brand,priority,status,assigned_to&status=in.(active,in_progress,blocked,pending)&order=created_at.desc&limit=8"),
+        supa("khg_master_tasks", "select=task_key,title,brand,priority,status,assigned_to&status=not.in.(completed,cancelled)&order=priority,created_at.desc&limit=12"),
         supa("email_approval_queue", "select=id,approved&approved=eq.false"),
         supa("ghl_social_posting_queue", "select=id&status=eq.queued"),
       ]);
@@ -214,11 +214,16 @@ function MarketingHQ({ brand, bk, navigate }) {
       </div>
       <div className="card" style={{maxHeight:380,overflowY:"auto"}}>
         <div className="row" style={{justifyContent:"space-between",marginBottom:10}}><div className="ct" style={{margin:0}}>Active Tasks</div><button className="btn btn-sm" onClick={()=>navigate("tasks")}>All</button></div>
+        <div className="row" style={{gap:6,marginBottom:10}}>
+          <span className="badge bg-o" style={{fontSize:10,padding:"4px 8px"}}>Claude: {tasks.filter(t=>(t.assigned_to||"").toLowerCase()==="claude").length}</span>
+          <span className="badge bg-g" style={{fontSize:10,padding:"4px 8px"}}>Linda: {tasks.filter(t=>(t.assigned_to||"").toLowerCase()==="linda").length}</span>
+          <span className="badge bg-r" style={{fontSize:10,padding:"4px 8px"}}>Blocked: {tasks.filter(t=>t.status==="blocked").length}</span>
+        </div>
         {tasks.map((t,i) => (
           <div key={i} className="row" style={{padding:"8px 0",borderBottom:"1px solid var(--bd)",gap:8}}>
             <span className={`badge ${t.priority==="critical"?"bg-r":t.priority==="high"?"bg-o":"bg-x"}`} style={{width:50,justifyContent:"center"}}>{t.priority}</span>
             <div style={{flex:1}}><div style={{fontSize:12,fontWeight:500}} className="trunc">{t.title}</div><div style={{fontSize:10,color:"var(--tx3)"}}>{t.assigned_to} · {t.status}</div></div>
-            <span className={`badge ${t.status==="blocked"?"bg-r":t.status==="in_progress"?"bg-b":"bg-x"}`}>{t.status.replace("_"," ")}</span>
+            <span className={`badge ${t.status==="blocked"?"bg-r":t.status==="in_progress"?"bg-b":t.status==="recurring_active"?"bg-g":"bg-x"}`}>{t.status.replace("_"," ")}</span>
           </div>
         ))}
       </div>
@@ -231,6 +236,7 @@ function MarketingHQ({ brand, bk, navigate }) {
       <button className="btn" onClick={()=>navigate("dms")}><Ic d={P.dm} s={14} /> DMs</button>
       <button className="btn" onClick={()=>navigate("email")}><Ic d={P.mail} s={14} /> Email</button>
       <button className="btn" onClick={()=>navigate("team")}><Ic d={P.team} s={14} /> Team</button>
+      <button className="btn" onClick={()=>{navigate("tasks")}}><Ic d={P.target} s={14} /> Grants</button>
     </div></div>
   </div>);
 }
@@ -795,26 +801,98 @@ function TextScreen() {
 }
 
 function TasksScreen() {
-  const [tasks, setTasks] = useState([]); const [loading, setLoading] = useState(true); const [filter, setFilter] = useState("all");
-  useEffect(() => { (async () => { const d=await supa("khg_master_tasks","select=*&status=in.(active,in_progress,blocked,pending)&order=priority,created_at.desc&limit=40"); setTasks(d||[]); setLoading(false); })(); }, []);
-  const filtered = filter==="all"?tasks:tasks.filter(t=>t.status===filter);
-  const sc = {all:tasks.length, active:tasks.filter(t=>t.status==="active").length, in_progress:tasks.filter(t=>t.status==="in_progress").length, blocked:tasks.filter(t=>t.status==="blocked").length, pending:tasks.filter(t=>t.status==="pending").length};
+  const [tasks, setTasks] = useState([]); const [grants, setGrants] = useState([]);
+  const [loading, setLoading] = useState(true); const [view, setView] = useState("owner");
+  const [ownerFilter, setOwnerFilter] = useState("all");
+  useEffect(() => { (async () => {
+    const [td, gd] = await Promise.all([
+      supa("khg_master_tasks","select=*&status=not.in.(completed,cancelled)&order=priority,created_at.desc&limit=50"),
+      supa("khg_grant_tracker","select=*&order=deadline.asc.nullslast&limit=15"),
+    ]);
+    setTasks(td||[]); setGrants(gd||[]); setLoading(false);
+  })(); }, []);
+
+  const claude = tasks.filter(t=>(t.assigned_to||"").toLowerCase()==="claude");
+  const linda = tasks.filter(t=>(t.assigned_to||"").toLowerCase()==="linda");
+  const dorsey = tasks.filter(t=>!t.assigned_to || t.assigned_to==="dr_dorsey");
+  const recurring = tasks.filter(t=>t.is_recurring);
+  const oneTime = tasks.filter(t=>!t.is_recurring);
+  const blocked = tasks.filter(t=>t.status==="blocked");
+  const daily = recurring.filter(t=>t.frequency==="daily");
+  const weekly = recurring.filter(t=>t.frequency==="weekly");
+
+  const byOwner = ownerFilter==="claude"?claude:ownerFilter==="linda"?linda:ownerFilter==="dorsey"?dorsey:tasks;
+
+  const renderTask = (t, i) => (
+    <div key={i} className="card fi" style={{marginBottom:6,borderLeft:`3px solid ${t.priority==="critical"?"var(--rd)":t.priority==="high"?"var(--ac)":"var(--bd)"}`}}>
+      <div className="row" style={{justifyContent:"space-between",marginBottom:4}}>
+        <div className="row" style={{gap:6}}>
+          <span className="mono" style={{fontSize:9,color:"var(--tx3)"}}>{t.task_key}</span>
+          <span className={`badge ${t.priority==="critical"?"bg-r":t.priority==="high"?"bg-o":"bg-x"}`}>{t.priority}</span>
+          <span className={`badge ${t.status==="blocked"?"bg-r":t.status==="in_progress"?"bg-b":t.status==="recurring_active"?"bg-g":"bg-y"}`}>{t.status.replace(/_/g," ")}</span>
+          {t.is_recurring && <span className="badge bg-b">{t.frequency}</span>}
+        </div>
+        <span className="badge bg-x">{(t.assigned_to||"unassigned").toUpperCase()}</span>
+      </div>
+      <div style={{fontSize:13,fontWeight:600}}>{t.title}</div>
+      <div className="row" style={{gap:8,marginTop:4}}>
+        <span style={{fontSize:10,color:"var(--tx3)"}}>{t.category}</span>
+        {t.due_date && <span className="mono" style={{fontSize:10,color:daysUntil(t.due_date.split("T")[0])<=7?"var(--rd)":"var(--tx3)"}}>Due: {fmtDate(t.due_date.split("T")[0])}</span>}
+        {t.blocker_reason && <span style={{fontSize:10,color:"var(--rd)"}}>Blocker: {t.blocker_reason}</span>}
+      </div>
+    </div>
+  );
+
   return (<div>
-    <div className="pills fi">{["all","active","in_progress","blocked","pending"].map(f=><button key={f} className={`pill ${filter===f?"act":""}`} onClick={()=>setFilter(f)}>{f.replace("_"," ")} ({sc[f]||0})</button>)}</div>
-    {loading ? <div className="card" style={{textAlign:"center",padding:32}}>Loading...</div> :
-    <div style={{display:"flex",flexDirection:"column",gap:6}}>{filtered.map((t,i)=>(
-      <div key={i} className="card fi row" style={{gap:10,borderLeft:`3px solid ${t.priority==="critical"?"var(--rd)":t.priority==="high"?"var(--ac)":"var(--bd)"}`}}>
-        <div style={{flex:1}}>
-          <div className="row" style={{gap:6,marginBottom:4}}>
-            <span className="mono" style={{fontSize:9,color:"var(--tx3)"}}>{t.task_key}</span>
-            <span className={`badge ${t.priority==="critical"?"bg-r":t.priority==="high"?"bg-o":"bg-x"}`}>{t.priority}</span>
-            <span className={`badge ${t.status==="blocked"?"bg-r":t.status==="in_progress"?"bg-b":"bg-x"}`}>{t.status.replace("_"," ")}</span>
-          </div>
-          <div style={{fontSize:13,fontWeight:600}}>{t.title}</div>
-          <div style={{fontSize:11,color:"var(--tx3)",marginTop:2}}>{t.assigned_to} · {t.category}</div>
+    <div className="g4 fi" style={{marginBottom:14}}>
+      <div className="card ptr" onClick={()=>setOwnerFilter("dorsey")} style={{borderTop:ownerFilter==="dorsey"?"2px solid var(--ac)":"none"}}><div className="sv" style={{color:"var(--ac)"}}>{dorsey.length}</div><div className="sl2">Dr. Dorsey</div></div>
+      <div className="card ptr" onClick={()=>setOwnerFilter("claude")} style={{borderTop:ownerFilter==="claude"?"2px solid var(--bl)":"none"}}><div className="sv" style={{color:"var(--bl)"}}>{claude.length}</div><div className="sl2">Claude</div></div>
+      <div className="card ptr" onClick={()=>setOwnerFilter("linda")} style={{borderTop:ownerFilter==="linda"?"2px solid var(--gn)":"none"}}><div className="sv" style={{color:"var(--gn)"}}>{linda.length}</div><div className="sl2">Linda</div></div>
+      <div className="card ptr" onClick={()=>setOwnerFilter("all")} style={{borderTop:ownerFilter==="all"?"2px solid var(--pr)":"none"}}><div className="sv" style={{color:"var(--pr)"}}>{tasks.length}</div><div className="sl2">All Open</div></div>
+    </div>
+
+    <div className="pills fi">
+      <button className={`pill ${view==="owner"?"act":""}`} onClick={()=>setView("owner")}>By Owner ({byOwner.length})</button>
+      <button className={`pill ${view==="recurring"?"act":""}`} onClick={()=>setView("recurring")}>Recurring ({recurring.length})</button>
+      <button className={`pill ${view==="onetime"?"act":""}`} onClick={()=>setView("onetime")}>One-Time ({oneTime.length})</button>
+      <button className={`pill ${view==="blocked"?"act":""}`} onClick={()=>setView("blocked")}>Blocked ({blocked.length})</button>
+      <button className={`pill ${view==="grants"?"act":""}`} onClick={()=>setView("grants")}>Grants ({grants.length})</button>
+    </div>
+
+    {loading ? <div className="card" style={{textAlign:"center",padding:32}}>Loading...</div> : view==="grants" ? (
+      <div>
+        <div className="sec-t">Grant Pipeline ({grants.length})</div>
+        <div style={{display:"flex",flexDirection:"column",gap:6}}>
+          {grants.map((g,i) => (
+            <div key={i} className="card fi" style={{borderLeft:"3px solid var(--gn)"}}>
+              <div className="row" style={{justifyContent:"space-between",marginBottom:4}}>
+                <div style={{fontSize:13,fontWeight:700}}>{g.grant_name}</div>
+                {g.amount_max && <span className="badge bg-g">${Number(g.amount_max).toLocaleString()}</span>}
+              </div>
+              <div style={{fontSize:11,color:"var(--tx2)",marginBottom:4}}>{g.grantor}</div>
+              <div className="row" style={{gap:6}}>
+                <span className="badge bg-b">{g.eligible_entity}</span>
+                <span className={`badge ${g.status==="identified"?"bg-y":"bg-g"}`}>{g.status}</span>
+                {g.deadline && <span className="mono" style={{fontSize:10,color:daysUntil(g.deadline)<=30?"var(--rd)":"var(--tx3)"}}>Deadline: {fmtDate(g.deadline)}{daysUntil(g.deadline)<=30?` (${daysUntil(g.deadline)}d)`:""}</span>}
+                {g.grant_url && <a href={g.grant_url} target="_blank" rel="noopener" className="btn btn-sm" style={{marginLeft:"auto"}}><Ic d={P.link} s={10} /> Apply</a>}
+              </div>
+            </div>
+          ))}
         </div>
       </div>
-    ))}</div>}
+    ) : view==="recurring" ? (
+      <div>
+        <div className="sec-t">Daily Tasks ({daily.length})</div>
+        {daily.map(renderTask)}
+        <div className="divider" />
+        <div className="sec-t">Weekly Tasks ({weekly.length})</div>
+        {weekly.map(renderTask)}
+      </div>
+    ) : view==="blocked" ? (
+      <div>{blocked.length===0?<div className="card" style={{textAlign:"center",padding:24,color:"var(--tx3)"}}>No blocked tasks</div>:blocked.map(renderTask)}</div>
+    ) : (
+      <div>{(view==="onetime"?oneTime:byOwner).map(renderTask)}</div>
+    )}
   </div>);
 }
 
