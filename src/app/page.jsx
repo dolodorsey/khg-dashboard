@@ -166,14 +166,17 @@ function MarketingHQ({ brand, bk, navigate }) {
   const [loading, setLoading] = useState(true);
   useEffect(() => {
     (async () => {
-      const bf = bk === "all" ? "" : `&brand_key=eq.${bk}`;
-      const [q, ev, tk] = await Promise.all([
+      const motherMatch = MOTHERS.find(m=>m.key===bk && m.children?.length>1);
+      const bf = bk==="all"?"":motherMatch?`&brand_key=in.(${motherMatch.children.join(",")})`:`&brand_key=eq.${bk}`;
+      const [q, ev, tk, eq, pq] = await Promise.all([
         supa("contact_action_queue", `select=status${bf}&limit=5000`),
         supa("eventbrite_events", `select=event_name,brand_key,event_date,city&is_active=eq.true&event_date=gte.${new Date().toISOString().split("T")[0]}&order=event_date.asc&limit=8`),
         supa("khg_master_tasks", "select=task_key,title,brand,priority,status,assigned_to&status=in.(active,in_progress,blocked,pending)&order=created_at.desc&limit=8"),
+        supa("email_approval_queue", "select=id,approved&approved=eq.false"),
+        supa("ghl_social_posting_queue", "select=id&status=eq.queued"),
       ]);
       const qs = q || [];
-      setStats({ queued: qs.filter(x=>x.status==="queued").length, sent: qs.filter(x=>x.status==="sent").length, total: qs.length });
+      setStats({ queued: qs.filter(x=>x.status==="queued").length, sent: qs.filter(x=>x.status==="sent").length, total: qs.length, pendingApprovals: (eq||[]).length + (pq||[]).length });
       setEvents(ev || []); setTasks(tk || []); setLoading(false);
     })();
   }, [bk]);
@@ -192,8 +195,8 @@ function MarketingHQ({ brand, bk, navigate }) {
     <div className="g4 fi" style={{marginBottom:14}}>
       <div className="card ptr" onClick={()=>navigate("outreach")}><div className="sv" style={{color:"var(--bl)"}}>{loading?"—":stats.queued?.toLocaleString()}</div><div className="sl2">Queued Outreach</div></div>
       <div className="card ptr" onClick={()=>navigate("outreach")}><div className="sv" style={{color:"var(--gn)"}}>{loading?"—":stats.sent?.toLocaleString()}</div><div className="sl2">Sent</div></div>
-      <div className="card ptr" onClick={()=>navigate("social")}><div className="sv" style={{color:"var(--ac)"}}>{loading?"—":stats.total?.toLocaleString()}</div><div className="sl2">Total Pipeline</div></div>
-      <div className="card ptr" onClick={()=>navigate("approvals")}><div className="sv" style={{color:"var(--yl)"}}>—</div><div className="sl2">Pending Approvals</div></div>
+      <div className="card ptr" onClick={()=>navigate("social")}><div className="sv" style={{color:"var(--ac)"}}>{loading?"—":(pq||[]).length}</div><div className="sl2">Posts Queued</div></div>
+      <div className="card ptr" onClick={()=>navigate("approvals")}><div className="sv" style={{color:stats.pendingApprovals>0?"var(--rd)":"var(--gn)"}}>{loading?"—":stats.pendingApprovals||0}</div><div className="sl2">Pending Approvals</div></div>
     </div>
     <div className="g2 fi fd2" style={{marginBottom:14}}>
       <div className="card" style={{maxHeight:380,overflowY:"auto"}}>
@@ -361,10 +364,11 @@ function OutreachScreen({ bk }) {
   const [stats, setStats] = useState({}); const [queue, setQueue] = useState([]); const [loading, setLoading] = useState(true); const [sending, setSending] = useState(false); const [view, setView] = useState("queue");
   useEffect(() => {
     (async () => {
-      const bf = bk==="all"?"":"&brand_key=eq."+bk;
+      const motherMatch = MOTHERS.find(m=>m.key===bk && m.children?.length>1);
+      const bf = bk==="all"?"":motherMatch?`&brand_key=in.(${motherMatch.children.join(",")})`:"&brand_key=eq."+bk;
       const [cd, qd] = await Promise.all([
         supa("contact_action_queue", `select=status${bf}&limit=5000`),
-        supa("contact_action_queue", `select=id,contact_name,contact_email,ig_handle,brand_key,action_type,status,segment_type,contact_city${bf}&order=created_at.desc&limit=40`),
+        supa("contact_action_queue", `select=id,contact_name,contact_email,ig_handle,brand_key,action_type,status,segment_type,contact_city,scheduled_date${bf}&order=created_at.desc&limit=60`),
       ]);
       const cs = cd||[];
       setStats({queued:cs.filter(c=>c.status==="queued").length, sent:cs.filter(c=>c.status==="sent").length, pending:cs.filter(c=>c.status==="pending").length, total:cs.length});
@@ -415,11 +419,12 @@ function SocialScreen({ bk }) {
   const [preview, setPreview] = useState(null);
   const [np, setNp] = useState({brand:bk==="all"?"huglife":bk, caption:"", platform:"instagram", type:"IMAGE", image:"", scheduledFor:""});
   useEffect(() => { (async () => {
-    const bf = bk==="all"?"":"&brand_key=eq."+bk;
-    const d = await supa("ghl_social_posting_queue", `select=*${bf}&order=scheduled_for.desc.nullslast&limit=60`);
+    const motherMatch = MOTHERS.find(m=>m.key===bk && m.children?.length>1);
+    const bf = bk==="all"?"":motherMatch?`&brand_key=in.(${motherMatch.children.join(",")})`:"&brand_key=eq."+bk;
+    const d = await supa("ghl_social_posting_queue", `select=*${bf}&order=scheduled_for.desc.nullslast&limit=100`);
     setPosts(d||[]); setLoading(false);
   })(); }, [bk]);
-  const queued = posts.filter(p=>p.status==="queued"); const posted = posts.filter(p=>p.status==="posted"||p.status==="sent");
+  const queued = posts.filter(p=>p.status==="queued"||p.status==="pending"); const posted = posts.filter(p=>p.status==="posted"||p.status==="sent"); const approved = posts.filter(p=>p.status==="approved");
   const approvePost = async (id) => { await supaUpdate("ghl_social_posting_queue",`id=eq.${id}`,{status:"approved"}); setPosts(p=>p.map(x=>x.id===id?{...x,status:"approved"}:x)); };
   const rejectPost = async (id) => { await supaUpdate("ghl_social_posting_queue",`id=eq.${id}`,{status:"rejected"}); setPosts(p=>p.map(x=>x.id===id?{...x,status:"rejected"}:x)); };
   const createPost = async () => {
@@ -431,7 +436,7 @@ function SocialScreen({ bk }) {
   return (<div>
     <div className="row fi" style={{justifyContent:"space-between",marginBottom:14}}>
       <div><div style={{fontSize:16,fontWeight:700}}>Social Posts</div>
-        <div style={{fontSize:11,color:"var(--tx3)"}}>{posts.length} total · {queued.length} queued · {posted.length} posted</div></div>
+        <div style={{fontSize:11,color:"var(--tx3)"}}>{posts.length} loaded · {queued.length} ready · {approved.length} approved · {posted.length} posted</div></div>
       <div className="row" style={{gap:6}}>
         <button className="btn btn-p" onClick={()=>setComposing(!composing)}><Ic d={P.plus} s={14} /> New Post</button>
         <button className="btn btn-sm" onClick={()=>triggerN8n(WF.dailyPoster,{action:"run_now"})}><Ic d={P.zap} s={12} /> Post Now</button>
@@ -458,12 +463,13 @@ function SocialScreen({ bk }) {
         <button className="btn" onClick={()=>setComposing(false)}>Cancel</button>
       </div>
     </div>}
-    <div className="pills fi"><button className={`pill ${tab==="queued"?"act":""}`} onClick={()=>setTab("queued")}>Queued ({queued.length})</button>
-      <button className={`pill ${tab==="all"?"act":""}`} onClick={()=>setTab("all")}>All ({posts.length})</button>
-      <button className={`pill ${tab==="posted"?"act":""}`} onClick={()=>setTab("posted")}>Posted ({posted.length})</button></div>
+    <div className="pills fi"><button className={`pill ${tab==="queued"?"act":""}`} onClick={()=>setTab("queued")}>Ready ({queued.length})</button>
+      <button className={`pill ${tab==="approved"?"act":""}`} onClick={()=>setTab("approved")}>Approved ({approved.length})</button>
+      <button className={`pill ${tab==="posted"?"act":""}`} onClick={()=>setTab("posted")}>Posted ({posted.length})</button>
+      <button className={`pill ${tab==="all"?"act":""}`} onClick={()=>setTab("all")}>All ({posts.length})</button></div>
     {loading ? <div className="card" style={{textAlign:"center",padding:32}}>Loading posts...</div> :
     <div style={{display:"flex",flexDirection:"column",gap:8}}>
-      {(tab==="queued"?queued:tab==="posted"?posted:posts).map((p,i) => { const b=BRANDS[p.brand_key]||{}; return (
+      {(tab==="queued"?queued:tab==="approved"?approved:tab==="posted"?posted:posts).map((p,i) => { const b=BRANDS[p.brand_key]||{}; return (
         <div key={i} className="card fi" style={{borderLeft:`3px solid ${b.color||"var(--bd)"}`}}>
           <div className="row" style={{gap:14}}>
             {p.image_url && <div style={{width:64,height:64,borderRadius:8,overflow:"hidden",flexShrink:0,background:"var(--sf2)"}}>
@@ -481,7 +487,7 @@ function SocialScreen({ bk }) {
               <div style={{fontSize:12,color:"var(--tx2)",lineHeight:1.5,whiteSpace:"pre-wrap",maxHeight:80,overflow:"hidden"}}>{p.caption}</div>
               <div className="row" style={{gap:6,marginTop:6}}>
                 {p.scheduled_for && <span className="mono" style={{fontSize:10,color:"var(--tx3)"}}>{new Date(p.scheduled_for).toLocaleString("en-US",{month:"short",day:"numeric",hour:"numeric",minute:"2-digit"})}</span>}
-                {p.status==="queued" && <><button className="btn btn-g btn-sm" onClick={()=>approvePost(p.id)}><Ic d={P.check} s={11} c="#fff" /> Approve</button>
+                {(p.status==="queued"||p.status==="pending") && <><button className="btn btn-g btn-sm" onClick={()=>approvePost(p.id)}><Ic d={P.check} s={11} c="#fff" /> Approve</button>
                   <button className="btn btn-d btn-sm" onClick={()=>rejectPost(p.id)}><Ic d={P.x} s={11} c="#fff" /> Reject</button></>}
                 <button className="btn btn-sm" onClick={()=>setPreview(preview===i?null:i)}><Ic d={P.eye} s={11} /> {preview===i?"Close":"Preview"}</button>
               </div>
@@ -792,9 +798,9 @@ function TasksScreen() {
   const [tasks, setTasks] = useState([]); const [loading, setLoading] = useState(true); const [filter, setFilter] = useState("all");
   useEffect(() => { (async () => { const d=await supa("khg_master_tasks","select=*&status=in.(active,in_progress,blocked,pending)&order=priority,created_at.desc&limit=40"); setTasks(d||[]); setLoading(false); })(); }, []);
   const filtered = filter==="all"?tasks:tasks.filter(t=>t.status===filter);
-  const sc = {all:tasks.length, active:tasks.filter(t=>t.status==="active").length, in_progress:tasks.filter(t=>t.status==="in_progress").length, blocked:tasks.filter(t=>t.status==="blocked").length};
+  const sc = {all:tasks.length, active:tasks.filter(t=>t.status==="active").length, in_progress:tasks.filter(t=>t.status==="in_progress").length, blocked:tasks.filter(t=>t.status==="blocked").length, pending:tasks.filter(t=>t.status==="pending").length};
   return (<div>
-    <div className="pills fi">{["all","active","in_progress","blocked"].map(f=><button key={f} className={`pill ${filter===f?"act":""}`} onClick={()=>setFilter(f)}>{f.replace("_"," ")} ({sc[f]||0})</button>)}</div>
+    <div className="pills fi">{["all","active","in_progress","blocked","pending"].map(f=><button key={f} className={`pill ${filter===f?"act":""}`} onClick={()=>setFilter(f)}>{f.replace("_"," ")} ({sc[f]||0})</button>)}</div>
     {loading ? <div className="card" style={{textAlign:"center",padding:32}}>Loading...</div> :
     <div style={{display:"flex",flexDirection:"column",gap:6}}>{filtered.map((t,i)=>(
       <div key={i} className="card fi row" style={{gap:10,borderLeft:`3px solid ${t.priority==="critical"?"var(--rd)":t.priority==="high"?"var(--ac)":"var(--bd)"}`}}>
