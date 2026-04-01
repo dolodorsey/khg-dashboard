@@ -41,7 +41,7 @@ export default function HubPage() {
             <p style={{ fontSize: 12, color: "#666", marginTop: 6 }}>57+ brands · 8 cities · {total} dashboards · {ready} live</p>
           </div>
           <div style={{ display: "flex", gap: 12 }}>
-            <a href="https://doctordorsey.com" target="_blank" rel="noopener" style={{ padding: "10px 20px", background: "#D4A85322", border: "1px solid #D4A85344", borderRadius: 6, fontSize: 11, fontWeight: 600, letterSpacing: 1, color: "#D4A853", textTransform: "uppercase" }}>doctordorsey.com</a>
+            <a href="https://thedoctordorsey.com" target="_blank" rel="noopener" style={{ padding: "10px 20px", background: "#D4A85322", border: "1px solid #D4A85344", borderRadius: 6, fontSize: 11, fontWeight: 600, letterSpacing: 1, color: "#D4A853", textTransform: "uppercase" }}>thedoctordorsey.com</a>
           </div>
         </div>
       </div>
