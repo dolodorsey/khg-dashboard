@@ -5,12 +5,12 @@ import Link from "next/link";
 const DASHBOARDS = [
   { key: "command-center", label: "Command Center", icon: "🎛️", desc: "Master enterprise view — tasks, brands, workflows", color: "#D4A853", ready: true },
   { key: "ambassador", label: "Ambassadors", icon: "⭐", desc: "Manage ambassadors — approve, deny, tier, track", color: "#10B981", ready: true },
-  { key: "schedule", label: "Schedule / Tasks", icon: "📅", desc: "Calendar, task queue, deadlines, sprint board", color: "#3B82F6", ready: false },
-  { key: "social", label: "Social Media", icon: "📱", desc: "Post queue, content calendar, engagement, analytics", color: "#E040FB", ready: false },
-  { key: "outreach", label: "Outreach", icon: "📨", desc: "Email sequences, SMS campaigns, follow-up tracking", color: "#FF6B35", ready: false },
+  { key: "schedule", label: "Schedule / Tasks", icon: "📅", desc: "Calendar, task queue, deadlines, sprint board", color: "#3B82F6", ready: true },
+  { key: "social", label: "Social Media", icon: "📱", desc: "Post queue, content calendar, engagement, analytics", color: "#E040FB", ready: true },
+  { key: "outreach", label: "Outreach", icon: "📨", desc: "Email sequences, SMS campaigns, follow-up tracking", color: "#FF6B35", ready: true },
   { key: "shopify", label: "Shopify / Products", icon: "🛍️", desc: "MAGA, Stush, Bodega — sales, inventory, orders", color: "#96BF48", ready: false },
-  { key: "events", label: "Events", icon: "🎪", desc: "Event calendar, ticketing, DJ/host assignments, sponsors", color: "#FF4081", ready: false },
-  { key: "grants", label: "Grants", icon: "💰", desc: "Grant tracker, deadlines, applications, status", color: "#FFD700", ready: false },
+  { key: "events", label: "Events", icon: "🎪", desc: "Event calendar, ticketing, DJ/host assignments, sponsors", color: "#FF4081", ready: true },
+  { key: "grants", label: "Grants", icon: "💰", desc: "Grant tracker, deadlines, applications, status — 24 active grants", color: "#FFD700", ready: true },
   { key: "mind-studio", label: "Mind Studio", icon: "🧠", desc: "Clinic pipeline, consumer, PI — 3 portal management", color: "#9B59B6", ready: false },
   { key: "casper-group", label: "Casper Group", icon: "🍽️", desc: "10 restaurant concepts — venues, prospects, menus", color: "#E74C3C", ready: false },
   { key: "umbrella", label: "Umbrella Group", icon: "☂️", desc: "Brand Studio, Auto Exchange, Clean, Realty, Injury", color: "#3498DB", ready: false },
@@ -21,7 +21,7 @@ const DASHBOARDS = [
   { key: "leads", label: "Lead Sourcing", icon: "🎯", desc: "Prospect lists, enrichment, qualification, scoring", color: "#F44336", ready: false },
   { key: "content", label: "Content", icon: "🎬", desc: "Graphics queue, video pipeline, brand assets, approvals", color: "#FF7043", ready: false },
   { key: "vendors", label: "Vendors", icon: "🏪", desc: "Vendor applications, event vendors, food vendors", color: "#8D6E63", ready: false },
-  { key: "contacts", label: "Database / Contacts", icon: "👥", desc: "2,143 contacts — directory, VIP circle, CRM", color: "#607D8B", ready: false },
+  { key: "contacts", label: "Database / Contacts", icon: "👥", desc: "2,143+ contacts — directory, VIP circle, CRM", color: "#607D8B", ready: true },
   { key: "upcoming", label: "Upcoming Events", icon: "📆", desc: "Next 30 days — events, deadlines, launches", color: "#00E676", ready: false },
 ];
 
