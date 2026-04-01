@@ -8,7 +8,7 @@ const DASHBOARDS = [
   { key: "schedule", label: "Schedule / Tasks", icon: "📅", desc: "Calendar, task queue, deadlines, sprint board", color: "#3B82F6", ready: true },
   { key: "social", label: "Social Media", icon: "📱", desc: "Post queue, content calendar, engagement, analytics", color: "#E040FB", ready: true },
   { key: "outreach", label: "Outreach", icon: "📨", desc: "Email sequences, SMS campaigns, follow-up tracking", color: "#FF6B35", ready: true },
-  { key: "shopify", label: "Shopify / Products", icon: "🛍️", desc: "MAGA, Stush, Bodega — sales, inventory, orders", color: "#96BF48", ready: true },
+  { key: "products", label: "Products", icon: "🛍️", desc: "MAGA, Stush, Bodega — sales, inventory, orders", color: "#96BF48", ready: true },
   { key: "events", label: "Events", icon: "🎪", desc: "Event calendar, ticketing, DJ/host assignments, sponsors", color: "#FF4081", ready: true },
   { key: "grants", label: "Grants", icon: "💰", desc: "Grant tracker, deadlines, applications, status — 24 active grants", color: "#FFD700", ready: true },
   { key: "mind-studio", label: "Mind Studio", icon: "🧠", desc: "Clinic pipeline, consumer, PI — 3 portal management", color: "#9B59B6", ready: true },
