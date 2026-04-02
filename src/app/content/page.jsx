@@ -1,21 +1,76 @@
 "use client";
-import Link from "next/link";
-export default function Dashboard() {
+import { useState, useEffect } from "react";
+import { Header, Card, Badge, Table, Section, Loading, q } from "../lib/ui";
+
+export default function Content() {
+  const [d, setD] = useState({});
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    Promise.all([
+      q("brand_asset_files", "select=entity_id,asset_type,file_name,file_url,created_at&order=created_at.desc&limit=200"),
+      q("graphics_folders", "select=entity_id,folder_name&limit=500"),
+      q("brand_voice_profiles", "select=brand_key,brand_name,tone,is_active&order=brand_name"),
+      q("weekly_content_schedule", "select=brand_key,day_of_week,platform,post_type,status&limit=500"),
+    ]).then(([assets, folders, voices, schedule]) => {
+      setD({ assets: assets||[], folders: folders||[], voices: voices||[], schedule: schedule||[] });
+      setLoading(false);
+    });
+  }, []);
+
+  if (loading) return <Loading text="LOADING CONTENT..." />;
+  const { assets, folders, voices, schedule } = d;
+  const byEntity = {};
+  assets.forEach(a => { byEntity[a.entity_id] = (byEntity[a.entity_id]||0)+1; });
+  const topEntities = Object.entries(byEntity).sort((a,b) => b[1]-a[1]).slice(0,15);
+  const byType = {};
+  assets.forEach(a => { const t = a.asset_type||"other"; byType[t] = (byType[t]||0)+1; });
+
   return (
     <div style={{ minHeight: "100vh", background: "#060604", fontFamily: "'DM Sans',sans-serif", color: "#F0EDE6" }}>
-      <div style={{ background: "linear-gradient(135deg,#0A0A08,#111)", borderBottom: "1px solid #1a1a1a", padding: "20px 32px", display: "flex", alignItems: "center", gap: 16 }}>
-        <Link href="/" style={{ fontSize: 11, color: "#666", letterSpacing: 2, textTransform: "uppercase", padding: "6px 12px", border: "1px solid #222", borderRadius: 4 }}>← HUB</Link>
-        <div>
-          <div style={{ fontFamily: "'DM Mono',monospace", fontSize: 9, letterSpacing: 6, color: "#FF7043", textTransform: "uppercase" }}>THE KOLLECTIVE HOSPITALITY GROUP</div>
-          <h1 style={{ fontSize: 22, fontWeight: 800, letterSpacing: -0.5, margin: 0 }}>Content</h1>
+      <Header title="Content" icon="🎬" sub="Graphics queue, video pipeline, brand assets, approval workflow" color="#F59E0B" />
+      <div style={{ padding: "24px 32px" }}>
+        <div style={{ display: "flex", gap: 16, flexWrap: "wrap", marginBottom: 32 }}>
+          <Card title="Total Assets" value={assets.length} sub="registered files" color="#F59E0B" />
+          <Card title="Graphics Folders" value={folders.length} sub="organized" color="#8B5CF6" />
+          <Card title="Brand Voices" value={voices.filter(v=>v.is_active).length} sub="active profiles" color="#22C55E" />
+          <Card title="Content Schedule" value={schedule.length} sub="weekly slots" color="#3B82F6" />
         </div>
-      </div>
-      <div style={{ padding: "24px 32px", textAlign: "center" }}>
-        <div style={{ fontSize: 64, marginBottom: 16, marginTop: 60 }}>🎬</div>
-        <div style={{ fontSize: 24, fontWeight: 800, marginBottom: 8 }}>Content</div>
-        <div style={{ fontSize: 13, color: "#666", marginBottom: 32 }}>Graphics queue, video pipeline, brand assets</div>
-        <div style={{ display: "inline-block", padding: "3px 14px", borderRadius: 20, fontSize: 10, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase", background: "#FF704322", color: "#FF7043", border: "1px solid #FF704344" }}>BUILDING — DATA SOURCES CONNECTED</div>
-        <div style={{ fontSize: 11, color: "#444", marginTop: 20 }}>Dashboard framework deployed. Live data integration in next sprint.</div>
+
+        <Section title="Assets by Brand" icon="📂" count={`${Object.keys(byEntity).length} BRANDS`}>
+          <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
+            {topEntities.map(([entity, count]) => (
+              <div key={entity} style={{ background:"#0D0D0B", border:"1px solid #1a1a1a", borderRadius:20, padding:"6px 16px", fontSize:11 }}>
+                <span style={{ color:"#F59E0B", fontWeight:700 }}>{count}</span> <span style={{ color:"#888" }}>{entity.replace(/_/g,' ')}</span>
+              </div>
+            ))}
+          </div>
+        </Section>
+
+        <Section title="Assets by Type" icon="🏷️">
+          <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
+            {Object.entries(byType).sort((a,b)=>b[1]-a[1]).map(([type, count]) => (
+              <div key={type} style={{ background:"#0D0D0B", border:"1px solid #1a1a1a", borderRadius:20, padding:"6px 16px", fontSize:11 }}>
+                <span style={{ color:"#8B5CF6", fontWeight:700 }}>{count}</span> <span style={{ color:"#888" }}>{type}</span>
+              </div>
+            ))}
+          </div>
+        </Section>
+
+        <Section title="Brand Voice Profiles" icon="🗣️" count={`${voices.length} PROFILES`}>
+          <Table headers={["Brand","Tone","Active"]} rows={voices.map(v => [
+            v.brand_name||v.brand_key||"—", v.tone||"—",
+            <Badge key="a" text={v.is_active?"ACTIVE":"OFF"} color={v.is_active?"#22C55E":"#555"} />
+          ])} />
+        </Section>
+
+        <Section title="Recent Assets" icon="🆕">
+          <Table headers={["File","Entity","Type","Date"]} rows={assets.slice(0,20).map(a => [
+            <span key="f" style={{ maxWidth:200, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", display:"inline-block" }}>{a.file_name||"—"}</span>,
+            a.entity_id||"—", <Badge key="t" text={a.asset_type||"file"} color="#F59E0B" />,
+            a.created_at ? new Date(a.created_at).toLocaleDateString() : "—"
+          ])} />
+        </Section>
       </div>
     </div>
   );

@@ -1,21 +1,65 @@
 "use client";
-import Link from "next/link";
-export default function Dashboard() {
+import { useState, useEffect } from "react";
+import { Header, Card, Badge, Section, Loading, q } from "../lib/ui";
+
+export default function SoleExchange() {
+  const [d, setD] = useState({});
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    Promise.all([
+      q("form_submissions", "select=*&brand_key=eq.sole_exchange&order=created_at.desc"),
+      q("brand_asset_files", "select=*&entity_id=eq.sole_exchange"),
+      q("contact_action_queue", "select=brand_key,action_type,status&brand_key=eq.sole_exchange&limit=200"),
+    ]).then(([subs, assets, eng]) => {
+      setD({ submissions: subs||[], assets: assets||[], engagement: eng||[] });
+      setLoading(false);
+    });
+  }, []);
+
+  if (loading) return <Loading text="LOADING SOLE EXCHANGE..." />;
+  const { submissions, assets, engagement } = d;
+
   return (
     <div style={{ minHeight: "100vh", background: "#060604", fontFamily: "'DM Sans',sans-serif", color: "#F0EDE6" }}>
-      <div style={{ background: "linear-gradient(135deg,#0A0A08,#111)", borderBottom: "1px solid #1a1a1a", padding: "20px 32px", display: "flex", alignItems: "center", gap: 16 }}>
-        <Link href="/" style={{ fontSize: 11, color: "#666", letterSpacing: 2, textTransform: "uppercase", padding: "6px 12px", border: "1px solid #222", borderRadius: 4 }}>← HUB</Link>
-        <div>
-          <div style={{ fontFamily: "'DM Mono',monospace", fontSize: 9, letterSpacing: 6, color: "#FF9800", textTransform: "uppercase" }}>THE KOLLECTIVE HOSPITALITY GROUP</div>
-          <h1 style={{ fontSize: 22, fontWeight: 800, letterSpacing: -0.5, margin: 0 }}>Sole Exchange</h1>
+      <Header title="Sole Exchange" icon="👟" sub="Sneaker events, vendors, market operations" color="#EF4444" />
+      <div style={{ padding: "24px 32px" }}>
+        <div style={{ display: "flex", gap: 16, flexWrap: "wrap", marginBottom: 32 }}>
+          <Card title="Vendor Apps" value={submissions.length} color="#EF4444" />
+          <Card title="Brand Assets" value={assets.length} color="#F59E0B" />
+          <Card title="Engagement Queue" value={engagement.length} color="#3B82F6" />
         </div>
-      </div>
-      <div style={{ padding: "24px 32px", textAlign: "center" }}>
-        <div style={{ fontSize: 64, marginBottom: 16, marginTop: 60 }}>👟</div>
-        <div style={{ fontSize: 24, fontWeight: 800, marginBottom: 8 }}>Sole Exchange</div>
-        <div style={{ fontSize: 13, color: "#666", marginBottom: 32 }}>Sneaker events, vendors, market operations</div>
-        <div style={{ display: "inline-block", padding: "3px 14px", borderRadius: 20, fontSize: 10, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase", background: "#FF980022", color: "#FF9800", border: "1px solid #FF980044" }}>BUILDING — DATA SOURCES CONNECTED</div>
-        <div style={{ fontSize: 11, color: "#444", marginTop: 20 }}>Dashboard framework deployed. Live data integration in next sprint.</div>
+
+        <Section title="Sole Exchange Operations" icon="🏪">
+          <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(280px,1fr))", gap:16 }}>
+            <div style={{ background:"#0D0D0B", border:"1px solid #1a1a1a", borderRadius:8, padding:20 }}>
+              <div style={{ fontSize:10, color:"#EF4444", letterSpacing:3, fontFamily:"'DM Mono',monospace", marginBottom:12 }}>VENDOR MANAGEMENT</div>
+              <div style={{ fontSize:12, color:"#888", lineHeight:1.8 }}>
+                <div>📝 Vendor booth applications</div>
+                <div>💰 Payment tracking</div>
+                <div>📍 Floor plan assignments</div>
+                <div>⭐ Performance reviews</div>
+              </div>
+            </div>
+            <div style={{ background:"#0D0D0B", border:"1px solid #1a1a1a", borderRadius:8, padding:20 }}>
+              <div style={{ fontSize:10, color:"#F59E0B", letterSpacing:3, fontFamily:"'DM Mono',monospace", marginBottom:12 }}>EVENT PRODUCTION</div>
+              <div style={{ fontSize:12, color:"#888", lineHeight:1.8 }}>
+                <div>🎪 Market layout planning</div>
+                <div>🎤 DJ/entertainment booking</div>
+                <div>📸 Photography/videography</div>
+                <div>🚗 Parking & logistics</div>
+              </div>
+            </div>
+            <div style={{ background:"#0D0D0B", border:"1px solid #1a1a1a", borderRadius:8, padding:20 }}>
+              <div style={{ fontSize:10, color:"#3B82F6", letterSpacing:3, fontFamily:"'DM Mono',monospace", marginBottom:12 }}>GHL INTEGRATION</div>
+              <div style={{ fontSize:12, color:"#888", lineHeight:1.8 }}>
+                <div>🔑 Location: F2avGQSgrWRyp0YiaWtO</div>
+                <div>⚠️ OAuth needs re-authentication</div>
+                <div>📊 Pipeline tracking</div>
+              </div>
+            </div>
+          </div>
+        </Section>
       </div>
     </div>
   );

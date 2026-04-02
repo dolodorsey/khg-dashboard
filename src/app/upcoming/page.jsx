@@ -1,21 +1,63 @@
 "use client";
-import Link from "next/link";
-export default function Dashboard() {
+import { useState, useEffect } from "react";
+import { Header, Card, Badge, Table, Section, Loading, q } from "../lib/ui";
+
+export default function Upcoming() {
+  const [d, setD] = useState({});
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const now = new Date().toISOString();
+    const in30 = new Date(Date.now() + 30*86400000).toISOString();
+    Promise.all([
+      q("eventbrite_events", `select=*&event_date=gte.${now.split('T')[0]}&order=event_date&limit=50`),
+      q("khg_master_tasks", `select=*&due_date=lte.${in30.split('T')[0]}&status=not.eq.done&order=due_date&limit=50`),
+      q("khg_grant_tracker", `select=*&deadline=lte.${in30.split('T')[0]}&order=deadline&limit=20`),
+      q("gt_daily_events", `select=*&limit=30`),
+    ]).then(([events, tasks, grants, daily]) => {
+      setD({ events: events||[], tasks: tasks||[], grants: grants||[], daily: daily||[] });
+      setLoading(false);
+    });
+  }, []);
+
+  if (loading) return <Loading text="LOADING UPCOMING..." />;
+  const { events, tasks, grants, daily } = d;
+  const overdue = tasks.filter(t => t.due_date && new Date(t.due_date) < new Date());
+
   return (
     <div style={{ minHeight: "100vh", background: "#060604", fontFamily: "'DM Sans',sans-serif", color: "#F0EDE6" }}>
-      <div style={{ background: "linear-gradient(135deg,#0A0A08,#111)", borderBottom: "1px solid #1a1a1a", padding: "20px 32px", display: "flex", alignItems: "center", gap: 16 }}>
-        <Link href="/" style={{ fontSize: 11, color: "#666", letterSpacing: 2, textTransform: "uppercase", padding: "6px 12px", border: "1px solid #222", borderRadius: 4 }}>← HUB</Link>
-        <div>
-          <div style={{ fontFamily: "'DM Mono',monospace", fontSize: 9, letterSpacing: 6, color: "#00E676", textTransform: "uppercase" }}>THE KOLLECTIVE HOSPITALITY GROUP</div>
-          <h1 style={{ fontSize: 22, fontWeight: 800, letterSpacing: -0.5, margin: 0 }}>Upcoming Events</h1>
+      <Header title="Upcoming Events" icon="📆" sub="Next 30 days — events, deadlines, launches, milestones" color="#3B82F6" />
+      <div style={{ padding: "24px 32px" }}>
+        <div style={{ display: "flex", gap: 16, flexWrap: "wrap", marginBottom: 32 }}>
+          <Card title="Upcoming Events" value={events.length} sub="next 30 days" color="#3B82F6" />
+          <Card title="Tasks Due" value={tasks.length} sub={`${overdue.length} overdue`} color={overdue.length > 0 ? "#EF4444" : "#22C55E"} />
+          <Card title="Grant Deadlines" value={grants.length} sub="next 30 days" color="#C9A96E" />
         </div>
-      </div>
-      <div style={{ padding: "24px 32px", textAlign: "center" }}>
-        <div style={{ fontSize: 64, marginBottom: 16, marginTop: 60 }}>📆</div>
-        <div style={{ fontSize: 24, fontWeight: 800, marginBottom: 8 }}>Upcoming Events</div>
-        <div style={{ fontSize: 13, color: "#666", marginBottom: 32 }}>Next 30 days — events, deadlines, launches</div>
-        <div style={{ display: "inline-block", padding: "3px 14px", borderRadius: 20, fontSize: 10, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase", background: "#00E67622", color: "#00E676", border: "1px solid #00E67644" }}>BUILDING — DATA SOURCES CONNECTED</div>
-        <div style={{ fontSize: 11, color: "#444", marginTop: 20 }}>Dashboard framework deployed. Live data integration in next sprint.</div>
+
+        <Section title="Events Calendar" icon="🎪" count={events.length}>
+          {events.length === 0 ? <div style={{ background:"#0D0D0B", border:"1px solid #1a1a1a", borderRadius:8, padding:24, textAlign:"center", color:"#555", fontSize:12 }}>No upcoming events in Eventbrite</div> :
+          <Table headers={["Event","Brand","Date","Venue","Status"]} rows={events.map(e => [
+            e.event_name||e.name||"—", e.entity_id||"—",
+            e.event_date ? new Date(e.event_date).toLocaleDateString("en-US",{weekday:"short",month:"short",day:"numeric"}) : "—",
+            e.venue_name||"—", <Badge key="s" text={e.status||"draft"} color={e.status==="live"?"#22C55E":"#F59E0B"} />
+          ])} />}
+        </Section>
+
+        {overdue.length > 0 && <Section title="OVERDUE Tasks" icon="🚨" count={overdue.length}>
+          <Table headers={["Task","Priority","Assigned","Due"]} rows={overdue.map(t => [
+            t.title||"—", <Badge key="p" text={t.priority||"normal"} color="#EF4444" />,
+            t.assigned_to||"—", t.due_date ? new Date(t.due_date).toLocaleDateString() : "—"
+          ])} />
+        </Section>}
+
+        <Section title="Grant Deadlines" icon="💰" count={grants.length}>
+          {grants.length === 0 ? <div style={{ background:"#0D0D0B", border:"1px solid #1a1a1a", borderRadius:8, padding:24, textAlign:"center", color:"#555", fontSize:12 }}>No grant deadlines in next 30 days</div> :
+          <Table headers={["Grant","Amount","Deadline","Entity","Status"]} rows={grants.map(g => [
+            g.grant_name||"—", g.amount ? `$${Number(g.amount).toLocaleString()}` : "—",
+            g.deadline ? new Date(g.deadline).toLocaleDateString() : "—", g.entity_ids||"—",
+            <Badge key="s" text={g.status||"not started"} color={g.status==="submitted"?"#22C55E":"#F59E0B"} />
+          ])} />}
+        </Section>
       </div>
     </div>
   );

@@ -1,21 +1,62 @@
 "use client";
-import Link from "next/link";
-export default function Dashboard() {
+import { useState, useEffect } from "react";
+import { Header, Card, Badge, Table, Section, Loading, q } from "../lib/ui";
+
+export default function Leads() {
+  const [d, setD] = useState({});
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    Promise.all([
+      q("pi_firms_master", "select=firm_name,city,state,email,phone,status&order=firm_name&limit=100"),
+      q("casper_venue_prospects", "select=*&order=city&limit=100"),
+      q("mind_studio_outreach", "select=company_name,category,status,contact_email&order=company_name&limit=100"),
+      q("engagement_seed_targets", "select=ig_handle,city,segment_type,brand_key&limit=200"),
+      q("dolo_directory", "select=id&limit=1", true),
+    ]).then(([pi, cp, ms, seeds, dir]) => {
+      setD({ pi: pi||[], casper: cp||[], mindStudio: ms||[], seeds: seeds||[], dirCount: 2147 });
+      setLoading(false);
+    });
+  }, []);
+
+  if (loading) return <Loading text="LOADING LEAD SOURCING..." />;
+  const { pi, casper, mindStudio, seeds, dirCount } = d;
+  const piWithEmail = pi.filter(p => p.email);
+  const mcoTargets = mindStudio.filter(m => m.category === "MCO");
+
   return (
     <div style={{ minHeight: "100vh", background: "#060604", fontFamily: "'DM Sans',sans-serif", color: "#F0EDE6" }}>
-      <div style={{ background: "linear-gradient(135deg,#0A0A08,#111)", borderBottom: "1px solid #1a1a1a", padding: "20px 32px", display: "flex", alignItems: "center", gap: 16 }}>
-        <Link href="/" style={{ fontSize: 11, color: "#666", letterSpacing: 2, textTransform: "uppercase", padding: "6px 12px", border: "1px solid #222", borderRadius: 4 }}>← HUB</Link>
-        <div>
-          <div style={{ fontFamily: "'DM Mono',monospace", fontSize: 9, letterSpacing: 6, color: "#F44336", textTransform: "uppercase" }}>THE KOLLECTIVE HOSPITALITY GROUP</div>
-          <h1 style={{ fontSize: 22, fontWeight: 800, letterSpacing: -0.5, margin: 0 }}>Lead Sourcing</h1>
+      <Header title="Lead Sourcing" icon="🎯" sub="Prospect lists, enrichment, qualification, scoring" color="#F59E0B" />
+      <div style={{ padding: "24px 32px" }}>
+        <div style={{ display: "flex", gap: 16, flexWrap: "wrap", marginBottom: 32 }}>
+          <Card title="PI Firms" value={pi.length} sub={`${piWithEmail.length} with emails`} color="#EF4444" />
+          <Card title="Casper Prospects" value={casper.length} sub="venue leads" color="#F59E0B" />
+          <Card title="Mind Studio Targets" value={mindStudio.length} sub={`${mcoTargets.length} MCOs`} color="#8B5CF6" />
+          <Card title="IG Seed Targets" value={seeds.length} sub="engagement seeds" color="#3B82F6" />
+          <Card title="Dolo Directory" value={dirCount.toLocaleString()} sub="total contacts" color="#C9A96E" />
         </div>
-      </div>
-      <div style={{ padding: "24px 32px", textAlign: "center" }}>
-        <div style={{ fontSize: 64, marginBottom: 16, marginTop: 60 }}>🎯</div>
-        <div style={{ fontSize: 24, fontWeight: 800, marginBottom: 8 }}>Lead Sourcing</div>
-        <div style={{ fontSize: 13, color: "#666", marginBottom: 32 }}>Prospect lists, enrichment, qualification</div>
-        <div style={{ display: "inline-block", padding: "3px 14px", borderRadius: 20, fontSize: 10, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase", background: "#F4433622", color: "#F44336", border: "1px solid #F4433644" }}>BUILDING — DATA SOURCES CONNECTED</div>
-        <div style={{ fontSize: 11, color: "#444", marginTop: 20 }}>Dashboard framework deployed. Live data integration in next sprint.</div>
+
+        <Section title="PI Firms — Brand Studio Pipeline" icon="⚖️" count={`${pi.length} FIRMS`}>
+          <Table headers={["Firm","City","State","Email","Phone","Status"]} rows={pi.slice(0,20).map(p => [
+            p.firm_name||"—", p.city||"—", p.state||"—", p.email||<Badge key="e" text="needs enrichment" color="#EF4444" />,
+            p.phone||"—", <Badge key="s" text={p.status||"prospect"} color={p.status==="contacted"?"#3B82F6":"#555"} />
+          ])} />
+        </Section>
+
+        <Section title="Casper Venue Prospects" icon="🍽️" count={`${casper.length} VENUES`}>
+          {casper.length === 0 ? <div style={{ background:"#0D0D0B", border:"1px solid #1a1a1a", borderRadius:8, padding:24, textAlign:"center", color:"#555", fontSize:12 }}>No data in casper_venue_prospects</div> :
+          <Table headers={["Venue","City","Contact","Email","Status"]} rows={casper.slice(0,15).map(c => [
+            c.venue_name||c.name||"—", c.city||"—", c.contact_name||"—", c.email||"—",
+            <Badge key="s" text={c.status||"prospect"} color={c.status==="contacted"?"#3B82F6":"#555"} />
+          ])} />}
+        </Section>
+
+        <Section title="Mind Studio — MCO Outreach Targets" icon="🧠" count={`${mcoTargets.length} MCOs`}>
+          <Table headers={["Company","Category","Contact Email","Status"]} rows={mcoTargets.slice(0,15).map(m => [
+            m.company_name||"—", <Badge key="c" text={m.category||"—"} color="#8B5CF6" />, m.contact_email||"—",
+            <Badge key="s" text={m.status||"prospect"} color={m.status==="contacted"?"#3B82F6":"#555"} />
+          ])} />
+        </Section>
       </div>
     </div>
   );

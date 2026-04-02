@@ -1,44 +1,68 @@
 "use client";
-import Link from "next/link";
-const SUBS = [
-  { name: "Brand Studio", icon: "🎨", desc: "Creative agency — design, branding, marketing", site: "brand-studio-website.vercel.app" },
-  { name: "Auto Exchange", icon: "🚗", desc: "Vehicle sourcing, financing, and sales", site: "umbrella-auto-exchange.vercel.app" },
-  { name: "Clean Services", icon: "🧹", desc: "Commercial and residential cleaning", site: "umbrella-clean-services.vercel.app" },
-  { name: "Realty Group", icon: "🏠", desc: "Real estate brokerage and property management", site: "umbrella-realty-group.vercel.app" },
-  { name: "Injury Network", icon: "⚖️", desc: "Personal injury referral network (HURT 911)", site: "umbrella-injury-network.vercel.app" },
-];
-export default function UmbrellaDashboard() {
+import { useState, useEffect } from "react";
+import { Header, Card, Badge, Table, Section, Loading, q } from "../lib/ui";
+
+export default function Umbrella() {
+  const [d, setD] = useState({});
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    Promise.all([
+      q("pi_firms_master", "select=firm_name,city,state,email,phone,status&order=firm_name&limit=100"),
+      q("contact_action_queue", "select=brand_key,action_type,status&brand_key=eq.umbrella_injury&limit=200"),
+      q("brand_asset_files", "select=*&entity_id=eq.umbrella_injury"),
+      q("khg_master_tasks", "select=*&category=eq.umbrella&status=not.eq.done&order=due_date"),
+    ]).then(([pi, eng, assets, tasks]) => {
+      setD({ pi: pi||[], engagement: eng||[], assets: assets||[], tasks: tasks||[] });
+      setLoading(false);
+    });
+  }, []);
+
+  if (loading) return <Loading text="LOADING UMBRELLA GROUP..." />;
+  const { pi, engagement, assets, tasks } = d;
+
+  const brands = [
+    { name: "Brand Studio", icon: "🎨", desc: "Creative agency — $500K/month branding budget play for PI firms", color: "#C9A96E", metric: `${pi.length} PI firm targets` },
+    { name: "Auto Exchange", icon: "🚗", desc: "Automotive services & fleet management", color: "#3B82F6", metric: "Operations" },
+    { name: "Clean", icon: "🧹", desc: "Commercial & residential cleaning services", color: "#22C55E", metric: "Service delivery" },
+    { name: "Realty", icon: "🏠", desc: "Real estate investment & property management", color: "#F59E0B", metric: "Portfolio tracking" },
+    { name: "Injury Network", icon: "⚖️", desc: "Personal injury referral network", color: "#EF4444", metric: `${pi.filter(p=>p.email).length} firms with emails` },
+  ];
+
   return (
     <div style={{ minHeight: "100vh", background: "#060604", fontFamily: "'DM Sans',sans-serif", color: "#F0EDE6" }}>
-      <div style={{ background: "linear-gradient(135deg,#0A0A08,#111)", borderBottom: "1px solid #1a1a1a", padding: "20px 32px", display: "flex", alignItems: "center", gap: 16 }}>
-        <Link href="/" style={{ fontSize: 11, color: "#666", letterSpacing: 2, textTransform: "uppercase", padding: "6px 12px", border: "1px solid #222", borderRadius: 4 }}>← HUB</Link>
-        <div>
-          <div style={{ fontFamily: "'DM Mono',monospace", fontSize: 9, letterSpacing: 6, color: "#3498DB", textTransform: "uppercase" }}>THE KOLLECTIVE HOSPITALITY GROUP</div>
-          <h1 style={{ fontSize: 22, fontWeight: 800, letterSpacing: -0.5, margin: 0 }}>Umbrella Group</h1>
-        </div>
-      </div>
+      <Header title="Umbrella Group" icon="☂️" sub="Brand Studio · Auto Exchange · Clean · Realty · Injury Network" color="#C9A96E" />
       <div style={{ padding: "24px 32px" }}>
-        <div style={{ display: "flex", gap: 16, marginBottom: 24 }}>
-          {[["☂️", "5", "Sub-Brands"], ["🌐", "5", "Websites"], ["📊", "1", "GHL Location"]].map(([icon, n, l], i) => (
-            <div key={i} style={{ background: "#0D0D0B", border: "1px solid #1a1a1a", borderRadius: 6, padding: 20, textAlign: "center", flex: 1 }}>
-              <div style={{ fontSize: 24 }}>{icon}</div>
-              <div style={{ fontSize: 28, fontWeight: 800, color: "#3498DB", lineHeight: 1, marginTop: 4 }}>{n}</div>
-              <div style={{ fontSize: 9, letterSpacing: 2, color: "#666", textTransform: "uppercase", marginTop: 4 }}>{l}</div>
-            </div>
-          ))}
+        <div style={{ display: "flex", gap: 16, flexWrap: "wrap", marginBottom: 32 }}>
+          <Card title="PI Firms" value={pi.length} sub={`${pi.filter(p=>p.email).length} with email`} color="#EF4444" />
+          <Card title="Sub-Brands" value={5} color="#C9A96E" />
+          <Card title="Engagement Queue" value={engagement.length} color="#3B82F6" />
+          <Card title="Brand Assets" value={assets.length} color="#F59E0B" />
+          <Card title="Open Tasks" value={tasks.length} color="#8B5CF6" />
         </div>
-        {SUBS.map(s => (
-          <div key={s.name} style={{ background: "#0D0D0B", border: "1px solid #1a1a1a", borderRadius: 6, padding: 24, marginBottom: 12, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <div style={{ display: "flex", gap: 14, alignItems: "center" }}>
-              <div style={{ fontSize: 28 }}>{s.icon}</div>
-              <div>
-                <div style={{ fontSize: 15, fontWeight: 700 }}>{s.name}</div>
-                <div style={{ fontSize: 11, color: "#666", marginTop: 2 }}>{s.desc}</div>
+
+        <Section title="Umbrella Sub-Brands" icon="☂️">
+          <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(280px,1fr))", gap:16 }}>
+            {brands.map(b => (
+              <div key={b.name} style={{ background:"#0D0D0B", border:"1px solid #1a1a1a", borderRadius:8, padding:20 }}>
+                <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:8 }}>
+                  <span style={{ fontSize:20 }}>{b.icon}</span>
+                  <span style={{ fontSize:14, fontWeight:700 }}>{b.name}</span>
+                </div>
+                <div style={{ fontSize:12, color:"#888", marginBottom:8 }}>{b.desc}</div>
+                <Badge text={b.metric} color={b.color} />
               </div>
-            </div>
-            <a href={`https://${s.site}`} target="_blank" rel="noopener" style={{ padding: "8px 16px", background: "#3498DB22", border: "1px solid #3498DB44", borderRadius: 4, fontSize: 10, fontWeight: 600, color: "#3498DB", letterSpacing: 1, textTransform: "uppercase" }}>VISIT →</a>
+            ))}
           </div>
-        ))}
+        </Section>
+
+        <Section title="PI Firms — Brand Studio Pipeline" icon="⚖️" count={`${pi.length} FIRMS`}>
+          <Table headers={["Firm","City","State","Email","Status"]} rows={pi.slice(0,20).map(p => [
+            p.firm_name||"—", p.city||"—", p.state||"—",
+            p.email||<Badge key="e" text="needs enrichment" color="#EF4444" />,
+            <Badge key="s" text={p.status||"prospect"} color="#555" />
+          ])} />
+        </Section>
       </div>
     </div>
   );
