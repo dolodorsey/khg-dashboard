@@ -1,4 +1,24 @@
 {
   "/_not-found/page": "app/_not-found/page.js",
-  "/page": "app/page.js"
+  "/ambassador/page": "app/ambassador/page.js",
+  "/apps/page": "app/apps/page.js",
+  "/command-center/page": "app/command-center/page.js",
+  "/content/page": "app/content/page.js",
+  "/casper-group/page": "app/casper-group/page.js",
+  "/contacts/page": "app/contacts/page.js",
+  "/directory/page": "app/directory/page.js",
+  "/events/page": "app/events/page.js",
+  "/grants/page": "app/grants/page.js",
+  "/leads/page": "app/leads/page.js",
+  "/forever-futbol/page": "app/forever-futbol/page.js",
+  "/outreach/page": "app/outreach/page.js",
+  "/page": "app/page.js",
+  "/products/page": "app/products/page.js",
+  "/schedule/page": "app/schedule/page.js",
+  "/mind-studio/page": "app/mind-studio/page.js",
+  "/social/page": "app/social/page.js",
+  "/sole-exchange/page": "app/sole-exchange/page.js",
+  "/umbrella/page": "app/umbrella/page.js",
+  "/upcoming/page": "app/upcoming/page.js",
+  "/vendors/page": "app/vendors/page.js"
 }
