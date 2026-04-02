@@ -1,50 +1,75 @@
 "use client";
-import { useState, useEffect, useCallback } from "react";
-import Link from "next/link";
-const SB = "https://dzlmtvodpyhetvektfuo.supabase.co";
-const SK = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR6bG10dm9kcHloZXR2ZWt0ZnVvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk1ODQ4NjQsImV4cCI6MjA4NTE2MDg2NH0.qmnWB4aWdb7U8Iod9Hv8PQAOJO3AG0vYEGnPS--kfAo";
-const H = { apikey: SK, Authorization: `Bearer ${SK}` };
-const sGet = async (p) => { try { const r = await fetch(`${SB}/rest/v1/${p}`, { headers: H }); return await r.json(); } catch { return []; } };
+import { useState, useEffect } from "react";
+import { Header, Card, Badge, Table, Section, Loading, q } from "../lib/ui";
 
-const PIPELINES = [
-  { name: "Clinic Pipeline", stages: 20, color: "#9B59B6" },
-  { name: "Consumer Pipeline", stages: 9, color: "#8E44AD" },
-  { name: "PI Pipeline", stages: 8, color: "#7D3C98" },
-];
+export default function MindStudio() {
+  const [d, setD] = useState({});
+  const [loading, setLoading] = useState(true);
 
-export default function MindStudioDashboard() {
+  useEffect(() => {
+    Promise.all([
+      q("mind_studio_outreach", "select=*&order=company_name"),
+      q("ms_clinic_pipeline", "select=*&order=created_at.desc"),
+      q("contact_action_queue", "select=*&brand_key=eq.mind_studio&limit=200"),
+      q("brand_asset_files", "select=*&entity_id=eq.mind_studio"),
+    ]).then(([outreach, pipeline, eng, assets]) => {
+      setD({ outreach: outreach||[], pipeline: pipeline||[], engagement: eng||[], assets: assets||[] });
+      setLoading(false);
+    });
+  }, []);
+
+  if (loading) return <Loading text="LOADING MIND STUDIO..." />;
+  const { outreach, pipeline, engagement, assets } = d;
+  const mcos = outreach.filter(o => o.category === "MCO");
+  const prenatal = outreach.filter(o => o.category === "prenatal" || o.category === "prenatal_partner");
+  const therapists = outreach.filter(o => o.category === "therapist" || o.category === "therapist_recruit");
+  const piWrong = outreach.filter(o => o.category === "wrong_channel");
+
   return (
     <div style={{ minHeight: "100vh", background: "#060604", fontFamily: "'DM Sans',sans-serif", color: "#F0EDE6" }}>
-      <div style={{ background: "linear-gradient(135deg,#0A0A08,#111)", borderBottom: "1px solid #1a1a1a", padding: "20px 32px", display: "flex", alignItems: "center", gap: 16 }}>
-        <Link href="/" style={{ fontSize: 11, color: "#666", letterSpacing: 2, textTransform: "uppercase", padding: "6px 12px", border: "1px solid #222", borderRadius: 4 }}>← HUB</Link>
-        <div>
-          <div style={{ fontFamily: "'DM Mono',monospace", fontSize: 9, letterSpacing: 6, color: "#9B59B6", textTransform: "uppercase" }}>THE KOLLECTIVE HOSPITALITY GROUP</div>
-          <h1 style={{ fontSize: 22, fontWeight: 800, letterSpacing: -0.5, margin: 0 }}>Mind Studio</h1>
-        </div>
-      </div>
+      <Header title="Mind Studio" icon="🧠" sub="3-entity MSO · Clinic + Consumer + PI · MCO agreements ONLY" color="#8B5CF6" />
       <div style={{ padding: "24px 32px" }}>
-        <div style={{ display: "flex", gap: 16, marginBottom: 24 }}>
-          {[["🧠", "3", "Pipelines"], ["📋", "37", "Total Stages"], ["🎯", "33", "Outreach Targets"], ["🌐", "1", "Portal App"]].map(([icon, n, l], i) => (
-            <div key={i} style={{ background: "#0D0D0B", border: "1px solid #1a1a1a", borderRadius: 6, padding: 20, textAlign: "center", flex: 1 }}>
-              <div style={{ fontSize: 24 }}>{icon}</div>
-              <div style={{ fontSize: 28, fontWeight: 800, color: "#9B59B6", lineHeight: 1, marginTop: 4 }}>{n}</div>
-              <div style={{ fontSize: 9, letterSpacing: 2, color: "#666", textTransform: "uppercase", marginTop: 4 }}>{l}</div>
-            </div>
-          ))}
+        <div style={{ display: "flex", gap: 16, flexWrap: "wrap", marginBottom: 32 }}>
+          <Card title="MCO Targets" value={mcos.length} sub="correct channel" color="#8B5CF6" />
+          <Card title="Prenatal Partners" value={prenatal.length} color="#EC4899" />
+          <Card title="Therapist Recruits" value={therapists.length} color="#22C55E" />
+          <Card title="PI Firms (Moved)" value={piWrong.length} sub="→ Brand Studio" color="#555" />
+          <Card title="Clinic Pipeline" value={pipeline.length} color="#3B82F6" />
+          <Card title="Engagement" value={engagement.filter(e=>e.status==='approved').length} sub="approved" color="#F59E0B" />
         </div>
-        {PIPELINES.map(p => (
-          <div key={p.name} style={{ background: "#0D0D0B", border: `1px solid ${p.color}33`, borderRadius: 6, padding: 24, marginBottom: 14 }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <div style={{ fontSize: 16, fontWeight: 700, color: p.color }}>{p.name}</div>
-              <div style={{ fontSize: 24, fontWeight: 800, color: p.color }}>{p.stages} <span style={{ fontSize: 10, color: "#666" }}>stages</span></div>
+
+        <Section title="MCO Outreach Pipeline" icon="🏥" count={`${mcos.length} MCOs`}>
+          {mcos.length === 0 ? <div style={{ background:"#0D0D0B", border:"1px solid #1a1a1a", borderRadius:8, padding:24, textAlign:"center", color:"#555", fontSize:12 }}>No MCOs in mind_studio_outreach</div> :
+          <Table headers={["Company","Contact","Email","Status"]} rows={mcos.slice(0,20).map(m => [
+            m.company_name||"—", m.contact_name||"—",
+            m.contact_email||<Badge key="e" text="needs email" color="#EF4444" />,
+            <Badge key="s" text={m.status||"prospect"} color={m.status==="contacted"?"#3B82F6":m.status==="warm"?"#F59E0B":"#555"} />
+          ])} />}
+        </Section>
+
+        <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(280px,1fr))", gap:16, marginBottom:32 }}>
+          <div style={{ background:"#0D0D0B", border:"1px solid #1a1a1a", borderRadius:8, padding:20 }}>
+            <div style={{ fontSize:10, color:"#8B5CF6", letterSpacing:3, fontFamily:"'DM Mono',monospace", marginBottom:12 }}>CLINIC PIPELINE (20-stage)</div>
+            <div style={{ fontSize:24, fontWeight:800, color:"#8B5CF6" }}>{pipeline.length}</div>
+            <div style={{ fontSize:11, color:"#666", marginTop:4 }}>Active clients in pipeline</div>
+          </div>
+          <div style={{ background:"#0D0D0B", border:"1px solid #1a1a1a", borderRadius:8, padding:20 }}>
+            <div style={{ fontSize:10, color:"#22C55E", letterSpacing:3, fontFamily:"'DM Mono',monospace", marginBottom:12 }}>GHL INTEGRATION</div>
+            <div style={{ fontSize:12, color:"#888", lineHeight:1.8 }}>
+              <div>🔑 Location: 6h8pNMs7vPOnStVIvGvJ</div>
+              <div>🌐 themindstudioworldwide.com</div>
+              <div>📱 3-portal app (Client + Therapist + BOH)</div>
+              <div>⚠️ IG OAuth needs credentials from Myia B</div>
             </div>
           </div>
-        ))}
-        <div style={{ background: "#0D0D0B", border: "1px solid #1a1a1a", borderRadius: 6, padding: 24, marginTop: 20 }}>
-          <div style={{ fontSize: 13, fontWeight: 700, color: "#9B59B6", letterSpacing: 2, textTransform: "uppercase", marginBottom: 12 }}>QUICK LINKS</div>
-          <div style={{ display: "flex", gap: 12 }}>
-            <a href="https://themindstudioworldwide.com" target="_blank" rel="noopener" style={{ padding: "8px 16px", background: "#9B59B622", border: "1px solid #9B59B644", borderRadius: 4, fontSize: 11, fontWeight: 600, color: "#9B59B6", letterSpacing: 1 }}>WEBSITE →</a>
-            <a href="https://mind-studio-app.vercel.app" target="_blank" rel="noopener" style={{ padding: "8px 16px", background: "transparent", border: "1px solid #333", borderRadius: 4, fontSize: 11, fontWeight: 600, color: "#888", letterSpacing: 1 }}>PORTAL APP →</a>
+          <div style={{ background:"#0D0D0B", border:"1px solid #EF444433", borderRadius:8, padding:20 }}>
+            <div style={{ fontSize:10, color:"#EF4444", letterSpacing:3, fontFamily:"'DM Mono',monospace", marginBottom:12 }}>CORRECTED ROUTING</div>
+            <div style={{ fontSize:12, color:"#888", lineHeight:1.8 }}>
+              <div>✅ {piWrong.length} PI firms → Brand Studio</div>
+              <div>✅ {mcos.length} MCOs → Mind Studio (correct)</div>
+              <div>✅ {prenatal.length} prenatal → Mind Studio</div>
+              <div>✅ {therapists.length} therapists → Mind Studio</div>
+            </div>
           </div>
         </div>
       </div>

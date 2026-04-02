@@ -1,48 +1,89 @@
 "use client";
-import { useState, useEffect, useCallback } from "react";
-import Link from "next/link";
-const SB = "https://dzlmtvodpyhetvektfuo.supabase.co";
-const SK = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR6bG10dm9kcHloZXR2ZWt0ZnVvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk1ODQ4NjQsImV4cCI6MjA4NTE2MDg2NH0.qmnWB4aWdb7U8Iod9Hv8PQAOJO3AG0vYEGnPS--kfAo";
-const H = { apikey: SK, Authorization: `Bearer ${SK}` };
+import { useState, useEffect } from "react";
+import { Header, Card, Badge, Table, Section, Loading, q } from "../lib/ui";
 
-const BRANDS = ["Angel Wings","Pasta Bish","Taco Yaki","Patty Daddy","Espresso Co.","Morning After","Toss'd","Sweet Tooth","Mojo Juice","Mr. Oyster"];
+export default function CasperGroup() {
+  const [d, setD] = useState({});
+  const [loading, setLoading] = useState(true);
 
-export default function CasperDashboard() {
+  useEffect(() => {
+    Promise.all([
+      q("casper_venue_prospects", "select=*&order=city&limit=250"),
+      q("contact_action_queue", "select=brand_key,action_type,status&brand_key=eq.casper_group&limit=200"),
+      q("brand_asset_files", "select=entity_id,asset_type,file_name&entity_id=in.(casper_group,angel_wings,morning_after,mr_oyster,sweet_tooth,mojo_juice,espresso_co,taco_yaki,pasta_bish,tossd,patty_daddy)"),
+    ]).then(([prospects, eng, assets]) => {
+      setD({ prospects: prospects||[], engagement: eng||[], assets: assets||[] });
+      setLoading(false);
+    });
+  }, []);
+
+  if (loading) return <Loading text="LOADING CASPER GROUP..." />;
+  const { prospects, engagement, assets } = d;
+  const withEmail = prospects.filter(p => p.email);
+  const withPhone = prospects.filter(p => p.phone);
+  const byCityMap = {};
+  prospects.forEach(p => { const c = p.city||"Unknown"; byCityMap[c] = (byCityMap[c]||0)+1; });
+  const topCities = Object.entries(byCityMap).sort((a,b) => b[1]-a[1]);
+
+  const subBrands = [
+    { name: "Angel Wings", icon: "👼", color: "#F0EDE6" },
+    { name: "Tha Morning After", icon: "☀️", color: "#F59E0B" },
+    { name: "Patty Daddy", icon: "🍔", color: "#EF4444" },
+    { name: "Espresso Co.", icon: "☕", color: "#8B5CF6" },
+    { name: "Mojo Juice", icon: "🧃", color: "#22C55E" },
+    { name: "Mr. Oyster", icon: "🦪", color: "#3B82F6" },
+    { name: "Sweet Tooth", icon: "🍩", color: "#EC4899" },
+    { name: "Taco Yaki", icon: "🌮", color: "#F59E0B" },
+    { name: "Toss'd", icon: "🥗", color: "#22C55E" },
+    { name: "Pasta Bish", icon: "🍝", color: "#EF4444" },
+  ];
+
   return (
     <div style={{ minHeight: "100vh", background: "#060604", fontFamily: "'DM Sans',sans-serif", color: "#F0EDE6" }}>
-      <div style={{ background: "linear-gradient(135deg,#0A0A08,#111)", borderBottom: "1px solid #1a1a1a", padding: "20px 32px", display: "flex", alignItems: "center", gap: 16 }}>
-        <Link href="/" style={{ fontSize: 11, color: "#666", letterSpacing: 2, textTransform: "uppercase", padding: "6px 12px", border: "1px solid #222", borderRadius: 4 }}>← HUB</Link>
-        <div>
-          <div style={{ fontFamily: "'DM Mono',monospace", fontSize: 9, letterSpacing: 6, color: "#E74C3C", textTransform: "uppercase" }}>THE KOLLECTIVE HOSPITALITY GROUP</div>
-          <h1 style={{ fontSize: 22, fontWeight: 800, letterSpacing: -0.5, margin: 0 }}>Casper Group</h1>
-        </div>
-      </div>
+      <Header title="Casper Group" icon="🍽️" sub="10 restaurant concepts · 220 venue prospects · 15 cities" color="#C9A96E" />
       <div style={{ padding: "24px 32px" }}>
-        <div style={{ display: "flex", gap: 16, marginBottom: 24 }}>
-          {[["🍽️", "10", "Concepts"], ["🏢", "220", "Venue Prospects"], ["📧", "98", "Have Email"], ["📱", "217", "Have Phone"], ["👥", "6", "Team Members"]].map(([icon, n, l], i) => (
-            <div key={i} style={{ background: "#0D0D0B", border: "1px solid #1a1a1a", borderRadius: 6, padding: 20, textAlign: "center", flex: 1 }}>
-              <div style={{ fontSize: 24 }}>{icon}</div>
-              <div style={{ fontSize: 28, fontWeight: 800, color: "#E74C3C", lineHeight: 1, marginTop: 4 }}>{n}</div>
-              <div style={{ fontSize: 9, letterSpacing: 2, color: "#666", textTransform: "uppercase", marginTop: 4 }}>{l}</div>
-            </div>
-          ))}
+        <div style={{ display: "flex", gap: 16, flexWrap: "wrap", marginBottom: 32 }}>
+          <Card title="Venue Prospects" value={prospects.length} sub={`${topCities.length} cities`} color="#C9A96E" />
+          <Card title="With Email" value={withEmail.length} color="#22C55E" />
+          <Card title="With Phone" value={withPhone.length} color="#3B82F6" />
+          <Card title="Sub-Brands" value={10} sub="food concepts" color="#F59E0B" />
+          <Card title="Brand Assets" value={assets.length} color="#8B5CF6" />
         </div>
-        <div style={{ background: "#0D0D0B", border: "1px solid #1a1a1a", borderRadius: 6, padding: 24, marginBottom: 16 }}>
-          <div style={{ fontSize: 13, fontWeight: 700, color: "#E74C3C", letterSpacing: 2, textTransform: "uppercase", marginBottom: 16 }}>10 RESTAURANT CONCEPTS</div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 10 }}>
-            {BRANDS.map(b => (
-              <div key={b} style={{ background: "#111", border: "1px solid #1a1a1a", borderRadius: 6, padding: 14, textAlign: "center" }}>
-                <div style={{ fontSize: 13, fontWeight: 700 }}>{b}</div>
+
+        <Section title="10 Restaurant Concepts" icon="🍽️">
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))", gap: 12 }}>
+            {subBrands.map(b => (
+              <div key={b.name} style={{ background: "#0D0D0B", border: "1px solid #1a1a1a", borderRadius: 8, padding: "14px 16px", textAlign: "center" }}>
+                <div style={{ fontSize: 28, marginBottom: 6 }}>{b.icon}</div>
+                <div style={{ fontSize: 12, fontWeight: 600, color: b.color }}>{b.name}</div>
               </div>
             ))}
           </div>
-        </div>
-        <div style={{ background: "#0D0D0B", border: "1px solid #1a1a1a", borderRadius: 6, padding: 24 }}>
-          <div style={{ fontSize: 13, fontWeight: 700, color: "#E74C3C", letterSpacing: 2, textTransform: "uppercase", marginBottom: 12 }}>TEAM — 12 CALLS/DAY WEEKDAYS</div>
-          <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-            {["Brad","Bax","Alandra","Linda","Brittany","Maia"].map(n => (
-              <div key={n} style={{ padding: "8px 16px", background: "#111", border: "1px solid #222", borderRadius: 20, fontSize: 12, fontWeight: 600 }}>{n}</div>
+        </Section>
+
+        <Section title="Prospects by City" icon="🌆" count={`${topCities.length} CITIES`}>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            {topCities.map(([city, count]) => (
+              <div key={city} style={{ background: "#0D0D0B", border: "1px solid #1a1a1a", borderRadius: 20, padding: "6px 16px", fontSize: 11 }}>
+                <span style={{ color: "#C9A96E", fontWeight: 700 }}>{count}</span> <span style={{ color: "#888" }}>{city}</span>
+              </div>
             ))}
+          </div>
+        </Section>
+
+        <Section title="Venue Prospects" icon="📋" count={`${prospects.length} TOTAL`}>
+          <Table headers={["Venue","City","Contact","Email","Phone","Status"]} rows={prospects.slice(0,20).map(p => [
+            p.venue_name||p.name||"—", p.city||"—", p.contact_name||"—",
+            p.email||"—", p.phone||"—",
+            <Badge key="s" text={p.status||"prospect"} color={p.status==="contacted"?"#3B82F6":p.status==="warm"?"#F59E0B":p.status==="signed"?"#22C55E":"#555"} />
+          ])} />
+        </Section>
+
+        <div style={{ background:"#0D0D0B", border:"1px solid #C9A96E33", borderRadius:8, padding:20 }}>
+          <div style={{ fontSize:10, color:"#C9A96E", letterSpacing:3, fontFamily:"'DM Mono',monospace", marginBottom:12 }}>TEAM & OPS</div>
+          <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(200px,1fr))", gap:8, fontSize:12, color:"#888" }}>
+            <div>👤 Brad — sales lead</div><div>👤 Bax — operations</div><div>👤 Alandra — coordination</div>
+            <div>👤 Linda — admin/calls</div><div>👤 Brittany — outreach</div><div>👤 Maia — 12 calls/day weekdays</div>
           </div>
         </div>
       </div>
