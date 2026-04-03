@@ -209,7 +209,12 @@ function SocialMedia({ d, reload }) {
   const posted = all.filter(p=>p.status==="posted");
   const filtered = tab==="queued"?queued:tab==="approved"?approved:tab==="posted"?posted:all;
 
-  const action = async(id,data)=>{setBusy(id);await QU("ghl_social_posting_queue",`id=eq.${id}`,data);setEditing(null);await reload();setBusy(null);};
+  const action = async(id,data)=>{
+    setBusy(id);
+    await QU("ghl_social_posting_queue",`id=eq.${id}`,data);
+    if(data.status==="approved") { try { await fetch("https://dorsey.app.n8n.cloud/webhook/oWAp1njam9bgKhSa",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"post_approved",post_id:id})}); } catch(e) {} }
+    setEditing(null);await reload();setBusy(null);
+  };
   const startEdit = (p)=>{setEditing(p.id);setEf({caption:p.caption||"",platform:p.platform||"instagram",content_type:p.content_type||"post",image_url:p.image_url||"",hashtags:Array.isArray(p.hashtags)?(p.hashtags||[]).join(", "):"",scheduled_for:p.scheduled_for?new Date(p.scheduled_for).toISOString().slice(0,16):""});};
   const saveEdit = async(id)=>{
     const hashArr = ef.hashtags?ef.hashtags.split(",").map(h=>h.trim().replace("#","")).filter(Boolean):[];
@@ -291,7 +296,12 @@ function EmailApprovals({ d, reload }) {
   const pending = (d.emails||[]).filter(e=>!e.approved);
   const approved = (d.emails||[]).filter(e=>e.approved);
 
-  const act = async(id,data)=>{setBusy(id);await QU("email_approval_queue",`id=eq.${id}`,data);setEditing(null);await reload();setBusy(null);};
+  const act = async(id,data)=>{
+    setBusy(id);
+    await QU("email_approval_queue",`id=eq.${id}`,data);
+    if(data.approved) { try { await fetch("https://dorsey.app.n8n.cloud/webhook/3jDssrDbi21CLhn6",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"email_approved",email_id:id})}); } catch(e) {} }
+    setEditing(null);await reload();setBusy(null);
+  };
   const startEdit = (e)=>{setEditing(e.id);setEf({subject:e.subject||"",body_preview:e.body_preview||"",cta_text:e.cta_text||"",cta_url:e.cta_url||"",notes:e.notes||""});};
 
   return (<div className="u">

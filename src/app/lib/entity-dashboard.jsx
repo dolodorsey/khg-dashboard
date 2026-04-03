@@ -172,7 +172,13 @@ function SocialMedia({ d, reload, entity }) {
   const [busy,setBusy]=useState(null);
   const all=d.social||[];const queued=all.filter(p=>p.status==="queued");const posted=all.filter(p=>p.status==="posted");const approved=all.filter(p=>p.status==="approved");
   const filt=tab==="queued"?queued:tab==="posted"?posted:tab==="approved"?approved:all;
-  const approve=async id=>{setBusy(id);await qu("ghl_social_posting_queue",`id=eq.${id}`,{status:"approved"});await reload();setBusy(null)};
+  const approve=async id=>{
+    setBusy(id);
+    await qu("ghl_social_posting_queue",`id=eq.${id}`,{status:"approved"});
+    try { await fetch("https://dorsey.app.n8n.cloud/webhook/oWAp1njam9bgKhSa",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"post_approved",post_id:id})}); } catch(e) {}
+    await reload();
+    setBusy(null);
+  };
   const reject=async id=>{setBusy(id);await qu("ghl_social_posting_queue",`id=eq.${id}`,{status:"rejected"});await reload();setBusy(null)};
   const saveEdit=async()=>{if(!editing)return;setBusy(editing.id);await qu("ghl_social_posting_queue",`id=eq.${editing.id}`,{caption:editing.caption,image_url:editing.image_url||null,scheduled_for:editing.scheduled_for||null,platform:editing.platform,content_type:editing.content_type,brand_key:editing.brand_key});setEditing(null);await reload();setBusy(null)};
   const createPost=async()=>{if(!np.caption.trim())return;setBusy("new");await qi("ghl_social_posting_queue",{brand_key:np.brand_key,caption:np.caption,platform:np.platform,content_type:np.content_type,image_url:np.image_url||null,scheduled_for:np.scheduled_for||null,status:"queued"});setNp({caption:"",platform:"instagram",content_type:"post",image_url:"",scheduled_for:"",brand_key:entity.brandKeys[0]||""});setComposing(false);await reload();setBusy(null)};
@@ -228,7 +234,12 @@ function SocialMedia({ d, reload, entity }) {
 function EmailApprovals({ d, reload }) {
   const [busy,setBusy]=useState(null);const [editing,setEditing]=useState(null);
   const pending=(d.emails||[]).filter(e=>!e.approved);const approved=(d.emails||[]).filter(e=>e.approved);
-  const approve=async id=>{setBusy(id);await qu("email_approval_queue",`id=eq.${id}`,{approved:true,approved_at:new Date().toISOString(),approved_by:"dr_dorsey"});await reload();setBusy(null)};
+  const approve=async id=>{
+    setBusy(id);
+    await qu("email_approval_queue",`id=eq.${id}`,{approved:true,approved_at:new Date().toISOString(),approved_by:"dr_dorsey"});
+    try { await fetch("https://dorsey.app.n8n.cloud/webhook/3jDssrDbi21CLhn6",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"email_approved",email_id:id})}); } catch(e) {}
+    await reload();setBusy(null);
+  };
   const saveEmail=async()=>{if(!editing)return;setBusy(editing.id);await qu("email_approval_queue",`id=eq.${editing.id}`,{subject:editing.subject,body_preview:editing.body_preview,cta_text:editing.cta_text,cta_url:editing.cta_url});setEditing(null);await reload();setBusy(null)};
   return (<div className="up">
     {editing&&<div className="modal-bg" onClick={()=>setEditing(null)}><div className="modal" onClick={e=>e.stopPropagation()}>
