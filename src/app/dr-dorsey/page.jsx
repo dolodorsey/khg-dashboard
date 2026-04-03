@@ -440,7 +440,11 @@ export default function DrDorseyDashboard() {
       Q("khg_website_registry","select=entity_key,entity_name,vercel_project_name,custom_domain,vercel_url,status&status=eq.live&order=entity_name"),
       Q("ghl_locations","select=location_name,location_id,brand_key&order=location_name"),
     ]);
-    setD({contacts:contacts||[],vip:vip||[],outreach:outreach||[],social:social||[],tasks:tasks||[],content:content||[],emails:emails||[],creds:creds||[],crons:crons||[],websites:websites||[],ghl:ghl||[]});
+    setD({contacts:contacts||[],vip:vip||[],outreach:outreach||[],social:social||[],tasks:(tasks||[]).filter(function(t) {
+      if (!t.brand) return false;
+      var b = (t.brand||"").toLowerCase().replace(/\s+/g,"_");
+      return b === "dr_dorsey" || b.includes("dorsey");
+    }),content:content||[],emails:emails||[],creds:creds||[],crons:crons||[],websites:websites||[],ghl:ghl||[]});
     setLoading(false);
   },[]);
 
@@ -477,6 +481,14 @@ export default function DrDorseyDashboard() {
       case "social":return<SocialMedia d={d} reload={load}/>;
       case "content":return<ContentCalendar d={d}/>;
       case "emails":return<EmailApprovals d={d} reload={load}/>;
+      case "quotas": {
+        const qFields=[{key:"dms_per_day",label:"DMs / Day"},{key:"comments_per_day",label:"Comments / Day"},{key:"likes_per_day",label:"Likes / Day"},{key:"follows_per_day",label:"Follows / Day"},{key:"emails_per_day",label:"Emails / Day"},{key:"stories_per_day",label:"Stories / Day"},{key:"posts_per_day",label:"Posts / Day"},{key:"reels_per_week",label:"Reels / Week"}];
+        return (<div className="up"><div className="sec-t">Dr. Dorsey Daily Quotas</div><p style={{fontSize:13,color:"var(--tx2)",marginBottom:20}}>Set daily limits. Changes save to Supabase instantly.</p>
+        {(d.quotas||[]).map(function(qo){return (<div key={qo.id} className="card" style={{marginBottom:14}}><h3 style={{fontSize:16,marginBottom:12}}>{(qo.brand_key||"").replace(/_/g," ").toUpperCase()}</h3>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:12}}>{qFields.map(function(f){return (<div key={f.key}><label style={{fontSize:11,color:"var(--tx3)",fontWeight:600,display:"block",marginBottom:4}}>{f.label}</label><input className="inp" type="number" min="0" defaultValue={qo[f.key]||0} onBlur={function(e){if(parseInt(e.target.value)!==qo[f.key])qu("khg_daily_ops_quotas","id=eq."+qo.id,{[f.key]:parseInt(e.target.value)||0,updated_at:new Date().toISOString()}).then(load)}} style={{fontFamily:"var(--mn)",fontWeight:600,fontSize:16,textAlign:"center"}} /></div>)})}</div>
+        <div style={{marginTop:8,fontSize:11,color:"var(--tx3)"}}>Updated: {qo.updated_at?new Date(qo.updated_at).toLocaleString():"never"}</div></div>)})}
+        {(d.quotas||[]).length===0&&<div className="card" style={{textAlign:"center",padding:32,color:"var(--tx3)"}}>No quotas set for dr_dorsey</div>}
+        </div>);}
       case "ops":return<DailyOps d={d}/>;
       default:return<Overview d={d} go={go}/>;
     }

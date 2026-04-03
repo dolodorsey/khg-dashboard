@@ -349,6 +349,60 @@ function ExtraTable({ name, rows }) {
   );
 }
 
+// DAILY OPS QUOTAS - Editable per brand
+function DailyQuotas({ d, reload }) {
+  const [busy, setBusy] = useState(null);
+  const quotas = d.quotas || [];
+  const fields = [
+    {key:"dms_per_day",label:"DMs / Day"},
+    {key:"comments_per_day",label:"Comments / Day"},
+    {key:"likes_per_day",label:"Likes / Day"},
+    {key:"follows_per_day",label:"Follows / Day"},
+    {key:"emails_per_day",label:"Emails / Day"},
+    {key:"sms_per_day",label:"SMS / Day"},
+    {key:"stories_per_day",label:"Stories / Day"},
+    {key:"posts_per_day",label:"Posts / Day"},
+    {key:"reels_per_week",label:"Reels / Week"},
+  ];
+  const save = async (id, key, val) => {
+    setBusy(id+key);
+    const num = parseInt(val) || 0;
+    await qu("khg_daily_ops_quotas", "id=eq."+id, {[key]: num, updated_at: new Date().toISOString(), updated_by: "dr_dorsey"});
+    await reload();
+    setBusy(null);
+  };
+  return (<div className="up">
+    <div className="sec-t">Daily Operations Quotas</div>
+    <p style={{fontSize:13,color:"var(--tx2)",marginBottom:20,lineHeight:1.6}}>Set how many DMs, comments, likes, follows, emails, and posts each brand should execute per day. Changes save instantly to Supabase and are picked up by n8n workflows.</p>
+    {quotas.length === 0 && <div className="card" style={{textAlign:"center",padding:32,color:"var(--tx3)"}}>No quotas configured for this entity</div>}
+    {quotas.map(function(qo, qi) {
+      return (
+        <div key={qo.id} className="card" style={{marginBottom:14}}>
+          <h3 style={{fontSize:16,marginBottom:12}}>{(qo.brand_key||"").replace(/_/g," ").toUpperCase()}</h3>
+          <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:12}}>
+            {fields.map(function(f) {
+              return (
+                <div key={f.key}>
+                  <label style={{fontSize:11,color:"var(--tx3)",fontWeight:600,display:"block",marginBottom:4}}>{f.label}</label>
+                  <input
+                    className="inp"
+                    type="number"
+                    min="0"
+                    defaultValue={qo[f.key]||0}
+                    onBlur={function(e) { if (parseInt(e.target.value) !== qo[f.key]) save(qo.id, f.key, e.target.value); }}
+                    style={{fontFamily:"var(--mn)",fontWeight:600,fontSize:16,textAlign:"center",opacity:busy===(qo.id+f.key)?.5:1}}
+                  />
+                </div>
+              );
+            })}
+          </div>
+          <div style={{marginTop:8,fontSize:11,color:"var(--tx3)"}}>Last updated: {qo.updated_at ? new Date(qo.updated_at).toLocaleString() : "never"}</div>
+        </div>
+      );
+    })}
+  </div>);
+}
+
 // MAIN EXPORT
 export default function EntityDashboard({ entity }) {
   const [screen, setScreen] = useState("overview");
@@ -372,12 +426,18 @@ export default function EntityDashboard({ entity }) {
       q("ghl_locations","select=*&order=location_name"),
       q("brand_social_handles",`select=*&${bkFilter}&order=brand_key`),
       q("credentials","select=id,credential_type,credential_key,credential_value,is_active&is_active=eq.true&order=credential_type,credential_key"),
+      q("khg_daily_ops_quotas",`select=*&${bkFilter}&order=brand_key`),
     ]);
-    const [tasks,outreach,social,events,content,emails,sites,ghl,handles,creds,logos] = base;
+    const [tasks,outreach,social,events,content,emails,sites,ghl,handles,creds,logos,quotas] = base;
     const entitySites = (sites||[]).filter(s=>entity.brandKeys.some(k=>(s.entity_key||"").includes(k)));
     const entityGhl = (ghl||[]).filter(g=>entity.brandKeys.some(k=>k===g.brand_key||g.brand_key===k||(g.brand_key||'').includes(k.split('_')[0])));
     const entityLogos = (logos||[]).filter(l=>entity.brandKeys.some(k=>k===l.entity_id||(l.entity_id||'').includes(k)||(l.entity_id||'').includes(k.split('_')[0])));
-    const result = {tasks:tasks||[],outreach:outreach||[],social:social||[],events:events||[],content:content||[],emails:emails||[],sites:entitySites,ghl:entityGhl,handles:handles||[],creds:creds||[],logos:entityLogos};
+    const entityTasks = (tasks||[]).filter(function(t) {
+      if (!t.brand) return false;
+      var b = t.brand.toLowerCase().replace(/\s+/g,"_");
+      return entity.brandKeys.some(function(k) { return b === k || k === b || b.includes(k) || k.includes(b); });
+    });
+    const result = {tasks:entityTasks,outreach:outreach||[],social:social||[],events:events||[],content:content||[],emails:emails||[],sites:entitySites,ghl:entityGhl,handles:handles||[],creds:creds||[],logos:entityLogos,quotas:quotas||[]};
     if (entity.extraTables) {
       const extras = await Promise.all(entity.extraTables.map(ex=>q(ex.table,ex.query)));
       entity.extraTables.forEach((ex,i) => { result[ex.key] = extras[i]||[]; });
@@ -397,6 +457,7 @@ export default function EntityDashboard({ entity }) {
     {id:"social",label:"Social Media",sec:"Execution",ct:(d.social||[]).length},
     {id:"events",label:"Events",sec:"Execution",ct:(d.events||[]).length},
     {id:"content",label:"Content Calendar",sec:"Execution",ct:(d.content||[]).length},
+    {id:"quotas",label:"Daily Ops Quotas",sec:"Execution",ct:(d.quotas||[]).length},
     {id:"emails",label:"Email Approvals",sec:"Execution",ct:(d.emails||[]).filter(e=>!e.approved).length},
     ...(entity.extraNav||[]).map(n=>({...n,sec:n.sec||"Data",ct:n.ct||(d[n.id]||[]).length})),
   ];
@@ -414,6 +475,7 @@ export default function EntityDashboard({ entity }) {
       case "social": return <SocialMedia d={d} reload={load} entity={entity}/>;
       case "events": return <Events d={d}/>;
       case "content": return <ContentCal d={d}/>;
+      case "quotas": return <DailyQuotas d={d} reload={load} />;
       case "emails": return <EmailApprovals d={d} reload={load}/>;
       default:
         if(entity.extraTables?.find(ex=>ex.key===screen)&&d[screen]) return <ExtraTable name={titles[screen]||screen} rows={d[screen]}/>;
