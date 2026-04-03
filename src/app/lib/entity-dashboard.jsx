@@ -440,11 +440,23 @@ export default function EntityDashboard({ entity }) {
       q("khg_daily_ops_quotas",`select=*&${bkFilter}&order=brand_key`),
     ]);
     const [tasks,outreach,social,events,content,emails,sites,ghl,handles,creds,logos,quotas] = base;
-    const entitySites = (sites||[]).filter(s=>entity.brandKeys.some(k=>(s.entity_key||"").includes(k)));
-    const entityGhl = (ghl||[]).filter(g=>entity.brandKeys.some(k=>k===g.brand_key||g.brand_key===k||(g.brand_key||'').includes(k.split('_')[0])));
-    const entityLogos = (logos||[]).filter(l=>entity.brandKeys.some(k=>k===l.entity_id||(l.entity_id||'').includes(k)||(l.entity_id||'').includes(k.split('_')[0])));
+    const entitySites = (sites||[]).filter(function(s) {
+      var ek = s.entity_key || "";
+      return entity.brandKeys.some(function(k) {
+        return ek === k || ek === k + "_event" || ek === k + "_events" || ek.startsWith(k + "_");
+      });
+    });
+    const entityGhl = (ghl||[]).filter(function(g) {
+      return entity.brandKeys.includes(g.brand_key);
+    });
+    const entityLogos = (logos||[]).filter(function(l) {
+      var eid = l.entity_id || "";
+      return entity.brandKeys.some(function(k) {
+        return eid === k || eid === k + "_events" || eid === k + "_event" || eid.startsWith(k + "_");
+      });
+    });
     const entityTasks = (tasks||[]).filter(function(t) {
-      if (!t.brand || t.brand === "khg") return true;
+      if (!t.brand || t.brand === "khg") return false;
       var b = t.brand.toLowerCase().replace(/\s+/g,"_");
       return entity.brandKeys.some(function(k) { return b === k || k === b || b.includes(k) || k.includes(b); });
     });

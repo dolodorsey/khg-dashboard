@@ -437,7 +437,7 @@ export default function DrDorseyDashboard() {
   const [loading,setLoading]=useState(true);
 
   const load=useCallback(async()=>{
-    const [contacts,vip,outreach,social,tasks,content,emails,creds,crons,websites,ghl]=await Promise.all([
+    const [contacts,vip,outreach,social,tasks,content,emails,creds,crons,websites,ghl,handles,quotas,logos]=await Promise.all([
       Q("dolo_directory","select=display_name,first_name,last_name,phone,email,instagram,category,subcategory,relationship_tier,company,profession,city,is_vip&order=display_name&limit=500"),
       Q("dolo_vip_circle","select=*&order=full_name&limit=50"),
       Q("contact_action_queue","select=*&brand_key=eq.dr_dorsey&order=created_at.desc&limit=100"),
@@ -449,12 +449,15 @@ export default function DrDorseyDashboard() {
       Q("khg_cron_registry","select=*&order=status.desc,cron_name"),
       Q("khg_website_registry","select=entity_key,entity_name,vercel_project_name,custom_domain,vercel_url,status&status=eq.live&order=entity_name"),
       Q("ghl_locations","select=location_name,location_id,brand_key&order=location_name"),
+      Q("brand_social_handles","select=*&order=brand_key"),
+      Q("khg_daily_ops_quotas","select=*&brand_key=eq.dr_dorsey"),
+      Q("brand_asset_files","select=entity_id,file_url,is_primary&asset_type=eq.logo&file_url=not.is.null&entity_id=eq.dr_dorsey"),
     ]);
     setD({contacts:contacts||[],vip:vip||[],outreach:outreach||[],social:social||[],tasks:(tasks||[]).filter(function(t) {
       if (!t.brand || t.brand === "khg") return true;
       var b = (t.brand||"").toLowerCase().replace(/\s+/g,"_");
       return b === "dr_dorsey" || b.includes("dorsey");
-    }),content:content||[],emails:emails||[],creds:creds||[],crons:crons||[],websites:websites||[],ghl:ghl||[]});
+    }),content:content||[],emails:emails||[],creds:creds||[],crons:crons||[],websites:websites||[],ghl:ghl||[],handles:handles||[],quotas:quotas||[],logos:logos||[]});
     setLoading(false);
   },[]);
 
