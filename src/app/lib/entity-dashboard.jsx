@@ -317,6 +317,28 @@ function Contacts({ entity, data }) {
 }
 
 // ═══════════════════════════════════════════════
+// EXTRA TABLE (generic renderer for entity-specific data)
+// ═══════════════════════════════════════════════
+function ExtraTable({ name, rows }) {
+  const [search, setSearch] = useState("");
+  if (!rows || rows.length === 0) return <div className="card" style={{textAlign:"center",padding:24,color:"var(--tx3)"}}>No {name} data</div>;
+  const cols = Object.keys(rows[0]).filter(k => k !== "id" && !k.endsWith("_at") && k !== "created_by");
+  const filtered = search ? rows.filter(r => cols.some(c => String(r[c]||"").toLowerCase().includes(search.toLowerCase()))) : rows;
+  return (<div>
+    <input className="inp" placeholder={`Search ${name}...`} value={search} onChange={e=>setSearch(e.target.value)} style={{marginBottom:14}} />
+    <div className="sec-t">{filtered.length} records</div>
+    <div style={{overflowX:"auto"}}>
+      <table className="tbl"><thead><tr>{cols.slice(0,8).map(c=><th key={c}>{c.replace(/_/g," ")}</th>)}</tr></thead>
+      <tbody>{filtered.slice(0,40).map((r,i) => (
+        <tr key={i}>{cols.slice(0,8).map(c=><td key={c} style={{maxWidth:200,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{
+          String(r[c]||"—").startsWith("http") ? <a href={r[c]} target="_blank" rel="noopener" style={{color:"var(--ac)",fontSize:11}}>Link</a> : String(r[c]||"—").slice(0,60)
+        }</td>)}</tr>
+      ))}</tbody></table>
+    </div>
+  </div>);
+}
+
+// ═══════════════════════════════════════════════
 // MAIN ENTITY DASHBOARD
 // ═══════════════════════════════════════════════
 export default function EntityDashboard({ entity }) {
@@ -329,27 +351,34 @@ export default function EntityDashboard({ entity }) {
 
   const loadData = useCallback(async () => {
     if (!hasBrands) {
-      // Entities with no brand keys yet — load empty
       setData({ tasks: [], outreach: [], posts: [], events: [], contacts: [] });
       setLoading(false);
       return;
     }
     const [tasks, outreach, posts, events, contacts] = await Promise.all([
-      // Tasks: filter by brand_key since brand column has inconsistent values
       q("khg_master_tasks", `select=*&status=not.in.(completed,cancelled)&order=priority,created_at.desc&limit=60`),
       q("contact_action_queue", `select=*&${bkFilter}&order=created_at.desc&limit=100`),
       q("ghl_social_posting_queue", `select=*&${bkFilter}&order=created_at.desc&limit=50`),
       q("eventbrite_events", `select=*&${bkFilter}&event_date=gte.${new Date().toISOString().split("T")[0]}&order=event_date.asc&limit=20`),
       q("dolo_directory", `select=display_name,email,phone,instagram,category,city&order=display_name&limit=200`),
     ]);
-    // Client-side filter tasks by entity brand keys (since brand column format varies)
     const entityTasks = (tasks||[]).filter(t => {
       const b = (t.brand||"").toLowerCase().replace(/\s+/g,"_");
       return entity.brandKeys.some(k => b.includes(k) || k.includes(b)) || !t.brand;
     });
-    setData({ tasks: entityTasks, outreach: outreach||[], posts: posts||[], events: events||[], contacts: contacts||[] });
+    const result = { tasks: entityTasks, outreach: outreach||[], posts: posts||[], events: events||[], contacts: contacts||[] };
+    // Load extra tables if defined
+    if (entity.extraTables) {
+      const extraKeys = Object.keys(entity.extraTables);
+      const extraResults = await Promise.all(extraKeys.map(k => {
+        const cfg = entity.extraTables[k];
+        return q(cfg.table, `select=${cfg.select||"*"}&order=${cfg.order||"id"}&limit=${cfg.limit||50}`);
+      }));
+      extraKeys.forEach((k,i) => { result[k] = extraResults[i]||[]; });
+    }
+    setData(result);
     setLoading(false);
-  }, [bkFilter, hasBrands, entity.brandKeys]);
+  }, [bkFilter, hasBrands, entity.brandKeys, entity.extraTables]);
 
   useEffect(() => { loadData(); }, [loadData]);
   const navigate = useCallback((s) => setScreen(s), []);
@@ -377,7 +406,10 @@ export default function EntityDashboard({ entity }) {
       case "events": return <Events entity={entity} data={data} />;
       case "contacts": return <Contacts entity={entity} data={data} />;
       default:
-        if (entity.renderExtra) return entity.renderExtra(screen, data, loadData, navigate);
+        // Render extra tables as searchable data grids
+        if (entity.extraTables && entity.extraTables[screen] && data[screen]) {
+          return <ExtraTable name={titles[screen]||screen} rows={data[screen]} />;
+        }
         return <Overview entity={entity} navigate={navigate} data={data} />;
     }
   };
