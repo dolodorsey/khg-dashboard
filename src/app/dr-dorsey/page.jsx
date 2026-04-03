@@ -204,10 +204,10 @@ function SocialMedia({ d, reload }) {
   const [np, setNp] = useState({caption:"",platform:"instagram",content_type:"post",image_url:"",hashtags:"",scheduled_for:""});
   const [busy, setBusy] = useState(null);
   const all = d.social||[];
-  const queued = all.filter(p=>p.status==="queued");
+  const pending = all.filter(p=>p.status==="pending"||p.status==="queued");
   const approved = all.filter(p=>p.status==="approved");
   const posted = all.filter(p=>p.status==="posted");
-  const filtered = tab==="queued"?queued:tab==="approved"?approved:tab==="posted"?posted:all;
+  const held = all.filter(p=>p.status==="held");const filtered = tab==="pending"?pending:tab==="held"?held:tab==="posted"?posted:all;
 
   const action = async(id,data)=>{
     setBusy(id);
@@ -231,8 +231,8 @@ function SocialMedia({ d, reload }) {
     <div className="row" style={{justifyContent:"space-between",marginBottom:16}}>
       <div className="pills" style={{margin:0}}>
         <button className={`pill ${tab==="all"?"on":""}`} onClick={()=>setTab("all")}>All ({all.length})</button>
-        <button className={`pill ${tab==="queued"?"on":""}`} onClick={()=>setTab("queued")}>Queued ({queued.length})</button>
-        <button className={`pill ${tab==="approved"?"on":""}`} onClick={()=>setTab("approved")}>Approved ({approved.length})</button>
+        <button className={`pill ${tab==="pending"?"on":""}`} onClick={()=>setTab("pending")}>Pending ({pending.length})</button>
+        <button className={`pill ${tab==="held"?"on":""}`} onClick={()=>setTab("held")}>Held ({held.length})</button>
         <button className={`pill ${tab==="posted"?"on":""}`} onClick={()=>setTab("posted")}>Posted ({posted.length})</button>
       </div>
       <button className="btn btn-p" onClick={()=>setComposing(!composing)}>+ Compose Post</button>
@@ -256,7 +256,7 @@ function SocialMedia({ d, reload }) {
           <div className="row" style={{gap:6}}><span className="bg bg-bl">{p.platform||"IG"}</span><span className="bg bg-mt">{p.content_type||"post"}</span></div>
           <div className="row" style={{gap:6}}>
             {p.scheduled_for&&<span style={{fontSize:10,color:"var(--tx3)",fontFamily:"var(--mn)"}}>{new Date(p.scheduled_for).toLocaleString("en-US",{month:"short",day:"numeric",hour:"numeric",minute:"2-digit"})}</span>}
-            <span className={`bg ${p.status==="posted"?"bg-gn":p.status==="approved"?"bg-bl":"bg-yl"}`}>{p.status}</span>
+            <span className={`bg ${p.status==="posted"||p.status==="sent"?"bg-gn":p.status==="pending"?"bg-yl":"bg-mt"}`}>{p.status}</span>
           </div>
         </div>
         {editing===p.id ? (<div>
@@ -277,9 +277,9 @@ function SocialMedia({ d, reload }) {
         </>)}
         <div className="row" style={{gap:4,marginTop:10,flexWrap:"wrap"}}>
           {editing!==p.id&&<button className="btn btn-s" onClick={()=>startEdit(p)}>Edit</button>}
-          {p.status==="queued"&&<button className="btn btn-s btn-g" onClick={()=>action(p.id,{status:"approved"})}>Approve</button>}
+          {p.status==="pending"&&<button className="btn btn-s btn-g" onClick={()=>action(p.id,{status:"approved"})}>Approve</button>}
           {p.status==="queued"&&<button className="btn btn-s btn-r" onClick={()=>action(p.id,{status:"rejected"})}>Reject</button>}
-          {p.status==="approved"&&<button className="btn btn-s btn-p" onClick={()=>action(p.id,{status:"queued"})}>Back to Queue</button>}
+          {p.status==="held"&&<button className="btn btn-s btn-p" onClick={()=>action(p.id,{status:"pending"})}>Move to Pending</button>}
           {editing!==p.id&&<button className="btn btn-s" onClick={()=>{const d={...p,id:undefined,status:"queued",created_at:undefined,posted_at:undefined};QI("ghl_social_posting_queue",d).then(reload)}}>Duplicate</button>}
         </div>
       </div>
@@ -441,7 +441,7 @@ export default function DrDorseyDashboard() {
       Q("dolo_directory","select=display_name,first_name,last_name,phone,email,instagram,category,subcategory,relationship_tier,company,profession,city,is_vip&order=display_name&limit=500"),
       Q("dolo_vip_circle","select=*&order=full_name&limit=50"),
       Q("contact_action_queue","select=*&brand_key=eq.dr_dorsey&order=created_at.desc&limit=100"),
-      Q("ghl_social_posting_queue","select=*&brand_key=eq.dr_dorsey&order=created_at.desc&limit=50"),
+      Q("ghl_social_posting_queue","select=*&brand_key=eq.dr_dorsey&order=scheduled_for.desc.nullslast&limit=100"),
       Q("khg_master_tasks","select=*&order=priority,created_at.desc&limit=100"),
       Q("weekly_content_schedule","select=*&brand_key=eq.dr_dorsey&is_active=eq.true&order=day_of_week,post_time"),
       Q("email_approval_queue","select=*&order=created_at.desc&limit=30"),
