@@ -34,7 +34,7 @@ export default function Outreach() {
   queue.forEach(q => { const a = q.action_type||"unknown"; byAction[a] = (byAction[a]||0)+1; });
 
   return (
-    <div style={{ minHeight: "100vh", background: "#060604", fontFamily: "'DM Sans',sans-serif", color: "#F0EDE6" }}>
+    <div style={{ minHeight: "100vh", background: "#F5F5F7", fontFamily: "'DM Sans',sans-serif", color: "#111111" }}>
       <Header title="Outreach" icon="📨" sub="Email sequences, SMS, follow-up tracking, approval gate" color="#F59E0B" />
       <div style={{ padding: "24px 32px" }}>
         <div style={{ display: "flex", gap: 16, flexWrap: "wrap", marginBottom: 32 }}>
@@ -49,7 +49,7 @@ export default function Outreach() {
         <Section title="Queue by Status" icon="📊">
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
             {Object.entries(byStatus).sort((a,b) => b[1]-a[1]).map(([status, count]) => (
-              <div key={status} style={{ background: "#0D0D0B", border: "1px solid #1a1a1a", borderRadius: 20, padding: "6px 16px", fontSize: 11 }}>
+              <div key={status} style={{ background: "#FFFFFF", border: "1px solid #E5E5E7", borderRadius: 20, padding: "6px 16px", fontSize: 11 }}>
                 <span style={{ color: status==="sent"?"#22C55E":status==="held"?"#EF4444":status==="approved"?"#3B82F6":"#888", fontWeight: 700 }}>{count.toLocaleString()}</span>
                 <span style={{ color: "#888" }}> {status}</span>
               </div>
@@ -60,7 +60,7 @@ export default function Outreach() {
         <Section title="Queue by Action Type" icon="🔀">
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
             {Object.entries(byAction).sort((a,b) => b[1]-a[1]).map(([action, count]) => (
-              <div key={action} style={{ background: "#0D0D0B", border: "1px solid #1a1a1a", borderRadius: 20, padding: "6px 16px", fontSize: 11 }}>
+              <div key={action} style={{ background: "#FFFFFF", border: "1px solid #E5E5E7", borderRadius: 20, padding: "6px 16px", fontSize: 11 }}>
                 <span style={{ color: "#F59E0B", fontWeight: 700 }}>{count.toLocaleString()}</span>
                 <span style={{ color: "#888" }}> {action.replace(/_/g," ")}</span>
               </div>
@@ -89,7 +89,7 @@ export default function Outreach() {
           ])} />
         </Section>
 
-        <div style={{ background: "#0D0D0B", border: "1px solid #EF444433", borderRadius: 8, padding: 20, marginTop: 16 }}>
+        <div style={{ background: "#FFFFFF", border: "1px solid #EF444433", borderRadius: 8, padding: 20, marginTop: 16 }}>
           <div style={{ fontSize: 10, color: "#EF4444", letterSpacing: 3, fontFamily: "'DM Mono',monospace", marginBottom: 12 }}>EMAIL RULES</div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(280px,1fr))", gap: 8, fontSize: 12, color: "#888" }}>
             <div>🛑 ZERO emails send without Dr. Dorsey approval</div>

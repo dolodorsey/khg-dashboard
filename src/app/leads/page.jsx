@@ -25,7 +25,7 @@ export default function Leads() {
   const mcoTargets = mindStudio.filter(m => m.category === "MCO");
 
   return (
-    <div style={{ minHeight: "100vh", background: "#060604", fontFamily: "'DM Sans',sans-serif", color: "#F0EDE6" }}>
+    <div style={{ minHeight: "100vh", background: "#F5F5F7", fontFamily: "'DM Sans',sans-serif", color: "#111111" }}>
       <Header title="Lead Sourcing" icon="🎯" sub="Prospect lists, enrichment, qualification, scoring" color="#F59E0B" />
       <div style={{ padding: "24px 32px" }}>
         <div style={{ display: "flex", gap: 16, flexWrap: "wrap", marginBottom: 32 }}>
@@ -44,7 +44,7 @@ export default function Leads() {
         </Section>
 
         <Section title="Casper Venue Prospects" icon="🍽️" count={`${casper.length} VENUES`}>
-          {casper.length === 0 ? <div style={{ background:"#0D0D0B", border:"1px solid #1a1a1a", borderRadius:8, padding:24, textAlign:"center", color:"#555", fontSize:12 }}>No data in casper_venue_prospects</div> :
+          {casper.length === 0 ? <div style={{ background:"#FFFFFF", border:"1px solid #E5E5E7", borderRadius:8, padding:24, textAlign:"center", color:"#555", fontSize:12 }}>No data in casper_venue_prospects</div> :
           <Table headers={["Venue","City","Contact","Email","Status"]} rows={casper.slice(0,15).map(c => [
             c.venue_name||c.name||"—", c.city||"—", c.contact_name||"—", c.email||"—",
             <Badge key="s" text={c.status||"prospect"} color={c.status==="contacted"?"#3B82F6":"#555"} />

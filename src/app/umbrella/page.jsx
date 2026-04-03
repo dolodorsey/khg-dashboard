@@ -30,7 +30,7 @@ export default function Umbrella() {
   ];
 
   return (
-    <div style={{ minHeight: "100vh", background: "#060604", fontFamily: "'DM Sans',sans-serif", color: "#F0EDE6" }}>
+    <div style={{ minHeight: "100vh", background: "#F5F5F7", fontFamily: "'DM Sans',sans-serif", color: "#111111" }}>
       <Header title="Umbrella Group" icon="☂️" sub="Brand Studio · Auto Exchange · Clean · Realty · Injury Network" color="#C9A96E" />
       <div style={{ padding: "24px 32px" }}>
         <div style={{ display: "flex", gap: 16, flexWrap: "wrap", marginBottom: 32 }}>
@@ -44,7 +44,7 @@ export default function Umbrella() {
         <Section title="Umbrella Sub-Brands" icon="☂️">
           <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(280px,1fr))", gap:16 }}>
             {brands.map(b => (
-              <div key={b.name} style={{ background:"#0D0D0B", border:"1px solid #1a1a1a", borderRadius:8, padding:20 }}>
+              <div key={b.name} style={{ background:"#FFFFFF", border:"1px solid #E5E5E7", borderRadius:8, padding:20 }}>
                 <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:8 }}>
                   <span style={{ fontSize:20 }}>{b.icon}</span>
                   <span style={{ fontSize:14, fontWeight:700 }}>{b.name}</span>

@@ -24,7 +24,7 @@ export default function Grants() {
   const overdue = grants.filter(g => g.deadline && new Date(g.deadline) < new Date() && !["submitted","applied","awarded","rejected"].includes(g.status));
 
   return (
-    <div style={{ minHeight: "100vh", background: "#060604", fontFamily: "'DM Sans',sans-serif", color: "#F0EDE6" }}>
+    <div style={{ minHeight: "100vh", background: "#F5F5F7", fontFamily: "'DM Sans',sans-serif", color: "#111111" }}>
       <Header title="Grants" icon="💰" sub="Grant tracker, deadlines, applications — 3-5 apps per entity per day" color="#22C55E" />
       <div style={{ padding: "24px 32px" }}>
         <div style={{ display: "flex", gap: 16, flexWrap: "wrap", marginBottom: 32 }}>
@@ -54,7 +54,7 @@ export default function Grants() {
           ])} />
         </Section>
 
-        <div style={{ background:"#0D0D0B", border:"1px solid #22C55E33", borderRadius:8, padding:20, marginTop:16 }}>
+        <div style={{ background:"#FFFFFF", border:"1px solid #22C55E33", borderRadius:8, padding:20, marginTop:16 }}>
           <div style={{ fontSize:10, color:"#22C55E", letterSpacing:3, fontFamily:"'DM Mono',monospace", marginBottom:12 }}>TOP PRIORITY GRANTS</div>
           <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(280px,1fr))", gap:12, fontSize:12, color:"#888" }}>
             <div>🏆 Invest Atlanta SBIG — $50,000</div>

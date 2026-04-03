@@ -34,7 +34,7 @@ export default function Contacts() {
   ) : directory;
 
   return (
-    <div style={{ minHeight: "100vh", background: "#060604", fontFamily: "'DM Sans',sans-serif", color: "#F0EDE6" }}>
+    <div style={{ minHeight: "100vh", background: "#F5F5F7", fontFamily: "'DM Sans',sans-serif", color: "#111111" }}>
       <Header title="Database / Contacts" icon="👥" sub="2,143+ contacts — directory, VIP circle, CRM management" color="#3B82F6" />
       <div style={{ padding: "24px 32px" }}>
         <div style={{ display: "flex", gap: 16, flexWrap: "wrap", marginBottom: 24 }}>
@@ -45,13 +45,13 @@ export default function Contacts() {
         </div>
 
         <div style={{ marginBottom: 24 }}>
-          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search contacts..." style={{ width: "100%", maxWidth: 400, padding: "10px 16px", background: "#0D0D0B", border: "1px solid #222", borderRadius: 8, color: "#F0EDE6", fontSize: 13, fontFamily: "'DM Sans',sans-serif", outline: "none" }} />
+          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search contacts..." style={{ width: "100%", maxWidth: 400, padding: "10px 16px", background: "#FFFFFF", border: "1px solid #E5E5E7", borderRadius: 8, color: "#111111", fontSize: 13, fontFamily: "'DM Sans',sans-serif", outline: "none" }} />
         </div>
 
         <Section title="Rolodex Tabs" icon="📑">
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
             {tabs.map(([tab, count]) => (
-              <div key={tab} style={{ background: "#0D0D0B", border: "1px solid #1a1a1a", borderRadius: 20, padding: "6px 16px", fontSize: 11 }}>
+              <div key={tab} style={{ background: "#FFFFFF", border: "1px solid #E5E5E7", borderRadius: 20, padding: "6px 16px", fontSize: 11 }}>
                 <span style={{ color: "#3B82F6", fontWeight: 700 }}>{count}</span> <span style={{ color: "#888" }}>{tab}</span>
               </div>
             ))}
@@ -69,14 +69,14 @@ export default function Contacts() {
         <Section title="Top Cities" icon="🌆">
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
             {topCities.map(([city, count]) => (
-              <div key={city} style={{ background: "#0D0D0B", border: "1px solid #1a1a1a", borderRadius: 20, padding: "6px 16px", fontSize: 11 }}>
+              <div key={city} style={{ background: "#FFFFFF", border: "1px solid #E5E5E7", borderRadius: 20, padding: "6px 16px", fontSize: 11 }}>
                 <span style={{ color: "#22C55E", fontWeight: 700 }}>{count}</span> <span style={{ color: "#888" }}>{city}</span>
               </div>
             ))}
           </div>
         </Section>
 
-        <div style={{ background: "#0D0D0B", border: "1px solid #EF444433", borderRadius: 8, padding: 20, marginTop: 16 }}>
+        <div style={{ background: "#FFFFFF", border: "1px solid #EF444433", borderRadius: 8, padding: 20, marginTop: 16 }}>
           <div style={{ fontSize: 10, color: "#EF4444", letterSpacing: 3, fontFamily: "'DM Mono',monospace", marginBottom: 12 }}>CONTACT RULES</div>
           <div style={{ fontSize: 12, color: "#888", lineHeight: 1.8 }}>
             <div>🚫 NEVER auto-merge multiple phones/emails — list all matches, ask Dr. Dorsey which is correct</div>

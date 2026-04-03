@@ -28,7 +28,7 @@ export default function Apps() {
   const topCats = Object.entries(byCat).sort((a,b) => b[1]-a[1]).slice(0,10);
 
   return (
-    <div style={{ minHeight: "100vh", background: "#060604", fontFamily: "'DM Sans',sans-serif", color: "#F0EDE6" }}>
+    <div style={{ minHeight: "100vh", background: "#F5F5F7", fontFamily: "'DM Sans',sans-serif", color: "#111111" }}>
       <Header title="Apps" icon="📲" sub="Good Times · SOS · On Call — metrics & operations" color="#8B5CF6" />
       <div style={{ padding: "24px 32px" }}>
         <div style={{ display: "flex", gap: 16, flexWrap: "wrap", marginBottom: 32 }}>
@@ -45,7 +45,7 @@ export default function Apps() {
             {cities.sort().map(city => {
               const count = venues.filter(v => v.city === city).length;
               return (
-                <div key={city} style={{ background:"#0D0D0B", border:"1px solid #1a1a1a", borderRadius:8, padding:"14px 16px", textAlign:"center" }}>
+                <div key={city} style={{ background:"#FFFFFF", border:"1px solid #E5E5E7", borderRadius:8, padding:"14px 16px", textAlign:"center" }}>
                   <div style={{ fontSize:24, fontWeight:800, color:"#8B5CF6" }}>{count}</div>
                   <div style={{ fontSize:11, color:"#888", marginTop:4 }}>{city}</div>
                 </div>
@@ -57,7 +57,7 @@ export default function Apps() {
         <Section title="Venue Categories" icon="📊" count={`${Object.keys(byCat).length} TYPES`}>
           <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
             {topCats.map(([cat, count]) => (
-              <div key={cat} style={{ background:"#0D0D0B", border:"1px solid #1a1a1a", borderRadius:20, padding:"6px 16px", fontSize:11 }}>
+              <div key={cat} style={{ background:"#FFFFFF", border:"1px solid #E5E5E7", borderRadius:20, padding:"6px 16px", fontSize:11 }}>
                 <span style={{ color:"#8B5CF6", fontWeight:700 }}>{count}</span> <span style={{ color:"#888" }}>{cat}</span>
               </div>
             ))}
@@ -65,7 +65,7 @@ export default function Apps() {
         </Section>
 
         <Section title="Upcoming Shows" icon="🎤" count={shows.length}>
-          {shows.length === 0 ? <div style={{ background:"#0D0D0B", border:"1px solid #1a1a1a", borderRadius:8, padding:24, textAlign:"center", color:"#555", fontSize:12 }}>No shows in gt_shows</div> :
+          {shows.length === 0 ? <div style={{ background:"#FFFFFF", border:"1px solid #E5E5E7", borderRadius:8, padding:24, textAlign:"center", color:"#555", fontSize:12 }}>No shows in gt_shows</div> :
           <Table headers={["Show","Venue","City","Date"]} rows={shows.slice(0,15).map(s => [
             s.show_name||s.artist||"—", s.venue_name||"—", s.city||"—",
             s.show_date ? new Date(s.show_date).toLocaleDateString() : "—"
@@ -73,7 +73,7 @@ export default function Apps() {
         </Section>
 
         <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(280px,1fr))", gap:16 }}>
-          <div style={{ background:"#0D0D0B", border:"1px solid #1a1a1a", borderRadius:8, padding:20 }}>
+          <div style={{ background:"#FFFFFF", border:"1px solid #E5E5E7", borderRadius:8, padding:20 }}>
             <div style={{ fontSize:10, color:"#8B5CF6", letterSpacing:3, fontFamily:"'DM Mono',monospace", marginBottom:12 }}>GOOD TIMES APP</div>
             <div style={{ fontSize:12, color:"#888", lineHeight:1.6 }}>
               <div>🌐 thegoodtimesworldwide.com</div>
@@ -82,7 +82,7 @@ export default function Apps() {
               <div>🏪 {venues.length} venues · {events.length} events · {cities.length} cities</div>
             </div>
           </div>
-          <div style={{ background:"#0D0D0B", border:"1px solid #1a1a1a", borderRadius:8, padding:20 }}>
+          <div style={{ background:"#FFFFFF", border:"1px solid #E5E5E7", borderRadius:8, padding:20 }}>
             <div style={{ fontSize:10, color:"#EF4444", letterSpacing:3, fontFamily:"'DM Mono',monospace", marginBottom:12 }}>SOS APP</div>
             <div style={{ fontSize:12, color:"#888", lineHeight:1.6 }}>
               <div>🆘 Emergency response platform</div>
@@ -90,7 +90,7 @@ export default function Apps() {
               <div>🔑 GHL: jz8geHs33Iqyruo2q2oO</div>
             </div>
           </div>
-          <div style={{ background:"#0D0D0B", border:"1px solid #1a1a1a", borderRadius:8, padding:20 }}>
+          <div style={{ background:"#FFFFFF", border:"1px solid #E5E5E7", borderRadius:8, padding:20 }}>
             <div style={{ fontSize:10, color:"#F59E0B", letterSpacing:3, fontFamily:"'DM Mono',monospace", marginBottom:12 }}>HELP 911 APP</div>
             <div style={{ fontSize:12, color:"#888", lineHeight:1.6 }}>
               <div>🚨 help-911-app.vercel.app</div>

@@ -25,7 +25,7 @@ export default function Upcoming() {
   const overdue = tasks.filter(t => t.due_date && new Date(t.due_date) < new Date());
 
   return (
-    <div style={{ minHeight: "100vh", background: "#060604", fontFamily: "'DM Sans',sans-serif", color: "#F0EDE6" }}>
+    <div style={{ minHeight: "100vh", background: "#F5F5F7", fontFamily: "'DM Sans',sans-serif", color: "#111111" }}>
       <Header title="Upcoming Events" icon="📆" sub="Next 30 days — events, deadlines, launches, milestones" color="#3B82F6" />
       <div style={{ padding: "24px 32px" }}>
         <div style={{ display: "flex", gap: 16, flexWrap: "wrap", marginBottom: 32 }}>
@@ -35,7 +35,7 @@ export default function Upcoming() {
         </div>
 
         <Section title="Events Calendar" icon="🎪" count={events.length}>
-          {events.length === 0 ? <div style={{ background:"#0D0D0B", border:"1px solid #1a1a1a", borderRadius:8, padding:24, textAlign:"center", color:"#555", fontSize:12 }}>No upcoming events in Eventbrite</div> :
+          {events.length === 0 ? <div style={{ background:"#FFFFFF", border:"1px solid #E5E5E7", borderRadius:8, padding:24, textAlign:"center", color:"#555", fontSize:12 }}>No upcoming events in Eventbrite</div> :
           <Table headers={["Event","Brand","Date","Venue","Status"]} rows={events.map(e => [
             e.event_name||e.name||"—", e.entity_id||"—",
             e.event_date ? new Date(e.event_date).toLocaleDateString("en-US",{weekday:"short",month:"short",day:"numeric"}) : "—",
@@ -51,7 +51,7 @@ export default function Upcoming() {
         </Section>}
 
         <Section title="Grant Deadlines" icon="💰" count={grants.length}>
-          {grants.length === 0 ? <div style={{ background:"#0D0D0B", border:"1px solid #1a1a1a", borderRadius:8, padding:24, textAlign:"center", color:"#555", fontSize:12 }}>No grant deadlines in next 30 days</div> :
+          {grants.length === 0 ? <div style={{ background:"#FFFFFF", border:"1px solid #E5E5E7", borderRadius:8, padding:24, textAlign:"center", color:"#555", fontSize:12 }}>No grant deadlines in next 30 days</div> :
           <Table headers={["Grant","Amount","Deadline","Entity","Status"]} rows={grants.map(g => [
             g.grant_name||"—", g.amount ? `$${Number(g.amount).toLocaleString()}` : "—",
             g.deadline ? new Date(g.deadline).toLocaleDateString() : "—", g.entity_ids||"—",

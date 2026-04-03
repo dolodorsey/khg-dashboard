@@ -45,7 +45,7 @@ export default function Products() {
   });
 
   return (
-    <div style={{ minHeight: "100vh", background: "#060604", fontFamily: "'DM Sans',sans-serif", color: "#F0EDE6" }}>
+    <div style={{ minHeight: "100vh", background: "#F5F5F7", fontFamily: "'DM Sans',sans-serif", color: "#111111" }}>
       <Header title="Products" icon="🛍️" sub="MAGA · Stush · Bodega · Her Halloween — Shopify operations" color="#C9A96E" />
       <div style={{ padding: "24px 32px" }}>
         <div style={{ display: "flex", gap: 16, flexWrap: "wrap", marginBottom: 32 }}>
@@ -58,7 +58,7 @@ export default function Products() {
         {/* Store Tabs */}
         <div style={{ display: "flex", gap: 8, marginBottom: 24, flexWrap: "wrap" }}>
           {[{ key: "all", label: "All Stores" }, ...stores.map(s => ({ key: s.domain.split(".")[0], label: s.name }))].map(t => (
-            <button key={t.key} onClick={() => setTab(t.key)} style={{ padding: "6px 16px", borderRadius: 20, fontSize: 11, fontWeight: 600, border: tab === t.key ? "1px solid #C9A96E" : "1px solid #222", background: tab === t.key ? "#C9A96E18" : "transparent", color: tab === t.key ? "#C9A96E" : "#666", cursor: "pointer", letterSpacing: 1, textTransform: "uppercase" }}>{t.label} ({t.key === "all" ? products.length : byStore[t.key] || 0})</button>
+            <button key={t.key} onClick={() => setTab(t.key)} style={{ padding: "6px 16px", borderRadius: 20, fontSize: 11, fontWeight: 600, border: tab === t.key ? "1px solid #C9A96E" : "1px solid #E5E5E7", background: tab === t.key ? "#C9A96E18" : "transparent", color: tab === t.key ? "#C9A96E" : "#666", cursor: "pointer", letterSpacing: 1, textTransform: "uppercase" }}>{t.label} ({t.key === "all" ? products.length : byStore[t.key] || 0})</button>
           ))}
         </div>
 
@@ -75,7 +75,7 @@ export default function Products() {
         <Section title="Collections" icon="📂" count={collections.length}>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
             {collections.map((c, i) => (
-              <div key={i} style={{ background: "#0D0D0B", border: "1px solid #1a1a1a", borderRadius: 20, padding: "6px 16px", fontSize: 11 }}>
+              <div key={i} style={{ background: "#FFFFFF", border: "1px solid #E5E5E7", borderRadius: 20, padding: "6px 16px", fontSize: 11 }}>
                 <span style={{ color: "#C9A96E", fontWeight: 700 }}>{c.products_count||0}</span> <span style={{ color: "#888" }}>{c.title||"—"}</span>
               </div>
             ))}
@@ -83,7 +83,7 @@ export default function Products() {
         </Section>
 
         <Section title="Recent Orders" icon="🧾" count={orders.length}>
-          {orders.length === 0 ? <div style={{ background:"#0D0D0B", border:"1px solid #1a1a1a", borderRadius:8, padding:24, textAlign:"center", color:"#555", fontSize:12 }}>No orders synced yet</div> :
+          {orders.length === 0 ? <div style={{ background:"#FFFFFF", border:"1px solid #E5E5E7", borderRadius:8, padding:24, textAlign:"center", color:"#555", fontSize:12 }}>No orders synced yet</div> :
           <Table headers={["Order","Customer","Total","Status","Date"]} rows={orders.slice(0,15).map(o => [
             o.order_number||o.name||"—", o.customer_name||o.email||"—",
             o.total_price ? `$${parseFloat(o.total_price).toFixed(2)}` : "—",

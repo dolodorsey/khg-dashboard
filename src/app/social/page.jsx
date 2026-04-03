@@ -31,7 +31,7 @@ export default function Social() {
   held.forEach(p => { postsByBrand[p.brand_key] = (postsByBrand[p.brand_key]||0)+1; });
 
   return (
-    <div style={{ minHeight: "100vh", background: "#060604", fontFamily: "'DM Sans',sans-serif", color: "#F0EDE6" }}>
+    <div style={{ minHeight: "100vh", background: "#F5F5F7", fontFamily: "'DM Sans',sans-serif", color: "#111111" }}>
       <Header title="Social Media" icon="📱" sub="Post queue, engagement, analytics across all brands" color="#EC4899" />
       <div style={{ padding: "24px 32px" }}>
         <div style={{ display: "flex", gap: 16, flexWrap: "wrap", marginBottom: 32 }}>
@@ -46,7 +46,7 @@ export default function Social() {
         <Section title="Posts Awaiting Review (by Brand)" icon="📝" count={`${held.length} HELD`}>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
             {Object.entries(postsByBrand).sort((a,b)=>b[1]-a[1]).map(([brand, count]) => (
-              <div key={brand} style={{ background:"#0D0D0B", border:"1px solid #1a1a1a", borderRadius:20, padding:"6px 16px", fontSize:11 }}>
+              <div key={brand} style={{ background:"#FFFFFF", border:"1px solid #E5E5E7", borderRadius:20, padding:"6px 16px", fontSize:11 }}>
                 <span style={{ color:"#F59E0B", fontWeight:700 }}>{count}</span> <span style={{ color:"#888" }}>{brand.replace(/_/g," ")}</span>
               </div>
             ))}
@@ -65,7 +65,7 @@ export default function Social() {
         <Section title="IG OAuth Status" icon="🔗" count={`${oauthConnected.length} CONNECTED`}>
           <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(200px,1fr))", gap:8 }}>
             {handles.map((h, i) => (
-              <div key={i} style={{ background:"#0D0D0B", border:"1px solid #1a1a1a", borderRadius:8, padding:"10px 14px", display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+              <div key={i} style={{ background:"#FFFFFF", border:"1px solid #E5E5E7", borderRadius:8, padding:"10px 14px", display:"flex", justifyContent:"space-between", alignItems:"center" }}>
                 <div style={{ fontSize:12 }}>{h.brand_key?.replace(/_/g," ")||"—"}</div>
                 <Badge text={h.ghl_ig_oauth_connected?"CONNECTED":"MISSING"} color={h.ghl_ig_oauth_connected?"#22C55E":"#EF4444"} />
               </div>
@@ -73,7 +73,7 @@ export default function Social() {
           </div>
         </Section>
 
-        <div style={{ background:"#0D0D0B", border:"1px solid #EF444433", borderRadius:8, padding:20, marginTop:16 }}>
+        <div style={{ background:"#FFFFFF", border:"1px solid #EF444433", borderRadius:8, padding:20, marginTop:16 }}>
           <div style={{ fontSize:10, color:"#EF4444", letterSpacing:3, fontFamily:"'DM Mono',monospace", marginBottom:12 }}>SOCIAL POSTER STATUS</div>
           <div style={{ fontSize:12, color:"#888", lineHeight:1.8 }}>
             <div>🛑 Social poster workflow <strong style={{ color: "#EF4444" }}>DEACTIVATED</strong> — no auto-posting</div>

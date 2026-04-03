@@ -27,7 +27,7 @@ export default function Content() {
   assets.forEach(a => { const t = a.asset_type||"other"; byType[t] = (byType[t]||0)+1; });
 
   return (
-    <div style={{ minHeight: "100vh", background: "#060604", fontFamily: "'DM Sans',sans-serif", color: "#F0EDE6" }}>
+    <div style={{ minHeight: "100vh", background: "#F5F5F7", fontFamily: "'DM Sans',sans-serif", color: "#111111" }}>
       <Header title="Content" icon="🎬" sub="Graphics queue, video pipeline, brand assets, approval workflow" color="#F59E0B" />
       <div style={{ padding: "24px 32px" }}>
         <div style={{ display: "flex", gap: 16, flexWrap: "wrap", marginBottom: 32 }}>
@@ -40,7 +40,7 @@ export default function Content() {
         <Section title="Assets by Brand" icon="📂" count={`${Object.keys(byEntity).length} BRANDS`}>
           <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
             {topEntities.map(([entity, count]) => (
-              <div key={entity} style={{ background:"#0D0D0B", border:"1px solid #1a1a1a", borderRadius:20, padding:"6px 16px", fontSize:11 }}>
+              <div key={entity} style={{ background:"#FFFFFF", border:"1px solid #E5E5E7", borderRadius:20, padding:"6px 16px", fontSize:11 }}>
                 <span style={{ color:"#F59E0B", fontWeight:700 }}>{count}</span> <span style={{ color:"#888" }}>{entity.replace(/_/g,' ')}</span>
               </div>
             ))}
@@ -50,7 +50,7 @@ export default function Content() {
         <Section title="Assets by Type" icon="🏷️">
           <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
             {Object.entries(byType).sort((a,b)=>b[1]-a[1]).map(([type, count]) => (
-              <div key={type} style={{ background:"#0D0D0B", border:"1px solid #1a1a1a", borderRadius:20, padding:"6px 16px", fontSize:11 }}>
+              <div key={type} style={{ background:"#FFFFFF", border:"1px solid #E5E5E7", borderRadius:20, padding:"6px 16px", fontSize:11 }}>
                 <span style={{ color:"#8B5CF6", fontWeight:700 }}>{count}</span> <span style={{ color:"#888" }}>{type}</span>
               </div>
             ))}

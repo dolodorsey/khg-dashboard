@@ -29,7 +29,7 @@ export default function Schedule() {
   const filtered = filter === "all" ? active : filter === "overdue" ? overdue : filter === "blocked" ? blocked : filter === "delegated" ? delegated : active.filter(t => t.status === filter);
 
   return (
-    <div style={{ minHeight: "100vh", background: "#060604", fontFamily: "'DM Sans',sans-serif", color: "#F0EDE6" }}>
+    <div style={{ minHeight: "100vh", background: "#F5F5F7", fontFamily: "'DM Sans',sans-serif", color: "#111111" }}>
       <Header title="Schedule / Tasks" icon="📅" sub="Task queue, deadlines, sprint board, recurring tasks" color="#3B82F6" />
       <div style={{ padding: "24px 32px" }}>
         <div style={{ display: "flex", gap: 16, flexWrap: "wrap", marginBottom: 32 }}>
@@ -43,7 +43,7 @@ export default function Schedule() {
 
         <div style={{ display: "flex", gap: 8, marginBottom: 24, flexWrap: "wrap" }}>
           {["all","overdue","open","in_progress","blocked","delegated"].map(f => (
-            <button key={f} onClick={() => setFilter(f)} style={{ padding: "6px 14px", borderRadius: 20, fontSize: 10, fontWeight: 600, border: filter === f ? "1px solid #3B82F6" : "1px solid #222", background: filter === f ? "#3B82F618" : "transparent", color: filter === f ? "#3B82F6" : "#666", cursor: "pointer", letterSpacing: 1, textTransform: "uppercase" }}>{f.replace("_"," ")}</button>
+            <button key={f} onClick={() => setFilter(f)} style={{ padding: "6px 14px", borderRadius: 20, fontSize: 10, fontWeight: 600, border: filter === f ? "1px solid #3B82F6" : "1px solid #E5E5E7", background: filter === f ? "#3B82F618" : "transparent", color: filter === f ? "#3B82F6" : "#666", cursor: "pointer", letterSpacing: 1, textTransform: "uppercase" }}>{f.replace("_"," ")}</button>
           ))}
         </div>
 
@@ -61,7 +61,7 @@ export default function Schedule() {
         <Section title="Assignee Load" icon="👥">
           <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
             {Object.entries(byAssignee).sort((a,b)=>b[1]-a[1]).map(([name, count]) => (
-              <div key={name} style={{ background:"#0D0D0B", border:"1px solid #1a1a1a", borderRadius:20, padding:"6px 16px", fontSize:11 }}>
+              <div key={name} style={{ background:"#FFFFFF", border:"1px solid #E5E5E7", borderRadius:20, padding:"6px 16px", fontSize:11 }}>
                 <span style={{ color:"#3B82F6", fontWeight:700 }}>{count}</span> <span style={{ color:"#888" }}>{name}</span>
               </div>
             ))}
@@ -69,7 +69,7 @@ export default function Schedule() {
         </Section>
 
         <Section title="Recent Handoffs" icon="🔄" count={handoffs.length}>
-          {handoffs.length === 0 ? <div style={{ background:"#0D0D0B", border:"1px solid #1a1a1a", borderRadius:8, padding:24, textAlign:"center", color:"#555", fontSize:12 }}>No session handoffs yet</div> :
+          {handoffs.length === 0 ? <div style={{ background:"#FFFFFF", border:"1px solid #E5E5E7", borderRadius:8, padding:24, textAlign:"center", color:"#555", fontSize:12 }}>No session handoffs yet</div> :
           <Table headers={["Handoff","Summary","Date"]} rows={handoffs.slice(0,5).map(h => [
             h.handoff_id||"—",
             <span key="s" style={{ maxWidth:400, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", display:"inline-block" }}>{h.summary||h.context||"—"}</span>,

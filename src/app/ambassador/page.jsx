@@ -36,7 +36,7 @@ export default function Ambassador() {
     ambassadors.filter(a => a.tier === tab);
 
   return (
-    <div style={{ minHeight: "100vh", background: "#060604", fontFamily: "'DM Sans',sans-serif", color: "#F0EDE6" }}>
+    <div style={{ minHeight: "100vh", background: "#F5F5F7", fontFamily: "'DM Sans',sans-serif", color: "#111111" }}>
       <Header title="Ambassadors" icon="⭐" sub="Recruit, onboard, manage, scale — 4 programs, 8 role types" color="#C9A96E" />
       <div style={{ padding: "24px 32px" }}>
         <div style={{ display: "flex", gap: 16, flexWrap: "wrap", marginBottom: 32 }}>
@@ -50,12 +50,12 @@ export default function Ambassador() {
 
         <div style={{ display: "flex", gap: 8, marginBottom: 24, flexWrap: "wrap" }}>
           {["all","active","pending","gold","silver","bronze","standard"].map(t => (
-            <button key={t} onClick={() => setTab(t)} style={{ padding: "6px 14px", borderRadius: 20, fontSize: 10, fontWeight: 600, border: tab === t ? "1px solid #C9A96E" : "1px solid #222", background: tab === t ? "#C9A96E18" : "transparent", color: tab === t ? "#C9A96E" : "#666", cursor: "pointer", letterSpacing: 1, textTransform: "uppercase" }}>{t}</button>
+            <button key={t} onClick={() => setTab(t)} style={{ padding: "6px 14px", borderRadius: 20, fontSize: 10, fontWeight: 600, border: tab === t ? "1px solid #C9A96E" : "1px solid #E5E5E7", background: tab === t ? "#C9A96E18" : "transparent", color: tab === t ? "#C9A96E" : "#666", cursor: "pointer", letterSpacing: 1, textTransform: "uppercase" }}>{t}</button>
           ))}
         </div>
 
         <Section title="Ambassadors" icon="👥" count={`${filtered.length} SHOWING`}>
-          {filtered.length === 0 ? <div style={{ background:"#0D0D0B", border:"1px solid #1a1a1a", borderRadius:8, padding:24, textAlign:"center", color:"#555", fontSize:12 }}>No ambassadors match filter</div> :
+          {filtered.length === 0 ? <div style={{ background:"#FFFFFF", border:"1px solid #E5E5E7", borderRadius:8, padding:24, textAlign:"center", color:"#555", fontSize:12 }}>No ambassadors match filter</div> :
           <Table headers={["Name","Brand","Tier","Status","IG","Promo Code","Joined"]} rows={filtered.slice(0,30).map(a => [
             a.name||`${a.first_name||""} ${a.last_name||""}`.trim()||"—",
             a.brand_key?.replace(/_/g," ")||"—",
@@ -68,28 +68,28 @@ export default function Ambassador() {
         </Section>
 
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))", gap: 16, marginBottom: 32 }}>
-          <div style={{ background: "#0D0D0B", border: "1px solid #1a1a1a", borderRadius: 8, padding: 20 }}>
+          <div style={{ background: "#FFFFFF", border: "1px solid #E5E5E7", borderRadius: 8, padding: 20 }}>
             <div style={{ fontSize: 10, color: "#C9A96E", letterSpacing: 3, fontFamily: "'DM Mono',monospace", marginBottom: 12 }}>BY STATUS</div>
             {Object.entries(byStatus).map(([status, count]) => (
-              <div key={status} style={{ display: "flex", justifyContent: "space-between", padding: "4px 0", borderBottom: "1px solid #111" }}>
+              <div key={status} style={{ display: "flex", justifyContent: "space-between", padding: "4px 0", borderBottom: "1px solid #F5F5F5" }}>
                 <span style={{ fontSize: 12, color: "#888" }}>{status}</span>
                 <span style={{ fontSize: 12, fontWeight: 700, color: status==="active"?"#22C55E":"#F59E0B" }}>{count}</span>
               </div>
             ))}
           </div>
-          <div style={{ background: "#0D0D0B", border: "1px solid #1a1a1a", borderRadius: 8, padding: 20 }}>
+          <div style={{ background: "#FFFFFF", border: "1px solid #E5E5E7", borderRadius: 8, padding: 20 }}>
             <div style={{ fontSize: 10, color: "#8B5CF6", letterSpacing: 3, fontFamily: "'DM Mono',monospace", marginBottom: 12 }}>BY TIER</div>
             {Object.entries(byTier).map(([tier, count]) => (
-              <div key={tier} style={{ display: "flex", justifyContent: "space-between", padding: "4px 0", borderBottom: "1px solid #111" }}>
+              <div key={tier} style={{ display: "flex", justifyContent: "space-between", padding: "4px 0", borderBottom: "1px solid #F5F5F5" }}>
                 <span style={{ fontSize: 12, color: "#888" }}>{tier}</span>
                 <span style={{ fontSize: 12, fontWeight: 700, color: tier==="gold"?"#C9A96E":"#888" }}>{count}</span>
               </div>
             ))}
           </div>
-          <div style={{ background: "#0D0D0B", border: "1px solid #1a1a1a", borderRadius: 8, padding: 20 }}>
+          <div style={{ background: "#FFFFFF", border: "1px solid #E5E5E7", borderRadius: 8, padding: 20 }}>
             <div style={{ fontSize: 10, color: "#3B82F6", letterSpacing: 3, fontFamily: "'DM Mono',monospace", marginBottom: 12 }}>BY BRAND</div>
             {Object.entries(byBrand).sort((a,b)=>b[1]-a[1]).slice(0,8).map(([brand, count]) => (
-              <div key={brand} style={{ display: "flex", justifyContent: "space-between", padding: "4px 0", borderBottom: "1px solid #111" }}>
+              <div key={brand} style={{ display: "flex", justifyContent: "space-between", padding: "4px 0", borderBottom: "1px solid #F5F5F5" }}>
                 <span style={{ fontSize: 12, color: "#888" }}>{brand.replace(/_/g," ")}</span>
                 <span style={{ fontSize: 12, fontWeight: 700, color: "#3B82F6" }}>{count}</span>
               </div>
@@ -98,10 +98,10 @@ export default function Ambassador() {
         </div>
 
         <Section title="Ambassador Programs" icon="🏆" count={programs.length}>
-          {programs.length === 0 ? <div style={{ background:"#0D0D0B", border:"1px solid #1a1a1a", borderRadius:8, padding:24, textAlign:"center", color:"#555", fontSize:12 }}>No programs in khg_ambassador_programs</div> :
+          {programs.length === 0 ? <div style={{ background:"#FFFFFF", border:"1px solid #E5E5E7", borderRadius:8, padding:24, textAlign:"center", color:"#555", fontSize:12 }}>No programs in khg_ambassador_programs</div> :
           <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(280px,1fr))", gap:12 }}>
             {programs.map((p, i) => (
-              <div key={i} style={{ background:"#0D0D0B", border:"1px solid #1a1a1a", borderRadius:8, padding:16 }}>
+              <div key={i} style={{ background:"#FFFFFF", border:"1px solid #E5E5E7", borderRadius:8, padding:16 }}>
                 <div style={{ fontSize:14, fontWeight:600, marginBottom:4 }}>{p.program_name||"—"}</div>
                 <div style={{ fontSize:11, color:"#888", marginBottom:8 }}>{p.description||"—"}</div>
                 <Badge text={p.status||"active"} color="#22C55E" />

@@ -26,7 +26,7 @@ export default function CasperGroup() {
   const topCities = Object.entries(byCityMap).sort((a,b) => b[1]-a[1]);
 
   const subBrands = [
-    { name: "Angel Wings", icon: "👼", color: "#F0EDE6" },
+    { name: "Angel Wings", icon: "👼", color: "#111111" },
     { name: "Tha Morning After", icon: "☀️", color: "#F59E0B" },
     { name: "Patty Daddy", icon: "🍔", color: "#EF4444" },
     { name: "Espresso Co.", icon: "☕", color: "#8B5CF6" },
@@ -39,7 +39,7 @@ export default function CasperGroup() {
   ];
 
   return (
-    <div style={{ minHeight: "100vh", background: "#060604", fontFamily: "'DM Sans',sans-serif", color: "#F0EDE6" }}>
+    <div style={{ minHeight: "100vh", background: "#F5F5F7", fontFamily: "'DM Sans',sans-serif", color: "#111111" }}>
       <Header title="Casper Group" icon="🍽️" sub="10 restaurant concepts · 220 venue prospects · 15 cities" color="#C9A96E" />
       <div style={{ padding: "24px 32px" }}>
         <div style={{ display: "flex", gap: 16, flexWrap: "wrap", marginBottom: 32 }}>
@@ -53,7 +53,7 @@ export default function CasperGroup() {
         <Section title="10 Restaurant Concepts" icon="🍽️">
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))", gap: 12 }}>
             {subBrands.map(b => (
-              <div key={b.name} style={{ background: "#0D0D0B", border: "1px solid #1a1a1a", borderRadius: 8, padding: "14px 16px", textAlign: "center" }}>
+              <div key={b.name} style={{ background: "#FFFFFF", border: "1px solid #E5E5E7", borderRadius: 8, padding: "14px 16px", textAlign: "center" }}>
                 <div style={{ fontSize: 28, marginBottom: 6 }}>{b.icon}</div>
                 <div style={{ fontSize: 12, fontWeight: 600, color: b.color }}>{b.name}</div>
               </div>
@@ -64,7 +64,7 @@ export default function CasperGroup() {
         <Section title="Prospects by City" icon="🌆" count={`${topCities.length} CITIES`}>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
             {topCities.map(([city, count]) => (
-              <div key={city} style={{ background: "#0D0D0B", border: "1px solid #1a1a1a", borderRadius: 20, padding: "6px 16px", fontSize: 11 }}>
+              <div key={city} style={{ background: "#FFFFFF", border: "1px solid #E5E5E7", borderRadius: 20, padding: "6px 16px", fontSize: 11 }}>
                 <span style={{ color: "#C9A96E", fontWeight: 700 }}>{count}</span> <span style={{ color: "#888" }}>{city}</span>
               </div>
             ))}
@@ -79,7 +79,7 @@ export default function CasperGroup() {
           ])} />
         </Section>
 
-        <div style={{ background:"#0D0D0B", border:"1px solid #C9A96E33", borderRadius:8, padding:20 }}>
+        <div style={{ background:"#FFFFFF", border:"1px solid #C9A96E33", borderRadius:8, padding:20 }}>
           <div style={{ fontSize:10, color:"#C9A96E", letterSpacing:3, fontFamily:"'DM Mono',monospace", marginBottom:12 }}>TEAM & OPS</div>
           <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(200px,1fr))", gap:8, fontSize:12, color:"#888" }}>
             <div>👤 Brad — sales lead</div><div>👤 Bax — operations</div><div>👤 Alandra — coordination</div>

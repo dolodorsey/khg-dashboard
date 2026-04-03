@@ -26,7 +26,7 @@ export default function MindStudio() {
   const piWrong = outreach.filter(o => o.category === "wrong_channel");
 
   return (
-    <div style={{ minHeight: "100vh", background: "#060604", fontFamily: "'DM Sans',sans-serif", color: "#F0EDE6" }}>
+    <div style={{ minHeight: "100vh", background: "#F5F5F7", fontFamily: "'DM Sans',sans-serif", color: "#111111" }}>
       <Header title="Mind Studio" icon="🧠" sub="3-entity MSO · Clinic + Consumer + PI · MCO agreements ONLY" color="#8B5CF6" />
       <div style={{ padding: "24px 32px" }}>
         <div style={{ display: "flex", gap: 16, flexWrap: "wrap", marginBottom: 32 }}>
@@ -39,7 +39,7 @@ export default function MindStudio() {
         </div>
 
         <Section title="MCO Outreach Pipeline" icon="🏥" count={`${mcos.length} MCOs`}>
-          {mcos.length === 0 ? <div style={{ background:"#0D0D0B", border:"1px solid #1a1a1a", borderRadius:8, padding:24, textAlign:"center", color:"#555", fontSize:12 }}>No MCOs in mind_studio_outreach</div> :
+          {mcos.length === 0 ? <div style={{ background:"#FFFFFF", border:"1px solid #E5E5E7", borderRadius:8, padding:24, textAlign:"center", color:"#555", fontSize:12 }}>No MCOs in mind_studio_outreach</div> :
           <Table headers={["Company","Contact","Email","Status"]} rows={mcos.slice(0,20).map(m => [
             m.company_name||"—", m.contact_name||"—",
             m.contact_email||<Badge key="e" text="needs email" color="#EF4444" />,
@@ -48,12 +48,12 @@ export default function MindStudio() {
         </Section>
 
         <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(280px,1fr))", gap:16, marginBottom:32 }}>
-          <div style={{ background:"#0D0D0B", border:"1px solid #1a1a1a", borderRadius:8, padding:20 }}>
+          <div style={{ background:"#FFFFFF", border:"1px solid #E5E5E7", borderRadius:8, padding:20 }}>
             <div style={{ fontSize:10, color:"#8B5CF6", letterSpacing:3, fontFamily:"'DM Mono',monospace", marginBottom:12 }}>CLINIC PIPELINE (20-stage)</div>
             <div style={{ fontSize:24, fontWeight:800, color:"#8B5CF6" }}>{pipeline.length}</div>
             <div style={{ fontSize:11, color:"#666", marginTop:4 }}>Active clients in pipeline</div>
           </div>
-          <div style={{ background:"#0D0D0B", border:"1px solid #1a1a1a", borderRadius:8, padding:20 }}>
+          <div style={{ background:"#FFFFFF", border:"1px solid #E5E5E7", borderRadius:8, padding:20 }}>
             <div style={{ fontSize:10, color:"#22C55E", letterSpacing:3, fontFamily:"'DM Mono',monospace", marginBottom:12 }}>GHL INTEGRATION</div>
             <div style={{ fontSize:12, color:"#888", lineHeight:1.8 }}>
               <div>🔑 Location: 6h8pNMs7vPOnStVIvGvJ</div>
@@ -62,7 +62,7 @@ export default function MindStudio() {
               <div>⚠️ IG OAuth needs credentials from Myia B</div>
             </div>
           </div>
-          <div style={{ background:"#0D0D0B", border:"1px solid #EF444433", borderRadius:8, padding:20 }}>
+          <div style={{ background:"#FFFFFF", border:"1px solid #EF444433", borderRadius:8, padding:20 }}>
             <div style={{ fontSize:10, color:"#EF4444", letterSpacing:3, fontFamily:"'DM Mono',monospace", marginBottom:12 }}>CORRECTED ROUTING</div>
             <div style={{ fontSize:12, color:"#888", lineHeight:1.8 }}>
               <div>✅ {piWrong.length} PI firms → Brand Studio</div>
