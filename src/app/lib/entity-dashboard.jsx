@@ -449,9 +449,14 @@ export default function EntityDashboard({ entity }) {
       q("brand_social_handles",`select=*&${bkFilter}&order=brand_key`),
       q("credentials","select=id,credential_type,credential_key,credential_value,is_active&is_active=eq.true&order=credential_type,credential_key"),
       q("brand_voice_profiles",`select=*&${bkFilter}&is_active=eq.true&order=brand_key`),
+      q("khg_build_rubric",`select=*&${bkFilter.replace('brand_key','entity_key')}&order=project_name`),
+      q("khg_contracts",`select=*&${bkFilter.replace('brand_key','entity_key')}&order=status,contract_name`),
+      q("khg_sponsors",`select=*&${bkFilter.replace('brand_key','entity_key')}&order=tier,sponsor_name`),
+      q("khg_influencer_programs",`select=*&${bkFilter.replace('brand_key','entity_key')}&order=status,influencer_name`),
+      q("khg_scrape_targets",`select=*&${bkFilter.replace('brand_key','entity_key')}&order=target_name`),
       q("khg_daily_ops_quotas",`select=*&${bkFilter}&order=brand_key`),
     ]);
-    const [tasks,outreach,social,events,content,emails,sites,ghl,handles,creds,logos,quotas,voices] = base;
+    const [tasks,outreach,social,events,content,emails,sites,ghl,handles,creds,logos,quotas,voices,rubrics,contracts,sponsors,influencers,scrapes] = base;
     const entitySites = (sites||[]).filter(function(s) {
       var ek = s.entity_key || "";
       return entity.brandKeys.some(function(k) {
@@ -472,7 +477,7 @@ export default function EntityDashboard({ entity }) {
       var b = t.brand.toLowerCase().replace(/\s+/g,"_");
       return entity.brandKeys.some(function(k) { return b === k || k === b || b.includes(k) || k.includes(b); });
     });
-    const result = {tasks:entityTasks,outreach:outreach||[],social:social||[],events:events||[],content:content||[],emails:emails||[],sites:entitySites,ghl:entityGhl,handles:handles||[],creds:creds||[],logos:entityLogos,quotas:quotas||[],voices:voices||[]};
+    const result = {tasks:entityTasks,outreach:outreach||[],social:social||[],events:events||[],content:content||[],emails:emails||[],sites:entitySites,ghl:entityGhl,handles:handles||[],creds:creds||[],logos:entityLogos,quotas:quotas||[],voices:voices||[],rubrics:rubrics||[],contracts:contracts||[],sponsors:sponsors||[],influencers:influencers||[],scrapes:scrapes||[]};
     if (entity.extraTables) {
       const extras = await Promise.all(entity.extraTables.map(ex=>q(ex.table,ex.query)));
       entity.extraTables.forEach((ex,i) => { result[ex.key] = extras[i]||[]; });
@@ -493,6 +498,11 @@ export default function EntityDashboard({ entity }) {
     {id:"events",label:"Events",sec:"Execution",ct:(d.events||[]).length},
     {id:"content",label:"Content Calendar",sec:"Execution",ct:(d.content||[]).length},
     {id:"quotas",label:"Daily Ops Quotas",sec:"Execution",ct:(d.quotas||[]).length},
+    {id:"rubrics",label:"Build Rubric",sec:"Data",ct:(d.rubrics||[]).length},
+    {id:"contracts",label:"Contracts",sec:"Data",ct:(d.contracts||[]).length},
+    {id:"sponsors",label:"Sponsors",sec:"Data",ct:(d.sponsors||[]).length},
+    {id:"influencers",label:"Influencer Programs",sec:"Data",ct:(d.influencers||[]).length},
+    {id:"scrapes",label:"Scrape Targets",sec:"Data",ct:(d.scrapes||[]).length},
     {id:"emails",label:"Email Approvals",sec:"Execution",ct:(d.emails||[]).filter(e=>!e.approved).length},
     ...(entity.extraNav||[]).map(n=>({...n,sec:n.sec||"Data",ct:n.ct||(d[n.id]||[]).length})),
   ];
@@ -526,6 +536,54 @@ export default function EntityDashboard({ entity }) {
       case "social": return <SocialMedia d={d} reload={load} entity={entity}/>;
       case "events": return <Events d={d}/>;
       case "content": return <ContentCal d={d}/>;
+      case "rubrics": return (<div className="up"><div className="sec-t">Website / App Build Rubric</div>
+      <p style={{fontSize:13,color:"var(--tx2)",marginBottom:20,lineHeight:1.6}}>Each entry captures everything needed to build a website or app at Good Times quality level: logos, colors, fonts, content, integrations, design specs.</p>
+      {(d.rubrics||[]).map(function(r,i) { return (<div key={i} className="card" style={{marginBottom:16}}>
+        <div className="row" style={{justifyContent:"space-between",marginBottom:10}}>
+          <h3 style={{fontSize:16}}>{r.project_name}</h3>
+          <div className="row" style={{gap:6}}><span className={"bg "+(r.status==="live"?"bg-gn":r.status==="qa"?"bg-bl":r.status==="development"?"bg-yl":"bg-mt")}>{r.status}</span><span className="bg bg-ac">{r.project_type}</span></div>
+        </div>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:16,marginBottom:12}}>
+          <div><div className="sec-t">Brand</div><div style={{fontSize:13}}>{r.brand_name||"-"}</div><div style={{fontSize:11,color:"var(--tx3)"}}>{r.brand_tone||"-"} tone</div></div>
+          <div><div className="sec-t">Domain</div><div style={{fontSize:13}}>{r.domain?<a href={"https://"+r.domain} target="_blank" rel="noopener" style={{color:"var(--ac)"}}>{r.domain}</a>:"-"}</div></div>
+          <div><div className="sec-t">Vercel</div><div style={{fontSize:13}}>{r.vercel_project||"-"}</div></div>
+        </div>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:12,marginBottom:12}}>
+          <div><div className="sec-t">Colors</div><div className="row" style={{gap:4}}>{[r.color_primary,r.color_secondary,r.color_accent].filter(Boolean).map(function(c,j){return <div key={j} style={{width:24,height:24,borderRadius:4,background:c,border:"1px solid var(--bd)"}}></div>})}{![r.color_primary,r.color_secondary,r.color_accent].some(Boolean)&&<span style={{fontSize:11,color:"var(--tx3)"}}>Not set</span>}</div></div>
+          <div><div className="sec-t">Heading Font</div><div style={{fontSize:12}}>{r.font_heading||"Not set"}</div></div>
+          <div><div className="sec-t">Logo</div>{r.logo_url?<img src={r.logo_url} alt="" style={{maxHeight:28,maxWidth:80}} onError={function(e){e.target.style.display="none"}} />:<span style={{fontSize:11,color:"var(--tx3)"}}>Not set</span>}</div>
+          <div><div className="sec-t">Hero Video</div><span style={{fontSize:11,color:r.hero_video_url?"var(--gn)":"var(--tx3)"}}>{r.hero_video_url?"Set":"Not set"}</span></div>
+        </div>
+        <div className="row" style={{gap:12,fontSize:11,color:"var(--tx3)",flexWrap:"wrap"}}>
+          {r.has_contact_form&&<span className="bg bg-mt">Contact Form</span>}
+          {r.has_newsletter&&<span className="bg bg-mt">Newsletter</span>}
+          {r.has_booking&&<span className="bg bg-mt">Booking</span>}
+          {r.has_ecommerce&&<span className="bg bg-mt">E-Commerce</span>}
+          {r.has_events&&<span className="bg bg-mt">Events</span>}
+          {r.has_video&&<span className="bg bg-mt">Video</span>}
+          {r.has_animation&&<span className="bg bg-mt">Animation</span>}
+          <span className="bg bg-ac">{r.design_style||"ff_v3"}</span>
+        </div>
+        {r.overall_score&&<div style={{marginTop:8,fontSize:12}}>Score: <span style={{fontWeight:700,color:r.overall_score>=8?"var(--gn)":r.overall_score>=6?"var(--yl)":"var(--rd)"}}>{r.overall_score}/10</span></div>}
+      </div>);})}
+      {(d.rubrics||[]).length===0&&<div className="card" style={{textAlign:"center",padding:32,color:"var(--tx3)"}}>No build rubrics for this entity</div>}
+      </div>);
+      case "contracts": return (<div className="up"><div className="sec-t">Contracts</div>
+      {(d.contracts||[]).length>0?<div className="card" style={{padding:0,overflow:"hidden"}}><table className="tbl"><thead><tr><th>Name</th><th>Counterparty</th><th>Type</th><th>Value</th><th>Status</th><th>Dates</th></tr></thead>
+      <tbody>{(d.contracts||[]).map(function(c,i){return <tr key={i}><td style={{fontWeight:500}}>{c.contract_name}</td><td>{c.counterparty||"-"}</td><td><span className="bg bg-mt">{c.contract_type||"-"}</span></td><td style={{fontFamily:"var(--mn)"}}>{c.value?"$"+Number(c.value).toLocaleString():"-"}</td><td><span className={"bg "+(c.status==="signed"||c.status==="active"?"bg-gn":c.status==="sent"||c.status==="negotiating"?"bg-yl":"bg-mt")}>{c.status}</span></td><td style={{fontSize:11}}>{c.start_date||"-"}{c.end_date?" to "+c.end_date:""}</td></tr>})}</tbody></table></div>:<div className="card" style={{textAlign:"center",padding:32,color:"var(--tx3)"}}>No contracts</div>}
+      </div>);
+      case "sponsors": return (<div className="up"><div className="sec-t">Sponsors</div>
+      {(d.sponsors||[]).length>0?<div className="card" style={{padding:0,overflow:"hidden"}}><table className="tbl"><thead><tr><th>Sponsor</th><th>Contact</th><th>Tier</th><th>Type</th><th>Value</th><th>Status</th><th>Follow-ups</th></tr></thead>
+      <tbody>{(d.sponsors||[]).map(function(s,i){return <tr key={i}><td style={{fontWeight:500}}>{s.sponsor_name}</td><td style={{fontSize:11}}>{s.contact_name||"-"}<br/>{s.contact_email||""}</td><td><span className="bg bg-ac">{s.tier}</span></td><td><span className="bg bg-mt">{s.sponsorship_type||"-"}</span></td><td style={{fontFamily:"var(--mn)"}}>{s.value?"$"+Number(s.value).toLocaleString():"-"}</td><td><span className={"bg "+(s.tier==="confirmed"||s.tier==="active"?"bg-gn":s.tier==="negotiating"||s.tier==="interested"?"bg-yl":"bg-mt")}>{s.tier}</span></td><td style={{fontFamily:"var(--mn)",textAlign:"center"}}>{s.follow_up_count||0}</td></tr>})}</tbody></table></div>:<div className="card" style={{textAlign:"center",padding:32,color:"var(--tx3)"}}>No sponsors</div>}
+      </div>);
+      case "influencers": return (<div className="up"><div className="sec-t">Influencer Programs</div>
+      {(d.influencers||[]).length>0?<div className="card" style={{padding:0,overflow:"hidden"}}><table className="tbl"><thead><tr><th>Influencer</th><th>Handle</th><th>Followers</th><th>Niche</th><th>Tier</th><th>Status</th><th>Type</th></tr></thead>
+      <tbody>{(d.influencers||[]).map(function(inf,i){return <tr key={i}><td style={{fontWeight:500}}>{inf.influencer_name}</td><td style={{color:"var(--ac)"}}>{inf.ig_handle||"-"}</td><td style={{fontFamily:"var(--mn)"}}>{inf.follower_count?Number(inf.follower_count).toLocaleString():"-"}</td><td><span className="bg bg-mt">{inf.niche||"-"}</span></td><td><span className="bg bg-ac">{inf.tier}</span></td><td><span className={"bg "+(inf.status==="active"?"bg-gn":inf.status==="interested"||inf.status==="negotiating"?"bg-yl":"bg-mt")}>{inf.status}</span></td><td>{inf.partnership_type||"-"}</td></tr>})}</tbody></table></div>:<div className="card" style={{textAlign:"center",padding:32,color:"var(--tx3)"}}>No influencers</div>}
+      </div>);
+      case "scrapes": return (<div className="up"><div className="sec-t">Scrape Targets</div>
+      {(d.scrapes||[]).length>0?<div className="card" style={{padding:0,overflow:"hidden"}}><table className="tbl"><thead><tr><th>Target</th><th>Platform</th><th>Type</th><th>Frequency</th><th>Records</th><th>Last Scraped</th><th>Active</th></tr></thead>
+      <tbody>{(d.scrapes||[]).map(function(sc,i){return <tr key={i}><td style={{fontWeight:500}}>{sc.target_name}{sc.target_url&&<a href={sc.target_url} target="_blank" rel="noopener" style={{color:"var(--ac)",marginLeft:6,fontSize:11}}>Link</a>}</td><td><span className="bg bg-bl">{sc.platform||"-"}</span></td><td><span className="bg bg-mt">{sc.target_type||"-"}</span></td><td>{sc.scrape_frequency||"-"}</td><td style={{fontFamily:"var(--mn)"}}>{sc.records_collected||0}</td><td style={{fontSize:11}}>{sc.last_scraped_at?new Date(sc.last_scraped_at).toLocaleDateString():"never"}</td><td>{sc.is_active?<span className="bg bg-gn">Active</span>:<span className="bg bg-rd">Off</span>}</td></tr>})}</tbody></table></div>:<div className="card" style={{textAlign:"center",padding:32,color:"var(--tx3)"}}>No scrape targets</div>}
+      </div>);
       case "quotas": return <DailyQuotas d={d} reload={load} />;
       case "emails": return <EmailApprovals d={d} reload={load}/>;
       default:

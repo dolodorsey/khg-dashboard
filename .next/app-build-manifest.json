@@ -21,7 +21,7 @@
       "static/chunks/23-f3bd2664991ff6e1.js",
       "static/chunks/main-app-c234bf7c418a3c26.js",
       "static/chunks/138-f02d230bd104b4f1.js",
-      "static/chunks/814-9d3e61f72a2e57b3.js",
+      "static/chunks/814-8e332e4c99665ff9.js",
       "static/chunks/app/casper-group/page-be90a9a98a7e93fb.js"
     ],
     "/apps/page": [
@@ -30,7 +30,7 @@
       "static/chunks/23-f3bd2664991ff6e1.js",
       "static/chunks/main-app-c234bf7c418a3c26.js",
       "static/chunks/138-f02d230bd104b4f1.js",
-      "static/chunks/814-9d3e61f72a2e57b3.js",
+      "static/chunks/814-8e332e4c99665ff9.js",
       "static/chunks/app/apps/page-428fc7ee61a82ac0.js"
     ],
     "/command-center/page": [
@@ -48,23 +48,23 @@
       "static/chunks/138-f02d230bd104b4f1.js",
       "static/chunks/app/dr-dorsey/page-60afe1f393be652f.js"
     ],
-    "/forever-futbol/page": [
-      "static/chunks/webpack-8581be3563009278.js",
-      "static/chunks/fd9d1056-1f4c605cebad2e8d.js",
-      "static/chunks/23-f3bd2664991ff6e1.js",
-      "static/chunks/main-app-c234bf7c418a3c26.js",
-      "static/chunks/138-f02d230bd104b4f1.js",
-      "static/chunks/814-9d3e61f72a2e57b3.js",
-      "static/chunks/app/forever-futbol/page-8e8a017994baa542.js"
-    ],
     "/huglife/page": [
       "static/chunks/webpack-8581be3563009278.js",
       "static/chunks/fd9d1056-1f4c605cebad2e8d.js",
       "static/chunks/23-f3bd2664991ff6e1.js",
       "static/chunks/main-app-c234bf7c418a3c26.js",
       "static/chunks/138-f02d230bd104b4f1.js",
-      "static/chunks/814-9d3e61f72a2e57b3.js",
+      "static/chunks/814-8e332e4c99665ff9.js",
       "static/chunks/app/huglife/page-ee5b46a02eef3e60.js"
+    ],
+    "/forever-futbol/page": [
+      "static/chunks/webpack-8581be3563009278.js",
+      "static/chunks/fd9d1056-1f4c605cebad2e8d.js",
+      "static/chunks/23-f3bd2664991ff6e1.js",
+      "static/chunks/main-app-c234bf7c418a3c26.js",
+      "static/chunks/138-f02d230bd104b4f1.js",
+      "static/chunks/814-8e332e4c99665ff9.js",
+      "static/chunks/app/forever-futbol/page-8e8a017994baa542.js"
     ],
     "/page": [
       "static/chunks/webpack-8581be3563009278.js",
@@ -88,7 +88,7 @@
       "static/chunks/23-f3bd2664991ff6e1.js",
       "static/chunks/main-app-c234bf7c418a3c26.js",
       "static/chunks/138-f02d230bd104b4f1.js",
-      "static/chunks/814-9d3e61f72a2e57b3.js",
+      "static/chunks/814-8e332e4c99665ff9.js",
       "static/chunks/app/products/page-c1e1d450c8bd1f0b.js"
     ],
     "/scented-museums/page": [
@@ -105,7 +105,7 @@
       "static/chunks/23-f3bd2664991ff6e1.js",
       "static/chunks/main-app-c234bf7c418a3c26.js",
       "static/chunks/138-f02d230bd104b4f1.js",
-      "static/chunks/814-9d3e61f72a2e57b3.js",
+      "static/chunks/814-8e332e4c99665ff9.js",
       "static/chunks/app/umbrella/page-aeca9ba72ee47bb5.js"
     ]
   }
