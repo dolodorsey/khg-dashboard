@@ -170,8 +170,9 @@ function SocialMedia({ d, reload, entity }) {
   const [tab,setTab]=useState("all");const [composing,setComposing]=useState(false);const [editing,setEditing]=useState(null);
   const [np,setNp]=useState({caption:"",platform:"instagram",content_type:"post",image_url:"",scheduled_for:"",brand_key:entity.brandKeys[0]||""});
   const [busy,setBusy]=useState(null);
-  const all=d.social||[];const queued=all.filter(p=>p.status==="queued");const posted=all.filter(p=>p.status==="posted");const approved=all.filter(p=>p.status==="approved");
-  const filt=tab==="queued"?queued:tab==="posted"?posted:tab==="approved"?approved:all;
+  const all=d.social||[];
+  const pending=all.filter(p=>p.status==="pending");const held=all.filter(p=>p.status==="held");const posted=all.filter(p=>p.status==="posted"||p.status==="sent");
+  const filt=tab==="pending"?pending:tab==="held"?held:tab==="posted"?posted:all;
   const approve=async id=>{
     setBusy(id);
     await qu("ghl_social_posting_queue",`id=eq.${id}`,{status:"approved"});
@@ -181,13 +182,13 @@ function SocialMedia({ d, reload, entity }) {
   };
   const reject=async id=>{setBusy(id);await qu("ghl_social_posting_queue",`id=eq.${id}`,{status:"rejected"});await reload();setBusy(null)};
   const saveEdit=async()=>{if(!editing)return;setBusy(editing.id);await qu("ghl_social_posting_queue",`id=eq.${editing.id}`,{caption:editing.caption,image_url:editing.image_url||null,scheduled_for:editing.scheduled_for||null,platform:editing.platform,content_type:editing.content_type,brand_key:editing.brand_key});setEditing(null);await reload();setBusy(null)};
-  const createPost=async()=>{if(!np.caption.trim())return;setBusy("new");await qi("ghl_social_posting_queue",{brand_key:np.brand_key,caption:np.caption,platform:np.platform,content_type:np.content_type,image_url:np.image_url||null,scheduled_for:np.scheduled_for||null,status:"queued"});setNp({caption:"",platform:"instagram",content_type:"post",image_url:"",scheduled_for:"",brand_key:entity.brandKeys[0]||""});setComposing(false);await reload();setBusy(null)};
+  const createPost=async()=>{if(!np.caption.trim())return;setBusy("new");await qi("ghl_social_posting_queue",{brand_key:np.brand_key,caption:np.caption,platform:np.platform,content_type:np.content_type,image_url:np.image_url||null,scheduled_for:np.scheduled_for||null,status:"pending"});setNp({caption:"",platform:"instagram",content_type:"post",image_url:"",scheduled_for:"",brand_key:entity.brandKeys[0]||""});setComposing(false);await reload();setBusy(null)};
   return (<div className="up">
     <div className="row" style={{justifyContent:"space-between",marginBottom:16}}>
       <div className="pills" style={{margin:0}}>
         <button className={`pill ${tab==="all"?"on":""}`} onClick={()=>setTab("all")}>All ({all.length})</button>
-        <button className={`pill ${tab==="queued"?"on":""}`} onClick={()=>setTab("queued")}>Queued ({queued.length})</button>
-        <button className={`pill ${tab==="approved"?"on":""}`} onClick={()=>setTab("approved")}>Approved ({approved.length})</button>
+        <button className={`pill ${tab==="pending"?"on":""}`} onClick={()=>setTab("pending")}>Pending ({pending.length})</button>
+        <button className={`pill ${tab==="held"?"on":""}`} onClick={()=>setTab("held")}>Held ({held.length})</button>
         <button className={`pill ${tab==="posted"?"on":""}`} onClick={()=>setTab("posted")}>Posted ({posted.length})</button>
       </div>
       <button className="btn btn-p" onClick={()=>setComposing(!composing)}>+ Compose</button>
@@ -220,11 +221,11 @@ function SocialMedia({ d, reload, entity }) {
     {filt.map((p,i)=>(<div key={p.id||i} className="card" style={{marginBottom:8,opacity:busy===p.id?.4:1}}>
       <div className="row" style={{justifyContent:"space-between",marginBottom:6}}>
         <div className="row" style={{gap:6}}><span className="bg bg-bl">{p.platform||"IG"}</span><span className="bg bg-mt">{p.content_type||"post"}</span><span className="bg bg-ac">{p.brand_key||"-"}</span></div>
-        <div className="row" style={{gap:6}}>{p.scheduled_for&&<span style={{fontSize:10,color:"var(--tx3)",fontFamily:"var(--mn)"}}>{new Date(p.scheduled_for).toLocaleString()}</span>}<span className={`bg ${p.status==="posted"?"bg-gn":p.status==="approved"?"bg-bl":"bg-yl"}`}>{p.status}</span></div>
+        <div className="row" style={{gap:6}}>{p.scheduled_for&&<span style={{fontSize:10,color:"var(--tx3)",fontFamily:"var(--mn)"}}>{new Date(p.scheduled_for).toLocaleString()}</span>}<span className={`bg ${p.status==="posted"||p.status==="sent"?"bg-gn":p.status==="pending"?"bg-yl":"bg-mt"}`}>{p.status}</span></div>
       </div>
       <div style={{fontSize:13,lineHeight:1.6,color:"var(--tx2)",whiteSpace:"pre-wrap"}}>{(p.caption||"").slice(0,300)}</div>
       {p.image_url&&<img src={p.image_url} alt="" style={{maxWidth:180,borderRadius:6,border:"1px solid var(--bd)",marginTop:8}} onError={e=>{e.target.style.display="none"}} />}
-      <div className="row" style={{gap:4,marginTop:10}}>{p.status==="queued"&&<button className="btn btn-s btn-g" onClick={()=>approve(p.id)}>Approve</button>}{p.status==="queued"&&<button className="btn btn-s btn-r" onClick={()=>reject(p.id)}>Reject</button>}<button className="btn btn-s" onClick={()=>setEditing({...p})}>Edit</button></div>
+      <div className="row" style={{gap:4,marginTop:10}}>{p.status==="pending"&&<button className="btn btn-s btn-g" onClick={()=>approve(p.id)}>Approve</button>}{p.status==="pending"&&<button className="btn btn-s btn-r" onClick={()=>reject(p.id)}>Reject</button>}{p.status==="held"&&<button className="btn btn-s btn-p" onClick={()=>{setBusy(p.id);qu("ghl_social_posting_queue",`id=eq.${p.id}`,{status:"pending"}).then(reload).then(()=>setBusy(null))}}>Move to Pending</button>}<button className="btn btn-s" onClick={()=>setEditing({...p})}>Edit</button></div>
     </div>))}
     {filt.length===0&&<div className="card" style={{textAlign:"center",padding:32,color:"var(--tx3)"}}>No {tab} posts</div>}
   </div>);
@@ -284,12 +285,22 @@ function Overview({ d, go }) {
 
 // OUTREACH
 function Outreach({ d, reload }) {
-  const [view,setView]=useState("queued");const [busy,setBusy]=useState(null);const all=d.outreach||[];const queued=all.filter(o=>o.status==="queued");const sent=all.filter(o=>o.status==="sent");const filt=view==="sent"?sent:queued;
+  const [view,setView]=useState("queued");const [busy,setBusy]=useState(null);const all=d.outreach||[];
+  const held=all.filter(o=>o.status==="held");const queued=all.filter(o=>o.status==="queued");const approved=all.filter(o=>o.status==="approved");const sent=all.filter(o=>o.status==="sent");
+  const filt=view==="held"?held:view==="approved"?approved:view==="sent"?sent:queued;
   const send=async id=>{setBusy(id);await qu("contact_action_queue",`id=eq.${id}`,{status:"sent",sent_at:new Date().toISOString()});await reload();setBusy(null)};
   const skip=async id=>{setBusy(id);await qu("contact_action_queue",`id=eq.${id}`,{status:"skipped"});await reload();setBusy(null)};
-  return (<div className="up"><div className="pills"><button className={`pill ${view==="queued"?"on":""}`} onClick={()=>setView("queued")}>Queued ({queued.length})</button><button className={`pill ${view==="sent"?"on":""}`} onClick={()=>setView("sent")}>Sent ({sent.length})</button></div>
+  return (<div className="up"><div className="pills">
+      <button className={`pill ${view==="queued"?"on":""}`} onClick={()=>setView("queued")}>Queued ({queued.length})</button>
+      <button className={`pill ${view==="approved"?"on":""}`} onClick={()=>setView("approved")}>Approved ({approved.length})</button>
+      <button className={`pill ${view==="held"?"on":""}`} onClick={()=>setView("held")}>Held ({held.length})</button>
+      <button className={`pill ${view==="sent"?"on":""}`} onClick={()=>setView("sent")}>Sent ({sent.length})</button>
+    </div>
     <div className="card" style={{padding:0,overflow:"hidden"}}><table className="tbl"><thead><tr><th>Contact</th><th>Type</th><th>Segment</th><th>City</th><th>Status</th><th>Actions</th></tr></thead>
-    <tbody>{filt.slice(0,30).map((o,i)=>(<tr key={o.id||i} style={{opacity:busy===o.id?.4:1}}><td style={{fontWeight:500,color:"var(--tx)"}}>{o.contact_name||o.ig_handle||o.contact_email||"-"}</td><td>{o.action_type||"-"}</td><td><span className="bg bg-mt">{o.segment_type||"-"}</span></td><td>{o.contact_city||"-"}</td><td><span className={`bg ${o.status==="sent"?"bg-gn":"bg-yl"}`}>{o.status}</span></td><td><div className="row" style={{gap:4}}>{o.status==="queued"&&<button className="btn btn-s btn-p" onClick={()=>send(o.id)}>Send</button>}{o.status==="queued"&&<button className="btn btn-s" onClick={()=>skip(o.id)}>Skip</button>}</div></td></tr>))}</tbody></table></div>
+    <tbody>{filt.slice(0,30).map((o,i)=>(<tr key={o.id||i} style={{opacity:busy===o.id?.4:1}}><td style={{fontWeight:500,color:"var(--tx)"}}>{o.contact_name||o.ig_handle||o.contact_email||"-"}</td><td>{o.action_type||"-"}</td><td><span className="bg bg-mt">{o.segment_type||"-"}</span></td><td>{o.contact_city||"-"}</td><td><span className={`bg ${o.status==="sent"?"bg-gn":"bg-yl"}`}>{o.status}</span></td><td><div className="row" style={{gap:4}}>{o.status==="held"&&<button className="btn btn-s btn-p" onClick={()=>{setBusy(o.id);qu("contact_action_queue",`id=eq.${o.id}`,{status:"queued"}).then(reload).then(()=>setBusy(null))}}>Queue</button>}
+              {o.status==="queued"&&<button className="btn btn-s btn-g" onClick={()=>send(o.id)}>Send</button>}
+              {o.status==="queued"&&<button className="btn btn-s" onClick={()=>skip(o.id)}>Skip</button>}
+              {o.status==="approved"&&<button className="btn btn-s btn-g" onClick={()=>send(o.id)}>Send</button>}</div></td></tr>))}</tbody></table></div>
     {filt.length===0&&<div className="card" style={{textAlign:"center",padding:32,color:"var(--tx3)",marginTop:12}}>No {view} outreach</div>}
   </div>);
 }
@@ -427,7 +438,7 @@ export default function EntityDashboard({ entity }) {
     if (entity.brandKeys.length === 0) { setD({}); setLoading(false); return; }
     const base = await Promise.all([
       q("khg_master_tasks","select=*&order=priority,created_at.desc&limit=100"),
-      q("contact_action_queue",`select=*&${activeBk}&order=created_at.desc&limit=100`),
+      q("contact_action_queue",`select=*&${activeBk}&order=status.asc,created_at.desc&limit=200`),
       q("ghl_social_posting_queue",`select=*&${activeBk}&order=created_at.desc&limit=50`),
       q("eventbrite_events",`select=*&${activeBk}&event_date=gte.${new Date().toISOString().split("T")[0]}&order=event_date.asc&limit=30`),
       q("weekly_content_schedule",`select=*&${activeBk}&is_active=eq.true&order=day_of_week,post_time`),
