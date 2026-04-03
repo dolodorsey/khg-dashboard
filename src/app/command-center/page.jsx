@@ -176,7 +176,7 @@ function MarketingHQ({ brand, bk, navigate }) {
         supa("ghl_social_posting_queue", "select=id&status=eq.queued"),
       ]);
       const qs = q || [];
-      setStats({ queued: qs.filter(x=>x.status==="queued").length, sent: qs.filter(x=>x.status==="sent").length, total: qs.length, pendingApprovals: (eq||[]).length + (pq||[]).length });
+      setStats({ queued: qs.filter(x=>x.status==="queued").length, sent: qs.filter(x=>x.status==="sent").length, total: qs.length, pendingApprovals: (eq||[]).length + (pq||[]).length, postsQueued: (pq||[]).length });
       setEvents(ev || []); setTasks(tk || []); setLoading(false);
     })();
   }, [bk]);
@@ -195,7 +195,7 @@ function MarketingHQ({ brand, bk, navigate }) {
     <div className="g4 fi" style={{marginBottom:14}}>
       <div className="card ptr" onClick={()=>navigate("outreach")}><div className="sv" style={{color:"var(--bl)"}}>{loading?"—":stats.queued?.toLocaleString()}</div><div className="sl2">Queued Outreach</div></div>
       <div className="card ptr" onClick={()=>navigate("outreach")}><div className="sv" style={{color:"var(--gn)"}}>{loading?"—":stats.sent?.toLocaleString()}</div><div className="sl2">Sent</div></div>
-      <div className="card ptr" onClick={()=>navigate("social")}><div className="sv" style={{color:"var(--ac)"}}>{loading?"—":(pq||[]).length}</div><div className="sl2">Posts Queued</div></div>
+      <div className="card ptr" onClick={()=>navigate("social")}><div className="sv" style={{color:"var(--ac)"}}>{loading?"—":stats.postsQueued||0}</div><div className="sl2">Posts Queued</div></div>
       <div className="card ptr" onClick={()=>navigate("approvals")}><div className="sv" style={{color:stats.pendingApprovals>0?"var(--rd)":"var(--gn)"}}>{loading?"—":stats.pendingApprovals||0}</div><div className="sl2">Pending Approvals</div></div>
     </div>
     <div className="g2 fi fd2" style={{marginBottom:14}}>
