@@ -135,7 +135,10 @@ function Tasks({ entity, data, reload }) {
   const update = async (id, d) => { setBusy(id); await qu("khg_master_tasks",`id=eq.${id}`,{...d,updated_at:new Date().toISOString()}); await reload(); setBusy(null); };
   const create = async () => {
     if(!nt.title.trim()) return; setBusy("new");
-    await qi("khg_master_tasks",{task_key:`TASK-2026-${String(Date.now()).slice(-4)}`,title:nt.title,category:nt.category,priority:nt.priority,assigned_to:nt.assigned_to,description:nt.description||null,status:"open",brand:entity.key,created_by:"dr_dorsey"});
+    const existing = await q("khg_master_tasks","select=task_key&order=task_key.desc&limit=1");
+    const lastNum = existing[0]?.task_key ? parseInt(existing[0].task_key.split("-").pop()) : 94;
+    const nextKey = `TASK-2026-${String(lastNum+1).padStart(4,"0")}`;
+    await qi("khg_master_tasks",{task_key:nextKey,title:nt.title,category:nt.category,priority:nt.priority,assigned_to:nt.assigned_to,description:nt.description||null,status:"open",brand:entity.key,created_by:"dr_dorsey"});
     setNt({title:"",priority:"medium",assigned_to:"claude",category:"other",description:""}); setCreating(false); await reload(); setBusy(null);
   };
 
@@ -294,18 +297,18 @@ function Events({ entity, data }) {
 function Contacts({ entity, data }) {
   const [search, setSearch] = useState("");
   const contacts = data.contacts||[];
-  const filtered = search ? contacts.filter(c=>(c.contact_name||c.email||c.ig_handle||"").toLowerCase().includes(search.toLowerCase())) : contacts;
+  const filtered = search ? contacts.filter(c=>(c.display_name||c.email||c.instagram||"").toLowerCase().includes(search.toLowerCase())) : contacts;
   return (<div>
     <input className="inp" placeholder="Search contacts..." value={search} onChange={e=>setSearch(e.target.value)} style={{marginBottom:14}} />
     <div className="sec-t">{filtered.length} contacts</div>
-    <table className="tbl"><thead><tr><th>Name</th><th>Email</th><th>Phone</th><th>IG</th><th>Segment</th><th>City</th></tr></thead>
+    <table className="tbl"><thead><tr><th>Name</th><th>Email</th><th>Phone</th><th>IG</th><th>Category</th><th>City</th></tr></thead>
     <tbody>{filtered.slice(0,40).map((c,i) => (
       <tr key={i}>
-        <td style={{fontWeight:500}}>{c.contact_name||"—"}</td>
+        <td style={{fontWeight:500}}>{c.display_name||"—"}</td>
         <td style={{fontSize:11}}>{c.email||"—"}</td>
         <td style={{fontSize:11}}>{c.phone||"—"}</td>
-        <td style={{fontSize:11}}>{c.ig_handle||"—"}</td>
-        <td><span className="badge bg-x">{c.segment_type||"—"}</span></td>
+        <td style={{fontSize:11}}>{c.instagram||"—"}</td>
+        <td><span className="badge bg-x">{c.category||"—"}</span></td>
         <td style={{fontSize:11}}>{c.city||"—"}</td>
       </tr>
     ))}</tbody></table>
@@ -322,19 +325,31 @@ export default function EntityDashboard({ entity }) {
   const [loading, setLoading] = useState(true);
 
   const bkFilter = entity.brandKeys.length > 0 ? `brand_key=in.(${entity.brandKeys.join(",")})` : "";
-  const brandFilter = entity.brandKeys.length > 0 ? `brand=in.(${entity.brandKeys.join(",")})` : "";
+  const hasBrands = entity.brandKeys.length > 0;
 
   const loadData = useCallback(async () => {
+    if (!hasBrands) {
+      // Entities with no brand keys yet — load empty
+      setData({ tasks: [], outreach: [], posts: [], events: [], contacts: [] });
+      setLoading(false);
+      return;
+    }
     const [tasks, outreach, posts, events, contacts] = await Promise.all([
-      q("khg_master_tasks", `select=*&${brandFilter?brandFilter+"&":""}status=not.in.(completed,cancelled)&order=priority,created_at.desc&limit=60`),
-      q("contact_action_queue", `select=*&${bkFilter?bkFilter+"&":""}order=created_at.desc&limit=100`),
-      q("ghl_social_posting_queue", `select=*&${bkFilter?bkFilter+"&":""}order=created_at.desc&limit=50`),
-      q("eventbrite_events", `select=*&${bkFilter?bkFilter+"&":""}event_date=gte.${new Date().toISOString().split("T")[0]}&order=event_date.asc&limit=20`),
-      q("contact_action_queue", `select=contact_name,email,phone,ig_handle,segment_type,city&${bkFilter?bkFilter+"&":""}order=contact_name&limit=200`),
+      // Tasks: filter by brand_key since brand column has inconsistent values
+      q("khg_master_tasks", `select=*&status=not.in.(completed,cancelled)&order=priority,created_at.desc&limit=60`),
+      q("contact_action_queue", `select=*&${bkFilter}&order=created_at.desc&limit=100`),
+      q("ghl_social_posting_queue", `select=*&${bkFilter}&order=created_at.desc&limit=50`),
+      q("eventbrite_events", `select=*&${bkFilter}&event_date=gte.${new Date().toISOString().split("T")[0]}&order=event_date.asc&limit=20`),
+      q("dolo_directory", `select=display_name,email,phone,instagram,category,city&order=display_name&limit=200`),
     ]);
-    setData({ tasks: tasks||[], outreach: outreach||[], posts: posts||[], events: events||[], contacts: contacts||[] });
+    // Client-side filter tasks by entity brand keys (since brand column format varies)
+    const entityTasks = (tasks||[]).filter(t => {
+      const b = (t.brand||"").toLowerCase().replace(/\s+/g,"_");
+      return entity.brandKeys.some(k => b.includes(k) || k.includes(b)) || !t.brand;
+    });
+    setData({ tasks: entityTasks, outreach: outreach||[], posts: posts||[], events: events||[], contacts: contacts||[] });
     setLoading(false);
-  }, [bkFilter, brandFilter]);
+  }, [bkFilter, hasBrands, entity.brandKeys]);
 
   useEffect(() => { loadData(); }, [loadData]);
   const navigate = useCallback((s) => setScreen(s), []);
