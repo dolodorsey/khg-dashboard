@@ -451,7 +451,7 @@ export default function DrDorseyDashboard() {
       Q("ghl_locations","select=location_name,location_id,brand_key&order=location_name"),
     ]);
     setD({contacts:contacts||[],vip:vip||[],outreach:outreach||[],social:social||[],tasks:(tasks||[]).filter(function(t) {
-      if (!t.brand) return false;
+      if (!t.brand || t.brand === "khg") return true;
       var b = (t.brand||"").toLowerCase().replace(/\s+/g,"_");
       return b === "dr_dorsey" || b.includes("dorsey");
     }),content:content||[],emails:emails||[],creds:creds||[],crons:crons||[],websites:websites||[],ghl:ghl||[]});

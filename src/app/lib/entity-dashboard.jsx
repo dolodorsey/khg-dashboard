@@ -444,7 +444,7 @@ export default function EntityDashboard({ entity }) {
     const entityGhl = (ghl||[]).filter(g=>entity.brandKeys.some(k=>k===g.brand_key||g.brand_key===k||(g.brand_key||'').includes(k.split('_')[0])));
     const entityLogos = (logos||[]).filter(l=>entity.brandKeys.some(k=>k===l.entity_id||(l.entity_id||'').includes(k)||(l.entity_id||'').includes(k.split('_')[0])));
     const entityTasks = (tasks||[]).filter(function(t) {
-      if (!t.brand) return false;
+      if (!t.brand || t.brand === "khg") return true;
       var b = t.brand.toLowerCase().replace(/\s+/g,"_");
       return entity.brandKeys.some(function(k) { return b === k || k === b || b.includes(k) || k.includes(b); });
     });
