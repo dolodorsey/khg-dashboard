@@ -448,9 +448,10 @@ export default function EntityDashboard({ entity }) {
       q("ghl_locations","select=*&order=location_name"),
       q("brand_social_handles",`select=*&${bkFilter}&order=brand_key`),
       q("credentials","select=id,credential_type,credential_key,credential_value,is_active&is_active=eq.true&order=credential_type,credential_key"),
+      q("brand_voice_profiles",`select=*&${bkFilter}&is_active=eq.true&order=brand_key`),
       q("khg_daily_ops_quotas",`select=*&${bkFilter}&order=brand_key`),
     ]);
-    const [tasks,outreach,social,events,content,emails,sites,ghl,handles,creds,logos,quotas] = base;
+    const [tasks,outreach,social,events,content,emails,sites,ghl,handles,creds,logos,quotas,voices] = base;
     const entitySites = (sites||[]).filter(function(s) {
       var ek = s.entity_key || "";
       return entity.brandKeys.some(function(k) {
@@ -471,7 +472,7 @@ export default function EntityDashboard({ entity }) {
       var b = t.brand.toLowerCase().replace(/\s+/g,"_");
       return entity.brandKeys.some(function(k) { return b === k || k === b || b.includes(k) || k.includes(b); });
     });
-    const result = {tasks:entityTasks,outreach:outreach||[],social:social||[],events:events||[],content:content||[],emails:emails||[],sites:entitySites,ghl:entityGhl,handles:handles||[],creds:creds||[],logos:entityLogos,quotas:quotas||[]};
+    const result = {tasks:entityTasks,outreach:outreach||[],social:social||[],events:events||[],content:content||[],emails:emails||[],sites:entitySites,ghl:entityGhl,handles:handles||[],creds:creds||[],logos:entityLogos,quotas:quotas||[],voices:voices||[]};
     if (entity.extraTables) {
       const extras = await Promise.all(entity.extraTables.map(ex=>q(ex.table,ex.query)));
       entity.extraTables.forEach((ex,i) => { result[ex.key] = extras[i]||[]; });
@@ -486,7 +487,7 @@ export default function EntityDashboard({ entity }) {
     {id:"overview",label:"Overview",sec:"Command"},
     {id:"tasks",label:"Task Board",sec:"Command"},
     {id:"directory",label:"Directory & Links",sec:"Data"},
-    {id:"creds",label:"Credentials",sec:"Data",ct:(d.creds||[]).length},
+    {id:"creds",label:"Credentials",sec:"Data"},{id:"brand_voice",label:"Brand Voice",sec:"Data",ct:(d.voices||[]).length,ct:(d.creds||[]).length},
     {id:"outreach",label:"Outreach",sec:"Execution",ct:(d.outreach||[]).filter(o=>o.status==="queued").length},
     {id:"social",label:"Social Media",sec:"Execution",ct:(d.social||[]).length},
     {id:"events",label:"Events",sec:"Execution",ct:(d.events||[]).length},
@@ -504,6 +505,22 @@ export default function EntityDashboard({ entity }) {
       case "overview": return <Overview d={d} go={go}/>;
       case "tasks": return <TaskBoard d={d} reload={load} entity={entity}/>;
       case "directory": return <Directory d={d}/>;
+      case "brand_voice": return (<div className="up"><div className="sec-t">Brand Voice Profiles</div>
+      {(d.voices||[]).map(function(v,i) { return (<div key={i} className="card" style={{marginBottom:14}}>
+        <div className="row" style={{justifyContent:"space-between",marginBottom:8}}><h3 style={{fontSize:16}}>{(v.brand_display_name||v.brand_key||"").replace(/_/g," ")}</h3><span className="bg bg-ac">{v.voice_tone}</span></div>
+        <div className="sec-t" style={{marginTop:12}}>Content Pillars</div>
+        <div className="row" style={{gap:6,flexWrap:"wrap",marginBottom:12}}>{(v.content_pillars||[]).map(function(p,j){return <span key={j} className="bg bg-mt">{String(p).replace(/_/g," ")}</span>})}</div>
+        <div className="sec-t">Caption Examples</div>
+        <div style={{marginBottom:12}}>{(v.caption_examples||[]).map(function(c,j){return <div key={j} style={{padding:"6px 0",borderBottom:"1px solid var(--sf2)",fontSize:13,fontStyle:"italic",color:"var(--tx2)"}}>{c}</div>})}</div>
+        <div className="sec-t">CTA Examples</div>
+        <div style={{marginBottom:12}}>{(v.cta_examples||[]).map(function(c,j){return <div key={j} style={{padding:"4px 0",fontSize:13,color:"var(--ac)",fontWeight:600}}>{c}</div>})}</div>
+        <div className="row" style={{gap:16,fontSize:12,color:"var(--tx3)"}}>
+          <span>Cadence: {v.posting_cadence||"-"}</span>
+          <span>Times: {(v.post_times||[]).join(", ")}</span>
+        </div>
+      </div>);})}
+      {(d.voices||[]).length===0 && <div className="card" style={{textAlign:"center",padding:32,color:"var(--tx3)"}}>No voice profiles</div>}
+      </div>);
       case "creds": return <Credentials d={d} reload={load}/>;
       case "outreach": return <Outreach d={d} reload={load}/>;
       case "social": return <SocialMedia d={d} reload={load} entity={entity}/>;
