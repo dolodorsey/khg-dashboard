@@ -804,52 +804,108 @@ function TasksScreen() {
   const [tasks, setTasks] = useState([]); const [grants, setGrants] = useState([]);
   const [loading, setLoading] = useState(true); const [view, setView] = useState("owner");
   const [ownerFilter, setOwnerFilter] = useState("all");
-  useEffect(() => { (async () => {
+  const [creating, setCreating] = useState(false);
+  const [nt, setNt] = useState({title:"",category:"other",priority:"medium",assigned_to:"claude",description:""});
+  const [busy, setBusy] = useState(null);
+
+  const reload = async () => {
     const [td, gd] = await Promise.all([
       supa("khg_master_tasks","select=*&status=not.in.(completed,cancelled)&order=priority,created_at.desc&limit=50"),
       supa("khg_grant_tracker","select=*&order=deadline.asc.nullslast&limit=15"),
     ]);
-    setTasks(td||[]); setGrants(gd||[]); setLoading(false);
-  })(); }, []);
+    setTasks(td||[]); setGrants(gd||[]);
+  };
+  useEffect(() => { reload().then(()=>setLoading(false)); }, []);
+
+  const updateTask = async (id, data) => {
+    setBusy(id);
+    await supaUpdate("khg_master_tasks",`id=eq.${id}`, {...data, updated_at: new Date().toISOString()});
+    await reload(); setBusy(null);
+  };
+  const createTask = async () => {
+    if(!nt.title.trim()) return;
+    setBusy("new");
+    const num = String(tasks.length + 100).padStart(4,"0");
+    await supaInsert("khg_master_tasks", {task_key:`TASK-2026-${num}`, title:nt.title, category:nt.category, priority:nt.priority, assigned_to:nt.assigned_to, description:nt.description||null, status:"open", created_by:"dr_dorsey"});
+    setNt({title:"",category:"other",priority:"medium",assigned_to:"claude",description:""});
+    setCreating(false); await reload(); setBusy(null);
+  };
 
   const claude = tasks.filter(t=>(t.assigned_to||"").toLowerCase()==="claude");
   const linda = tasks.filter(t=>(t.assigned_to||"").toLowerCase()==="linda");
-  const dorsey = tasks.filter(t=>!t.assigned_to || t.assigned_to==="dr_dorsey");
+  const dorsey = tasks.filter(t=>!t.assigned_to || (t.assigned_to||"").toLowerCase().includes("dorsey"));
   const recurring = tasks.filter(t=>t.is_recurring);
   const oneTime = tasks.filter(t=>!t.is_recurring);
   const blocked = tasks.filter(t=>t.status==="blocked");
   const daily = recurring.filter(t=>t.frequency==="daily");
   const weekly = recurring.filter(t=>t.frequency==="weekly");
-
   const byOwner = ownerFilter==="claude"?claude:ownerFilter==="linda"?linda:ownerFilter==="dorsey"?dorsey:tasks;
 
   const renderTask = (t, i) => (
-    <div key={i} className="card fi" style={{marginBottom:6,borderLeft:`3px solid ${t.priority==="critical"?"var(--rd)":t.priority==="high"?"var(--ac)":"var(--bd)"}`}}>
+    <div key={t.id||i} className="card fi" style={{marginBottom:6,borderLeft:`3px solid ${t.priority==="critical"?"var(--rd)":t.priority==="high"?"var(--ac)":"var(--bd)"}`,opacity:busy===t.id?.6:1}}>
       <div className="row" style={{justifyContent:"space-between",marginBottom:4}}>
         <div className="row" style={{gap:6}}>
           <span className="mono" style={{fontSize:9,color:"var(--tx3)"}}>{t.task_key}</span>
           <span className={`badge ${t.priority==="critical"?"bg-r":t.priority==="high"?"bg-o":"bg-x"}`}>{t.priority}</span>
-          <span className={`badge ${t.status==="blocked"?"bg-r":t.status==="in_progress"?"bg-b":t.status==="recurring_active"?"bg-g":"bg-y"}`}>{t.status.replace(/_/g," ")}</span>
+          <span className={`badge ${t.status==="blocked"?"bg-r":t.status==="in_progress"?"bg-b":t.status==="recurring_active"?"bg-g":"bg-y"}`}>{(t.status||"").replace(/_/g," ")}</span>
           {t.is_recurring && <span className="badge bg-b">{t.frequency}</span>}
         </div>
         <span className="badge bg-x">{(t.assigned_to||"unassigned").toUpperCase()}</span>
       </div>
       <div style={{fontSize:13,fontWeight:600}}>{t.title}</div>
+      {t.description && <div style={{fontSize:11,color:"var(--tx2)",marginTop:2,lineHeight:1.4}}>{t.description.slice(0,120)}{t.description.length>120?"...":""}</div>}
       <div className="row" style={{gap:8,marginTop:4}}>
         <span style={{fontSize:10,color:"var(--tx3)"}}>{t.category}</span>
         {t.due_date && <span className="mono" style={{fontSize:10,color:daysUntil(t.due_date.split("T")[0])<=7?"var(--rd)":"var(--tx3)"}}>Due: {fmtDate(t.due_date.split("T")[0])}</span>}
         {t.blocker_reason && <span style={{fontSize:10,color:"var(--rd)"}}>Blocker: {t.blocker_reason}</span>}
       </div>
+      <div className="row" style={{gap:4,marginTop:8,flexWrap:"wrap"}}>
+        {t.status==="open" && <button className="btn btn-sm btn-p" onClick={()=>updateTask(t.id,{status:"in_progress",started_at:new Date().toISOString()})} disabled={busy===t.id}><Ic d={P.play} s={10} /> Start</button>}
+        {(t.status==="open"||t.status==="in_progress") && <button className="btn btn-sm btn-g" onClick={()=>updateTask(t.id,{status:"completed",completed_at:new Date().toISOString()})} disabled={busy===t.id}><Ic d={P.check} s={10} /> Done</button>}
+        {t.status!=="blocked" && <button className="btn btn-sm" onClick={()=>{const r=prompt("Blocker reason:");if(r)updateTask(t.id,{status:"blocked",blocker_reason:r})}} disabled={busy===t.id}>Block</button>}
+        {t.status==="blocked" && <button className="btn btn-sm btn-p" onClick={()=>updateTask(t.id,{status:"in_progress",blocker_reason:null})} disabled={busy===t.id}>Unblock</button>}
+        <select style={{fontSize:10,padding:"3px 6px",border:"1px solid var(--bd)",borderRadius:4,background:"var(--sf)",color:"var(--tx2)",cursor:"pointer"}} value={t.assigned_to||""} onChange={e=>updateTask(t.id,{assigned_to:e.target.value})}>
+          <option value="claude">Claude</option><option value="linda">Linda</option><option value="Dr. Dorsey">Dr. Dorsey</option>
+        </select>
+        <select style={{fontSize:10,padding:"3px 6px",border:"1px solid var(--bd)",borderRadius:4,background:"var(--sf)",color:"var(--tx2)",cursor:"pointer"}} value={t.priority} onChange={e=>updateTask(t.id,{priority:e.target.value})}>
+          <option value="critical">Critical</option><option value="high">High</option><option value="medium">Medium</option><option value="low">Low</option>
+        </select>
+        <button className="btn btn-sm" style={{marginLeft:"auto",color:"var(--rd)"}} onClick={()=>{if(confirm("Cancel this task?"))updateTask(t.id,{status:"cancelled"})}} disabled={busy===t.id}><Ic d={P.x} s={10} /></button>
+      </div>
     </div>
   );
 
   return (<div>
-    <div className="g4 fi" style={{marginBottom:14}}>
-      <div className="card ptr" onClick={()=>setOwnerFilter("dorsey")} style={{borderTop:ownerFilter==="dorsey"?"2px solid var(--ac)":"none"}}><div className="sv" style={{color:"var(--ac)"}}>{dorsey.length}</div><div className="sl2">Dr. Dorsey</div></div>
-      <div className="card ptr" onClick={()=>setOwnerFilter("claude")} style={{borderTop:ownerFilter==="claude"?"2px solid var(--bl)":"none"}}><div className="sv" style={{color:"var(--bl)"}}>{claude.length}</div><div className="sl2">Claude</div></div>
-      <div className="card ptr" onClick={()=>setOwnerFilter("linda")} style={{borderTop:ownerFilter==="linda"?"2px solid var(--gn)":"none"}}><div className="sv" style={{color:"var(--gn)"}}>{linda.length}</div><div className="sl2">Linda</div></div>
-      <div className="card ptr" onClick={()=>setOwnerFilter("all")} style={{borderTop:ownerFilter==="all"?"2px solid var(--pr)":"none"}}><div className="sv" style={{color:"var(--pr)"}}>{tasks.length}</div><div className="sl2">All Open</div></div>
+    <div className="row fi" style={{justifyContent:"space-between",marginBottom:14}}>
+      <div className="g4" style={{flex:1,gap:10}}>
+        <div className="card ptr" onClick={()=>setOwnerFilter("dorsey")} style={{borderTop:ownerFilter==="dorsey"?"2px solid var(--ac)":"none"}}><div className="sv" style={{color:"var(--ac)"}}>{dorsey.length}</div><div className="sl2">Dr. Dorsey</div></div>
+        <div className="card ptr" onClick={()=>setOwnerFilter("claude")} style={{borderTop:ownerFilter==="claude"?"2px solid var(--bl)":"none"}}><div className="sv" style={{color:"var(--bl)"}}>{claude.length}</div><div className="sl2">Claude</div></div>
+        <div className="card ptr" onClick={()=>setOwnerFilter("linda")} style={{borderTop:ownerFilter==="linda"?"2px solid var(--gn)":"none"}}><div className="sv" style={{color:"var(--gn)"}}>{linda.length}</div><div className="sl2">Linda</div></div>
+        <div className="card ptr" onClick={()=>setOwnerFilter("all")} style={{borderTop:ownerFilter==="all"?"2px solid var(--pr)":"none"}}><div className="sv" style={{color:"var(--pr)"}}>{tasks.length}</div><div className="sl2">All Open</div></div>
+      </div>
+      <button className="btn btn-p" style={{marginLeft:14,height:40}} onClick={()=>setCreating(!creating)}><Ic d={P.plus} s={14} /> New Task</button>
     </div>
+
+    {creating && <div className="card fi" style={{marginBottom:14,border:"1px solid var(--ac)",background:"var(--acBg)"}}>
+      <div className="ct">Create Task</div>
+      <input className="inp" placeholder="Task title..." value={nt.title} onChange={e=>setNt({...nt,title:e.target.value})} style={{marginBottom:8}} />
+      <input className="inp" placeholder="Description (optional)" value={nt.description} onChange={e=>setNt({...nt,description:e.target.value})} style={{marginBottom:8}} />
+      <div className="row" style={{gap:8,marginBottom:8}}>
+        <select className="inp" style={{flex:1}} value={nt.priority} onChange={e=>setNt({...nt,priority:e.target.value})}>
+          <option value="critical">Critical</option><option value="high">High</option><option value="medium">Medium</option><option value="low">Low</option>
+        </select>
+        <select className="inp" style={{flex:1}} value={nt.assigned_to} onChange={e=>setNt({...nt,assigned_to:e.target.value})}>
+          <option value="claude">Claude</option><option value="linda">Linda</option><option value="Dr. Dorsey">Dr. Dorsey</option>
+        </select>
+        <select className="inp" style={{flex:1}} value={nt.category} onChange={e=>setNt({...nt,category:e.target.value})}>
+          {["app_build","automation","content","data_ops","design","events","finance","infrastructure","outreach","product","scraping","team","website","other"].map(c=><option key={c} value={c}>{c.replace(/_/g," ")}</option>)}
+        </select>
+      </div>
+      <div className="row" style={{gap:8}}>
+        <button className="btn btn-p" onClick={createTask} disabled={busy==="new"||!nt.title.trim()}>{busy==="new"?"Creating...":"Create Task"}</button>
+        <button className="btn" onClick={()=>setCreating(false)}>Cancel</button>
+      </div>
+    </div>}
 
     <div className="pills fi">
       <button className={`pill ${view==="owner"?"act":""}`} onClick={()=>setView("owner")}>By Owner ({byOwner.length})</button>
