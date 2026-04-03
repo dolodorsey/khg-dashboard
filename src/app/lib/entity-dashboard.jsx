@@ -238,7 +238,7 @@ function EmailApprovals({ d, reload }) {
   const approve=async id=>{
     setBusy(id);
     await qu("email_approval_queue",`id=eq.${id}`,{approved:true,approved_at:new Date().toISOString(),approved_by:"dr_dorsey"});
-    try { await fetch("https://dorsey.app.n8n.cloud/webhook/3jDssrDbi21CLhn6",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"email_approved",email_id:id})}); } catch(e) {}
+    try { await fetch("https://dorsey.app.n8n.cloud/webhook/EGgj3tbbbNLYIfQ4",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"email_approved",email_id:id})}); } catch(e) {}
     await reload();setBusy(null);
   };
   const saveEmail=async()=>{if(!editing)return;setBusy(editing.id);await qu("email_approval_queue",`id=eq.${editing.id}`,{subject:editing.subject,body_preview:editing.body_preview,cta_text:editing.cta_text,cta_url:editing.cta_url});setEditing(null);await reload();setBusy(null)};

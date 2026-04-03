@@ -299,7 +299,7 @@ function EmailApprovals({ d, reload }) {
   const act = async(id,data)=>{
     setBusy(id);
     await QU("email_approval_queue",`id=eq.${id}`,data);
-    if(data.approved) { try { await fetch("https://dorsey.app.n8n.cloud/webhook/3jDssrDbi21CLhn6",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"email_approved",email_id:id})}); } catch(e) {} }
+    if(data.approved) { try { await fetch("https://dorsey.app.n8n.cloud/webhook/EGgj3tbbbNLYIfQ4",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"email_approved",email_id:id})}); } catch(e) {} }
     setEditing(null);await reload();setBusy(null);
   };
   const startEdit = (e)=>{setEditing(e.id);setEf({subject:e.subject||"",body_preview:e.body_preview||"",cta_text:e.cta_text||"",cta_url:e.cta_url||"",notes:e.notes||""});};
