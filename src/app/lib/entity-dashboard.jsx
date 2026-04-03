@@ -375,8 +375,8 @@ export default function EntityDashboard({ entity }) {
     ]);
     const [tasks,outreach,social,events,content,emails,sites,ghl,handles,creds,logos] = base;
     const entitySites = (sites||[]).filter(s=>entity.brandKeys.some(k=>(s.entity_key||"").includes(k)));
-    const entityGhl = (ghl||[]).filter(g=>entity.brandKeys.includes(g.brand_key));
-    const entityLogos = (logos||[]).filter(l=>entity.brandKeys.some(k=>(l.entity_id||'').includes(k)));
+    const entityGhl = (ghl||[]).filter(g=>entity.brandKeys.some(k=>k===g.brand_key||g.brand_key===k||(g.brand_key||'').includes(k.split('_')[0])));
+    const entityLogos = (logos||[]).filter(l=>entity.brandKeys.some(k=>k===l.entity_id||(l.entity_id||'').includes(k)||(l.entity_id||'').includes(k.split('_')[0])));
     const result = {tasks:tasks||[],outreach:outreach||[],social:social||[],events:events||[],content:content||[],emails:emails||[],sites:entitySites,ghl:entityGhl,handles:handles||[],creds:creds||[],logos:entityLogos};
     if (entity.extraTables) {
       const extras = await Promise.all(entity.extraTables.map(ex=>q(ex.table,ex.query)));
