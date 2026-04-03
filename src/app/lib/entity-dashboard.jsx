@@ -12,35 +12,35 @@ const qd = async (t, m) => { try { await fetch(`${S}/rest/v1/${t}?${m}`, { metho
 const css = `
 @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
 *{margin:0;padding:0;box-sizing:border-box}
-:root{--bg:#FAFAF8;--sf:#fff;--sf2:#F5F3EF;--bd:#E8E4DD;--tx:#1A1A18;--tx2:#6B6560;--tx3:#A39E96;--ac:VAR_AC;--acL:VAR_AC10;--gn:#4A8F6D;--rd:#C45B4A;--yl:#D4A843;--bl:#5B7FA6;--hd:'Cormorant Garamond',Georgia,serif;--bd-f:'Outfit',system-ui,sans-serif;--mn:'JetBrains Mono',monospace;--r:8px}
+:root{--bg:#FAFAF8;--sf:#fff;--sf2:#F5F3EF;--bd:#E8E4DD;--tx:#1A1A18;--tx2:#4A4540;--tx3:#7A756E;--ac:VAR_AC;--acL:VAR_AC10;--gn:#4A8F6D;--rd:#C45B4A;--yl:#D4A843;--bl:#5B7FA6;--hd:'Cormorant Garamond',Georgia,serif;--bd-f:'Outfit',system-ui,sans-serif;--mn:'JetBrains Mono',monospace;--r:8px}
 @keyframes up{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}.up{animation:up .4s cubic-bezier(.16,1,.3,1) both}
-body{font-family:var(--bd-f);background:var(--bg);color:var(--tx);-webkit-font-smoothing:antialiased;font-size:13px}
+body{font-family:var(--bd-f);background:var(--bg);color:var(--tx);-webkit-font-smoothing:antialiased;font-size:14px}
 h1,h2,h3{font-family:var(--hd);font-weight:600;letter-spacing:-.01em}
 .app{display:flex;height:100vh;overflow:hidden}
 .sb{width:240px;min-width:240px;background:var(--sf);border-right:1px solid var(--bd);display:flex;flex-direction:column}
-.sb-hd{padding:20px;border-bottom:1px solid var(--bd)}.sb-hd h2{font-size:18px;color:var(--ac)}.sb-hd p{font-size:10px;color:var(--tx3);letter-spacing:.15em;text-transform:uppercase;font-weight:500;margin-top:3px}
+.sb-hd{padding:20px;border-bottom:1px solid var(--bd)}.sb-hd h2{font-size:20px;color:var(--ac)}.sb-hd p{font-size:10px;color:var(--tx3);letter-spacing:.15em;text-transform:uppercase;font-weight:500;margin-top:3px}
 .sb-nav{flex:1;overflow-y:auto;padding:8px 0}
 .sb-sec{padding:16px 20px 4px;font-size:9px;font-weight:600;letter-spacing:.15em;text-transform:uppercase;color:var(--tx3)}
-.sb-i{display:flex;align-items:center;gap:10px;padding:10px 20px;cursor:pointer;color:var(--tx2);font-size:13px;transition:all .12s;border-left:3px solid transparent}
+.sb-i{display:flex;align-items:center;gap:10px;padding:10px 20px;cursor:pointer;color:var(--tx2);font-size:14px;transition:all .12s;border-left:3px solid transparent}
 .sb-i:hover{background:var(--sf2)}.sb-i.on{background:var(--acL);color:var(--ac);border-left-color:var(--ac);font-weight:600}
 .sb-i .n{margin-left:auto;font-size:10px;background:var(--sf2);padding:1px 7px;border-radius:10px;color:var(--tx3);font-family:var(--mn)}
 .mn{flex:1;display:flex;flex-direction:column;overflow:hidden}
 .tb{height:52px;min-height:52px;border-bottom:1px solid var(--bd);display:flex;align-items:center;padding:0 28px;background:var(--sf);gap:12px}
-.tb h1{font-size:17px}.tb .dt{margin-left:auto;font-size:11px;color:var(--tx3);font-family:var(--mn)}
+.tb h1{font-size:19px}.tb .dt{margin-left:auto;font-size:11px;color:var(--tx3);font-family:var(--mn)}
 .ct-a{flex:1;overflow-y:auto;padding:28px}
 .card{background:var(--sf);border:1px solid var(--bd);border-radius:var(--r);padding:20px;transition:box-shadow .2s}.card:hover{box-shadow:0 2px 8px rgba(0,0,0,.04)}
 .g2{display:grid;grid-template-columns:1fr 1fr;gap:16px}.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
-.stat{text-align:center;padding:22px 14px;cursor:pointer}.stat-v{font-family:var(--hd);font-size:32px;font-weight:700}.stat-l{font-size:9px;color:var(--tx3);margin-top:6px;letter-spacing:.12em;text-transform:uppercase;font-weight:500}
-.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:var(--r);font-size:12px;font-weight:600;cursor:pointer;border:1px solid var(--bd);background:var(--sf);color:var(--tx2);font-family:var(--bd-f);transition:all .12s}
+.stat{text-align:center;padding:22px 14px;cursor:pointer}.stat-v{font-family:var(--hd);font-size:36px;font-weight:700}.stat-l{font-size:9px;color:var(--tx3);margin-top:6px;letter-spacing:.12em;text-transform:uppercase;font-weight:500}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:9px 18px;border-radius:var(--r);font-size:13px;font-weight:600;cursor:pointer;border:1px solid var(--bd);background:var(--sf);color:var(--tx2);font-family:var(--bd-f);transition:all .12s}
 .btn:hover{border-color:var(--ac)}.btn-p{background:var(--ac);color:#fff;border-color:var(--ac)}.btn-g{background:var(--gn);color:#fff;border-color:var(--gn)}.btn-r{background:var(--rd);color:#fff;border-color:var(--rd)}.btn-s{padding:5px 12px;font-size:11px}
-.bg{display:inline-flex;padding:3px 9px;border-radius:4px;font-size:9px;font-weight:600;letter-spacing:.04em;text-transform:uppercase}
+.bg{display:inline-flex;padding:4px 10px;border-radius:4px;font-size:10px;font-weight:600;letter-spacing:.04em;text-transform:uppercase}
 .bg-ac{background:var(--acL);color:var(--ac)}.bg-gn{background:rgba(74,143,109,.1);color:var(--gn)}.bg-rd{background:rgba(196,91,74,.1);color:var(--rd)}.bg-bl{background:rgba(91,127,166,.1);color:var(--bl)}.bg-mt{background:var(--sf2);color:var(--tx3)}.bg-yl{background:rgba(212,168,67,.1);color:var(--yl)}
-.tbl{width:100%;border-collapse:collapse}.tbl th{text-align:left;padding:10px 14px;color:var(--tx3);font-weight:500;font-size:10px;text-transform:uppercase;letter-spacing:.1em;border-bottom:1px solid var(--bd)}.tbl td{padding:10px 14px;border-bottom:1px solid var(--sf2);color:var(--tx2)}.tbl tr:hover td{background:rgba(0,0,0,.01)}
-.inp{background:var(--sf2);border:1px solid var(--bd);border-radius:var(--r);padding:10px 14px;color:var(--tx);font-size:13px;font-family:var(--bd-f);width:100%;outline:none}.inp:focus{border-color:var(--ac)}
+.tbl{width:100%;border-collapse:collapse}.tbl th{text-align:left;padding:10px 14px;color:var(--tx3);font-weight:500;font-size:10px;text-transform:uppercase;letter-spacing:.1em;border-bottom:1px solid var(--bd)}.tbl td{padding:11px 14px;border-bottom:1px solid var(--sf2);color:var(--tx);font-size:13px}.tbl tr:hover td{background:rgba(0,0,0,.01)}
+.inp{background:var(--sf2);border:1px solid var(--bd);border-radius:var(--r);padding:10px 14px;color:var(--tx);font-size:14px;font-family:var(--bd-f);width:100%;outline:none}.inp:focus{border-color:var(--ac)}
 textarea.inp{min-height:80px;resize:vertical;line-height:1.5}
-.pills{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px}.pill{padding:6px 14px;border-radius:20px;font-size:11px;cursor:pointer;border:1px solid var(--bd);color:var(--tx3);background:var(--sf);font-weight:500;transition:all .12s}.pill.on{background:var(--ac);color:#fff;border-color:var(--ac)}
-.row{display:flex;align-items:center;gap:8px}.sep{height:1px;background:var(--bd);margin:20px 0}.sec-t{font-size:10px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--tx3);margin-bottom:12px}.trunc{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.kanban{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;align-items:start}.kanban-col{background:var(--sf2);border-radius:var(--r);padding:12px;min-height:200px}.kanban-hd{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:10px;display:flex;justify-content:space-between}.kanban-card{background:var(--sf);border:1px solid var(--bd);border-radius:6px;padding:10px 12px;margin-bottom:8px;font-size:12px;cursor:pointer}.kanban-card:hover{box-shadow:0 2px 8px rgba(0,0,0,.06)}
+.pills{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px}.pill{padding:7px 16px;border-radius:20px;font-size:12px;cursor:pointer;border:1px solid var(--bd);color:var(--tx3);background:var(--sf);font-weight:500;transition:all .12s}.pill.on{background:var(--ac);color:#fff;border-color:var(--ac)}
+.row{display:flex;align-items:center;gap:8px}.sep{height:1px;background:var(--bd);margin:20px 0}.sec-t{font-size:11px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--tx3);margin-bottom:12px}.trunc{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.kanban{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;align-items:start}.kanban-col{background:var(--sf2);border-radius:var(--r);padding:12px;min-height:200px}.kanban-hd{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:10px;display:flex;justify-content:space-between}.kanban-card{background:var(--sf);border:1px solid var(--bd);border-radius:6px;padding:12px 14px;margin-bottom:8px;font-size:13px;cursor:pointer}.kanban-card:hover{box-shadow:0 2px 8px rgba(0,0,0,.06)}
 .modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.3);z-index:100;display:flex;align-items:center;justify-content:center}.modal{background:var(--sf);border-radius:12px;padding:28px;width:90%;max-width:540px;max-height:80vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.15)}
 @media(max-width:900px){.sb{display:none}.g2,.g3,.g4,.kanban{grid-template-columns:1fr}}
 `;
@@ -61,6 +61,9 @@ function Directory({ d }) {
     {handles.length>0 && <><div className="sec-t">Social Handles</div>
     <div className="card" style={{padding:0,overflow:"hidden"}}><table className="tbl"><thead><tr><th>Brand</th><th>Instagram</th><th>TikTok</th><th>Email</th><th>OAuth</th></tr></thead>
     <tbody>{handles.map((h,i)=>(<tr key={i}><td style={{fontWeight:500}}>{h.brand_display_name||h.brand_key||"-"}</td><td style={{color:"var(--ac)"}}>{h.ig_handle||"-"}</td><td>{h.tiktok_handle||"-"}</td><td style={{fontSize:11}}>{h.email||"-"}</td><td>{h.ghl_ig_oauth_connected?<span className="bg bg-gn">Yes</span>:<span className="bg bg-rd">No</span>}</td></tr>))}</tbody></table></div></>}
+    {handles.length>0 && <><div className="sep" /><div className="sec-t">Email Accounts</div>
+    <div className="card" style={{padding:0,overflow:"hidden"}}><table className="tbl"><thead><tr><th>Brand</th><th>Email</th></tr></thead>
+    <tbody>{handles.filter(h=>h.email).map((h,i)=>(<tr key={i}><td style={{fontWeight:500}}>{h.brand_display_name||h.brand_key||"-"}</td><td style={{fontSize:13}}>{h.email}</td></tr>))}</tbody></table></div></>}
     {sites.length===0&&ghl.length===0&&handles.length===0 && <div className="card" style={{textAlign:"center",padding:32,color:"var(--tx3)"}}>No directory data for this entity</div>}
   </div>);
 }
@@ -365,14 +368,16 @@ export default function EntityDashboard({ entity }) {
       q("weekly_content_schedule",`select=*&${activeBk}&is_active=eq.true&order=day_of_week,post_time`),
       q("email_approval_queue","select=*&order=created_at.desc&limit=30"),
       q("khg_website_registry","select=*&order=entity_name"),
+      q("brand_asset_files","select=entity_id,file_url,is_primary&asset_type=eq.logo&file_url=not.is.null&order=entity_id"),
       q("ghl_locations","select=*&order=location_name"),
       q("brand_social_handles",`select=*&${bkFilter}&order=brand_key`),
       q("credentials","select=id,credential_type,credential_key,credential_value,is_active&is_active=eq.true&order=credential_type,credential_key"),
     ]);
-    const [tasks,outreach,social,events,content,emails,sites,ghl,handles,creds] = base;
+    const [tasks,outreach,social,events,content,emails,sites,ghl,handles,creds,logos] = base;
     const entitySites = (sites||[]).filter(s=>entity.brandKeys.some(k=>(s.entity_key||"").includes(k)));
     const entityGhl = (ghl||[]).filter(g=>entity.brandKeys.includes(g.brand_key));
-    const result = {tasks:tasks||[],outreach:outreach||[],social:social||[],events:events||[],content:content||[],emails:emails||[],sites:entitySites,ghl:entityGhl,handles:handles||[],creds:creds||[]};
+    const entityLogos = (logos||[]).filter(l=>entity.brandKeys.some(k=>(l.entity_id||'').includes(k)));
+    const result = {tasks:tasks||[],outreach:outreach||[],social:social||[],events:events||[],content:content||[],emails:emails||[],sites:entitySites,ghl:entityGhl,handles:handles||[],creds:creds||[],logos:entityLogos};
     if (entity.extraTables) {
       const extras = await Promise.all(entity.extraTables.map(ex=>q(ex.table,ex.query)));
       entity.extraTables.forEach((ex,i) => { result[ex.key] = extras[i]||[]; });
@@ -422,7 +427,9 @@ export default function EntityDashboard({ entity }) {
     <style>{themeCSS}</style>
     <div className="app">
       <div className="sb">
-        <div className="sb-hd"><h2>{entity.name}</h2><p>{entity.subtitle||""}</p></div>
+        <div className="sb-hd">
+          {d.logos && d.logos.filter(l=>l.is_primary).length > 0 && <img src={d.logos.filter(l=>l.is_primary)[0].file_url} alt="" style={{maxHeight:36,maxWidth:120,objectFit:"contain",marginBottom:8}} onError={e=>{e.target.style.display="none"}} />}
+          <h2>{entity.name}</h2><p>{entity.subtitle||""}</p></div>
         {entity.brandKeys.length>1&&<div style={{padding:"8px 20px"}}><select className="inp" value={subBrand} onChange={e=>{setSubBrand(e.target.value);setLoading(true);setTimeout(load,10)}} style={{fontSize:12}}><option value="all">All Brands ({entity.brandKeys.length})</option>{entity.brandKeys.map(k=><option key={k} value={k}>{k.replace(/_/g," ")}</option>)}</select></div>}
         <div className="sb-nav">
           {secs.map(sec=>(<div key={sec}><div className="sb-sec">{sec}</div>

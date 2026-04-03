@@ -3,12 +3,12 @@
   "/apps/page": "app/apps/page.js",
   "/command-center/page": "app/command-center/page.js",
   "/casper-group/page": "app/casper-group/page.js",
-  "/dr-dorsey/page": "app/dr-dorsey/page.js",
   "/forever-futbol/page": "app/forever-futbol/page.js",
+  "/dr-dorsey/page": "app/dr-dorsey/page.js",
   "/huglife/page": "app/huglife/page.js",
-  "/page": "app/page.js",
   "/nonprofit/page": "app/nonprofit/page.js",
+  "/page": "app/page.js",
   "/products/page": "app/products/page.js",
-  "/umbrella/page": "app/umbrella/page.js",
-  "/scented-museums/page": "app/scented-museums/page.js"
+  "/scented-museums/page": "app/scented-museums/page.js",
+  "/umbrella/page": "app/umbrella/page.js"
 }
