@@ -11,6 +11,8 @@ const ENTITIES = [
   { key: "products", label: "Products / Bodega", icon: "🛍️", desc: "MAGA, Stush, Bodega, Infinity Water, Pronto Energy", color: "#84CC16" },
   { key: "apps", label: "Apps", icon: "📲", desc: "Good Times, SOS, On Call, Help 911", color: "#7C3AED" },
   { key: "nonprofit", label: "Non-Profit", icon: "💚", desc: "Taste of Art Foundation, community programs", color: "#059669" },
+  { key: "maga", label: "Make Atlanta Great Again", icon: "🔥", desc: "MAGA store, culture drops, 404 campaigns", color: "#B22234" },
+  { key: "mind-studio", label: "Mind Studio", icon: "🧠", desc: "Mental health — 749 outreach, 3 pipelines, therapist network", color: "#5B8C6A" },
 ];
 
 export default function HubPage() {
