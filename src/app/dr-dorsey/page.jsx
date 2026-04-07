@@ -49,9 +49,25 @@ textarea.inp{min-height:80px;resize:vertical;line-height:1.5}
 
 function Directory({ d }) {
   const [search, setSearch] = useState("");
-  const websites = d.websites||[];
+  const [tab, setTab] = useState("all");
+  const allSites = d.websites||[];
   const ghl = d.ghl||[];
-  const links = [
+
+  const typeConfig = {
+    app:{icon:"📱",label:"Apps",color:"#38BDF8",bg:"rgba(56,189,248,.1)"},
+    website:{icon:"🌐",label:"Websites",color:"#4ADE80",bg:"rgba(74,222,128,.1)"},
+    event:{icon:"🎪",label:"Events",color:"#FBBF24",bg:"rgba(251,191,36,.1)"},
+    form:{icon:"📋",label:"Forms",color:"#F472B6",bg:"rgba(244,114,182,.1)"},
+    tool:{icon:"⚙️",label:"Tools",color:"#A855F7",bg:"rgba(168,85,247,.1)"},
+  };
+  const typeOrder = ["app","website","event","form","tool"];
+
+  // Count by type
+  const counts = {};
+  typeOrder.forEach(t=>{counts[t]=allSites.filter(w=>(w.site_type||"website")===t).length;});
+
+  // Infrastructure & external links
+  const infraLinks = [
     {cat:"Infrastructure",items:[
       {name:"Supabase",url:"https://supabase.com/dashboard/project/dzlmtvodpyhetvektfuo",icon:"🗄️",color:"#3ECF8E"},
       {name:"n8n Workflows",url:"https://dorsey.app.n8n.cloud",icon:"⚡",color:"#FF6D5A"},
@@ -63,46 +79,88 @@ function Directory({ d }) {
       {name:"Stush Store",url:"https://admin.shopify.com/store/stushusa",icon:"🛍️",color:"#A855F7"},
       {name:"Bodega Store",url:"https://admin.shopify.com/store/bodegabodegbodega",icon:"🛍️",color:"#FF9500"},
     ]},
-    {cat:"Tools",items:[
+    {cat:"External Tools",items:[
       {name:"Eventbrite",url:"https://www.eventbrite.com/organizations/home",icon:"🎫",color:"#F05537"},
       {name:"GoDaddy Domains",url:"https://dcc.godaddy.com/domains",icon:"🌐",color:"#1BDBDB"},
       {name:"Hostinger",url:"https://hpanel.hostinger.com",icon:"🏠",color:"#673DE6"},
     ]},
   ];
-  // Add GHL locations as links
   const ghlLinks = ghl.map(g=>({name:g.location_name,url:`https://app.gohighlevel.com/v2/location/${g.location_id}/dashboard`,icon:"📍",color:"#FF6B35"}));
-  if(ghlLinks.length>0) links.push({cat:"GoHighLevel Locations",items:ghlLinks});
+  if(ghlLinks.length>0) infraLinks.push({cat:"GoHighLevel Locations",items:ghlLinks});
 
-  // Add websites
-  const webLinks = websites.map(w=>({name:w.entity_name,url:w.custom_domain?`https://${w.custom_domain}`:`https://${w.vercel_url}`,icon:"🌐",color:"var(--ac)",sub:w.custom_domain||w.vercel_url}));
-  if(webLinks.length>0) links.push({cat:`Websites (${webLinks.length})`,items:webLinks});
+  // Filter sites by tab + search
+  let filtered = allSites;
+  if(tab!=="all"&&tab!=="infra") filtered = filtered.filter(w=>(w.site_type||"website")===tab);
+  if(search){
+    const q=search.toLowerCase();
+    filtered=filtered.filter(w=>w.entity_name.toLowerCase().includes(q)||(w.custom_domain||"").toLowerCase().includes(q)||(w.vercel_project_name||"").toLowerCase().includes(q)||(w.site_type||"").toLowerCase().includes(q));
+  }
 
-  const allItems = links.flatMap(l=>l.items.map(i=>({...i,cat:l.cat})));
-  const filtered = search ? allItems.filter(i=>i.name.toLowerCase().includes(search.toLowerCase())||i.cat.toLowerCase().includes(search.toLowerCase())) : null;
+  const pillStyle=(t)=>({padding:"7px 16px",borderRadius:20,fontSize:11,cursor:"pointer",border:`1px solid ${tab===t?"var(--ac)":"var(--bd)"}`,color:tab===t?"#fff":"var(--tx3)",background:tab===t?"var(--ac)":"var(--sf)",fontWeight:tab===t?600:500,transition:"all .15s",display:"flex",alignItems:"center",gap:6});
+  const badgeStyle=(t)=>({fontSize:9,padding:"1px 6px",borderRadius:8,background:tab===t?"rgba(255,255,255,.2)":"var(--sf2)",color:tab===t?"#fff":"var(--tx3)",fontFamily:"var(--mn)"});
+
+  const renderSiteCard=(w,i)=>{
+    const st=w.site_type||"website";
+    const tc=typeConfig[st]||typeConfig.website;
+    const url=w.custom_domain?`https://${w.custom_domain}`:(w.vercel_url?`https://${w.vercel_url}`:"#");
+    return(
+      <a key={i} href={url} target="_blank" rel="noopener" className="link-card" style={{position:"relative"}}>
+        <div className="link-icon" style={{background:tc.bg,color:tc.color}}>{tc.icon}</div>
+        <div style={{flex:1,minWidth:0}}>
+          <div style={{fontWeight:600,fontSize:13}} className="trunc">{w.entity_name}</div>
+          <div style={{fontSize:11,color:"var(--tx3)"}} className="trunc">{w.custom_domain||w.vercel_url||"—"}</div>
+        </div>
+        <span className="bg" style={{background:tc.bg,color:tc.color,fontSize:9,letterSpacing:".06em"}}>{st.toUpperCase()}</span>
+      </a>
+    );
+  };
+
+  const renderGrouped=(sites)=>{
+    return typeOrder.map(type=>{
+      const items=sites.filter(w=>(w.site_type||"website")===type);
+      if(items.length===0) return null;
+      const tc=typeConfig[type];
+      return(
+        <div key={type} style={{marginBottom:24}}>
+          <div className="sec" style={{display:"flex",alignItems:"center",gap:8}}>{tc.icon} {tc.label} <span style={{fontFamily:"var(--mn)",fontSize:10,color:tc.color}}>({items.length})</span></div>
+          <div className="g3">{items.map(renderSiteCard)}</div>
+        </div>
+      );
+    });
+  };
 
   return (<div className="u">
-    <input className="inp" placeholder="Search links, tools, websites..." value={search} onChange={e=>setSearch(e.target.value)} style={{marginBottom:20,maxWidth:400}} />
-    {filtered ? (
-      <div>{filtered.map((item,i)=>(
-        <a key={i} href={item.url} target="_blank" rel="noopener" className="link-card">
-          <div className="link-icon" style={{background:(item.color||"var(--ac)")+"14",color:item.color||"var(--ac)"}}>{item.icon}</div>
-          <div style={{flex:1,minWidth:0}}><div style={{fontWeight:600,fontSize:13}}>{item.name}</div>{item.sub&&<div style={{fontSize:11,color:"var(--tx3)"}}>{item.sub}</div>}</div>
-          <span className="bg bg-mt">{item.cat}</span>
-        </a>
-      ))}{filtered.length===0&&<div className="card" style={{textAlign:"center",padding:24,color:"var(--tx3)"}}>No results</div>}</div>
-    ) : (
-      links.map((group,gi)=>(
+    {/* Tabs */}
+    <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:16}}>
+      <div style={pillStyle("all")} onClick={()=>setTab("all")}>All <span style={badgeStyle("all")}>{allSites.length}</span></div>
+      {typeOrder.map(t=>(
+        <div key={t} style={pillStyle(t)} onClick={()=>setTab(t)}>{typeConfig[t].icon} {typeConfig[t].label} <span style={badgeStyle(t)}>{counts[t]}</span></div>
+      ))}
+      <div style={pillStyle("infra")} onClick={()=>setTab("infra")}>🔧 Infra & Links</div>
+    </div>
+
+    {/* Search */}
+    <input className="inp" placeholder="Search sites..." value={search} onChange={e=>setSearch(e.target.value)} style={{marginBottom:20,maxWidth:400}} />
+
+    {/* Content */}
+    {tab==="infra" ? (
+      infraLinks.map((group,gi)=>(
         <div key={gi} style={{marginBottom:24}}>
           <div className="sec">{group.cat}</div>
           <div className="g3">{group.items.map((item,i)=>(
             <a key={i} href={item.url} target="_blank" rel="noopener" className="link-card">
               <div className="link-icon" style={{background:(item.color||"var(--ac)")+"14",color:item.color||"var(--ac)"}}>{item.icon}</div>
-              <div style={{flex:1,minWidth:0}}><div style={{fontWeight:600,fontSize:13}} className="trunc">{item.name}</div>{item.sub&&<div style={{fontSize:11,color:"var(--tx3)"}} className="trunc">{item.sub}</div>}</div>
+              <div style={{flex:1,minWidth:0}}><div style={{fontWeight:600,fontSize:13}} className="trunc">{item.name}</div></div>
             </a>
           ))}</div>
         </div>
       ))
+    ) : tab==="all" ? (
+      search ? <div className="g3">{filtered.map(renderSiteCard)}</div> : renderGrouped(allSites)
+    ) : (
+      <div className="g3">{filtered.length>0?filtered.map(renderSiteCard):<div className="card" style={{textAlign:"center",padding:24,color:"var(--tx3)",gridColumn:"1/-1"}}>No {typeConfig[tab]?.label||"sites"} found</div>}</div>
     )}
+    {search&&filtered.length===0&&tab!=="infra"&&<div className="card" style={{textAlign:"center",padding:24,color:"var(--tx3)"}}>No results for "{search}"</div>}
   </div>);
 }
 
@@ -447,7 +505,7 @@ export default function DrDorseyDashboard() {
       Q("email_approval_queue","select=*&order=created_at.desc&limit=30"),
       Q("credentials","select=id,credential_type,credential_key,credential_value,is_active&is_active=eq.true&order=credential_type,credential_key"),
       Q("khg_cron_registry","select=*&order=status.desc,cron_name"),
-      Q("khg_website_registry","select=entity_key,entity_name,vercel_project_name,custom_domain,vercel_url,status&status=eq.live&order=entity_name"),
+      Q("khg_website_registry","select=entity_key,entity_name,vercel_project_name,custom_domain,vercel_url,status,site_type&status=eq.live&order=entity_name"),
       Q("ghl_locations","select=location_name,location_id,brand_key&order=location_name"),
       Q("brand_social_handles","select=*&order=brand_key"),
       Q("khg_daily_ops_quotas","select=*&brand_key=eq.dr_dorsey"),
