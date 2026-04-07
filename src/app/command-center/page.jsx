@@ -301,31 +301,97 @@ function CampaignScreen({ bk }) {
 }
 
 function ApprovalsScreen({ bk }) {
-  const [emails, setEmails] = useState([]); const [posts, setPosts] = useState([]);
-  const [tab, setTab] = useState("email"); const [loading, setLoading] = useState(true);
+  const [emails, setEmails] = useState([]); const [socialPosts, setSocialPosts] = useState([]);
+  const [generalQ, setGeneralQ] = useState([]); const [engagement, setEngagement] = useState([]);
+  const [tab, setTab] = useState("social"); const [loading, setLoading] = useState(true);
+  const [preview, setPreview] = useState(null); const [toast, setToast] = useState(null);
+  const showToast = (m) => { setToast(m); setTimeout(()=>setToast(null),2500); };
   useEffect(() => {
     (async () => {
-      const [em, po] = await Promise.all([
-        supa("email_approval_queue", "select=*&order=created_at.desc&limit=30"),
-        supa("weekly_content_schedule", "select=id,brand_key,day_of_week,content_pillar,caption_template,visual_type&is_active=eq.true&limit=20"),
+      const motherMatch = MOTHERS.find(m=>m.key===bk && m.children?.length>1);
+      const bf = bk==="all"?"":motherMatch?`&brand_key=in.(${motherMatch.children.join(",")})`:"&brand_key=eq."+bk;
+      const [em, sp, gq, eg] = await Promise.all([
+        supa("email_approval_queue", "select=*&order=created_at.desc&limit=50"),
+        supa("ghl_social_posting_queue", `select=*&status=in.(pending,held)${bf}&order=scheduled_for.asc.nullslast&limit=100`),
+        supa("approval_queue", "select=*&status=eq.pending&order=created_at.desc&limit=50"),
+        supa("ig_engagement_queue", `select=*&status=eq.pending${bf}&order=created_at.desc&limit=50`),
       ]);
-      setEmails(em||[]); setPosts((po||[]).map(p=>({...p,_st:"pending"}))); setLoading(false);
+      setEmails(em||[]); setSocialPosts(sp||[]); setGeneralQ(gq||[]); setEngagement(eg||[]); setLoading(false);
     })();
-  }, []);
-  const approveEmail = async (id) => { await supaUpdate("email_approval_queue",`id=eq.${id}`,{approved:true,approved_at:new Date().toISOString(),approved_by:"dr_dorsey"}); setEmails(p=>p.map(e=>e.id===id?{...e,approved:true}:e)); };
-  const rejectEmail = async (id) => { setEmails(p=>p.filter(e=>e.id!==id)); };
-  const pe = emails.filter(e=>!e.approved); const pp = posts.filter(p=>p._st==="pending");
+  }, [bk]);
+  const approvePost = async (id) => { await supaUpdate("ghl_social_posting_queue",`id=eq.${id}`,{status:"approved"}); setSocialPosts(p=>p.filter(x=>x.id!==id)); showToast("✓ Post approved"); };
+  const rejectPost = async (id) => { await supaUpdate("ghl_social_posting_queue",`id=eq.${id}`,{status:"rejected"}); setSocialPosts(p=>p.filter(x=>x.id!==id)); showToast("✗ Post rejected"); };
+  const approveAll = async () => { for(const p of socialPosts.slice(0,20)){await supaUpdate("ghl_social_posting_queue",`id=eq.${p.id}`,{status:"approved"});} setSocialPosts(s=>s.slice(20)); showToast(`✓ Approved ${Math.min(20,socialPosts.length)} posts`); };
+  const approveEmail = async (id) => { await supaUpdate("email_approval_queue",`id=eq.${id}`,{approved:true,approved_at:new Date().toISOString(),approved_by:"dr_dorsey"}); setEmails(p=>p.map(e=>e.id===id?{...e,approved:true}:e)); showToast("✓ Email approved"); };
+  const rejectEmail = async (id) => { setEmails(p=>p.filter(e=>e.id!==id)); showToast("✗ Email removed"); };
+  const approveItem = async (id) => { await supaUpdate("approval_queue",`id=eq.${id}`,{status:"approved",reviewed_at:new Date().toISOString(),reviewed_by:"dr_dorsey"}); setGeneralQ(p=>p.filter(x=>x.id!==id)); showToast("✓ Approved"); };
+  const rejectItem = async (id) => { await supaUpdate("approval_queue",`id=eq.${id}`,{status:"rejected",reviewed_at:new Date().toISOString(),reviewed_by:"dr_dorsey"}); setGeneralQ(p=>p.filter(x=>x.id!==id)); showToast("✗ Rejected"); };
+  const pe = emails.filter(e=>!e.approved);
+  const totalPending = socialPosts.length + pe.length + generalQ.length + engagement.length;
   return (<div>
+    {toast && <div style={{position:"fixed",top:16,right:16,zIndex:999,padding:"10px 18px",borderRadius:8,fontSize:12,fontWeight:600,background:toast.startsWith("✓")?"#16a34a":"#dc2626",color:"#fff",boxShadow:"0 4px 12px rgba(0,0,0,.2)"}}>{toast}</div>}
     <div className="row fi" style={{justifyContent:"space-between",marginBottom:14}}>
-      <div><div style={{fontSize:16,fontWeight:700}}>Approval Queue</div><div style={{fontSize:11,color:"var(--tx3)"}}>Nothing sends without your sign-off</div></div>
-      <span className="badge bg-r" style={{fontSize:11,padding:"4px 10px"}}>{pe.length+pp.length} pending</span>
+      <div><div style={{fontSize:16,fontWeight:700}}>🎯 Approval Command Center</div><div style={{fontSize:11,color:"var(--tx3)"}}>Preview everything before it goes live — posts, emails, events, engagement</div></div>
+      <span className="badge bg-r" style={{fontSize:12,padding:"5px 12px",fontWeight:700}}>{totalPending} PENDING</span>
+    </div>
+    {/* Stats row */}
+    <div className="g4 fi" style={{gap:8,marginBottom:14}}>
+      {[{l:"Social Posts",v:socialPosts.length,c:"var(--ac)"},{l:"Emails",v:pe.length,c:"var(--bl)"},{l:"Approvals",v:generalQ.length,c:"var(--pr)"},{l:"IG Engagement",v:engagement.length,c:"var(--gn)"}].map((s,i)=>(
+        <div key={i} className="card" style={{padding:"10px 14px",borderLeft:`3px solid ${s.c}`}}>
+          <div style={{fontSize:9,fontWeight:600,letterSpacing:".1em",textTransform:"uppercase",color:"var(--tx3)"}}>{s.l}</div>
+          <div style={{fontSize:22,fontWeight:700,color:s.c}}>{s.v}</div>
+        </div>
+      ))}
     </div>
     <div className="pills fi">
-      <button className={`pill ${tab==="email"?"act":""}`} onClick={()=>setTab("email")}>Emails ({pe.length})</button>
-      <button className={`pill ${tab==="posts"?"act":""}`} onClick={()=>setTab("posts")}>Posts ({pp.length})</button>
+      <button className={`pill ${tab==="social"?"act":""}`} onClick={()=>setTab("social")}>📱 Posts ({socialPosts.length})</button>
+      <button className={`pill ${tab==="email"?"act":""}`} onClick={()=>setTab("email")}>📧 Emails ({pe.length})</button>
+      <button className={`pill ${tab==="general"?"act":""}`} onClick={()=>setTab("general")}>📋 Approvals ({generalQ.length})</button>
+      <button className={`pill ${tab==="engagement"?"act":""}`} onClick={()=>setTab("engagement")}>💬 IG Engine ({engagement.length})</button>
     </div>
-    {loading ? <div className="card" style={{textAlign:"center",padding:32}}>Loading...</div> : tab==="email" ?
-    <div style={{display:"flex",flexDirection:"column",gap:8}}>
+    {loading ? <div className="card" style={{textAlign:"center",padding:32}}>Loading all queues...</div> :
+    /* ─── SOCIAL POSTS TAB ─── */
+    tab==="social" ? <div>
+      {socialPosts.length>0 && <div className="row fi" style={{gap:8,marginBottom:10}}>
+        <button className="btn btn-g" onClick={approveAll}><Ic d={P.check} s={12} c="#fff" /> Approve Next 20</button>
+        <button className="btn btn-sm" onClick={()=>triggerN8n(WF.dailyPoster,{action:"run_now"})}><Ic d={P.zap} s={12} /> Post Now</button>
+      </div>}
+      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(280px,1fr))",gap:10}}>
+        {socialPosts.map((p,i) => { const b=BRANDS[p.brand_key]||{}; return (
+          <div key={p.id} className="card fi" style={{padding:0,overflow:"hidden",borderLeft:`3px solid ${b.color||"var(--bd)"}`}}>
+            {/* Image preview */}
+            {p.image_url && <div style={{height:160,overflow:"hidden",background:"var(--sf2)",position:"relative"}}>
+              <img src={p.image_url} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}} onError={e=>{e.target.style.display="none"}} />
+              <div style={{position:"absolute",top:6,left:6,display:"flex",gap:4}}>
+                <span className="badge" style={{background:`${b.color||"#888"}dd`,color:"#fff",fontSize:9}}>{b.short||p.brand_key}</span>
+              </div>
+              <div style={{position:"absolute",top:6,right:6}}>
+                <span className={`badge ${p.status==="held"?"bg-r":"bg-y"}`} style={{fontSize:9}}>{p.status}</span>
+              </div>
+              {p.content_type && <div style={{position:"absolute",bottom:6,right:6}}><span className="badge" style={{background:"rgba(0,0,0,.6)",color:"#fff",fontSize:9}}>{p.content_type}</span></div>}
+            </div>}
+            <div style={{padding:12}}>
+              {!p.image_url && <div className="row" style={{justifyContent:"space-between",marginBottom:6}}>
+                <span className="badge" style={{background:`${b.color||"#888"}18`,color:b.color||"#888"}}>{b.short||p.brand_key}</span>
+                <span className={`badge ${p.status==="held"?"bg-r":"bg-y"}`}>{p.status}</span>
+              </div>}
+              <div className="row" style={{gap:6,marginBottom:6}}>
+                <span className="badge bg-b" style={{fontSize:9}}>{p.platform}</span>
+                {p.scheduled_for && <span className="mono" style={{fontSize:9,color:"var(--tx3)"}}>{new Date(p.scheduled_for).toLocaleString("en-US",{month:"short",day:"numeric",hour:"numeric",minute:"2-digit"})}</span>}
+              </div>
+              <div style={{fontSize:12,color:"var(--tx2)",lineHeight:1.5,maxHeight:60,overflow:"hidden"}}>{p.caption}</div>
+              <div className="row" style={{gap:6,marginTop:8}}>
+                <button className="btn btn-g btn-sm" style={{flex:1}} onClick={()=>approvePost(p.id)}><Ic d={P.check} s={11} c="#fff" /> Approve</button>
+                <button className="btn btn-d btn-sm" style={{flex:1}} onClick={()=>rejectPost(p.id)}><Ic d={P.x} s={11} c="#fff" /> Reject</button>
+              </div>
+            </div>
+          </div>);
+        })}
+      </div>
+      {socialPosts.length===0 && <div className="card" style={{textAlign:"center",padding:24,color:"var(--tx3)"}}>No posts waiting for approval</div>}
+    </div> :
+    /* ─── EMAILS TAB ─── */
+    tab==="email" ? <div style={{display:"flex",flexDirection:"column",gap:8}}>
       {emails.length===0 ? <div className="card" style={{textAlign:"center",padding:24,color:"var(--tx3)"}}>No emails in queue</div> : emails.map((e,i) => { const b = BRANDS[e.brand_key]||{}; return (
         <div key={i} className="card fi" style={{borderLeft:`3px solid ${e.approved?"var(--gn)":"var(--yl)"}`}}>
           <div className="row" style={{justifyContent:"space-between",marginBottom:6}}>
@@ -333,6 +399,7 @@ function ApprovalsScreen({ bk }) {
             <span className={`badge ${e.approved?"bg-g":"bg-y"}`}>{e.approved?"APPROVED":"PENDING"}</span>
           </div>
           <div style={{fontSize:12,color:"var(--tx2)",lineHeight:1.5,marginBottom:8}}>{e.body_preview||"—"}</div>
+          {e.cta_text && <div style={{fontSize:11,color:"var(--ac)",marginBottom:6}}>CTA: {e.cta_text} → {e.cta_url}</div>}
           <div className="row" style={{justifyContent:"space-between"}}>
             <div className="row" style={{gap:6}}>
               <span className="badge bg-x">{e.sequence_type}</span><span className="badge bg-x">Step {e.step_number}</span>
@@ -347,21 +414,61 @@ function ApprovalsScreen({ bk }) {
         </div>);
       })}
     </div> :
-    <div style={{display:"flex",flexDirection:"column",gap:8}}>
-      {posts.map((p,i) => { const b = BRANDS[p.brand_key]||{}; return (
-        <div key={i} className="card fi" style={{borderLeft:`3px solid ${p._st==="approved"?"var(--gn)":"var(--yl)"}`}}>
+    /* ─── GENERAL APPROVALS TAB ─── */
+    tab==="general" ? <div style={{display:"flex",flexDirection:"column",gap:8}}>
+      {generalQ.length===0 ? <div className="card" style={{textAlign:"center",padding:24,color:"var(--tx3)"}}>No items awaiting approval</div> : generalQ.map((q,i) => { const b = BRANDS[q.brand_key?.replace(/-/g,"_")]||{}; const typeIcons={email_blast:"📧",newsletter:"📰",pr_pitch:"📣",social_post:"📱",event_sourcing:"🎉"}; return (
+        <div key={i} className="card fi" style={{borderLeft:`3px solid ${b.color||"var(--pr)"}`}}>
           <div className="row" style={{justifyContent:"space-between",marginBottom:6}}>
-            <div className="row" style={{gap:8}}><span className="badge" style={{background:`${b.color||"#888"}18`,color:b.color||"#888"}}>{b.short||p.brand_key}</span><span className="badge bg-x">{p.content_pillar}</span><span className="badge bg-x">{p.day_of_week}</span></div>
-            <span className={`badge ${p._st==="approved"?"bg-g":"bg-y"}`}>{p._st}</span>
+            <div className="row" style={{gap:8}}>
+              <span style={{fontSize:18}}>{typeIcons[q.item_type]||"📋"}</span>
+              <span className="badge" style={{background:`${b.color||"#a855f7"}18`,color:b.color||"#a855f7"}}>{q.brand_key?.replace(/-/g," ").toUpperCase()}</span>
+              <span className="badge bg-x">{q.item_type?.replace(/_/g," ")}</span>
+              {q.channel && <span className="badge bg-b">{q.channel}</span>}
+            </div>
+            <span className="badge bg-y">PENDING</span>
           </div>
-          <div style={{fontSize:12,color:"var(--tx2)",lineHeight:1.5,marginBottom:8}}>{p.caption_template||"—"}</div>
-          {p._st==="pending" && <div className="row" style={{gap:6}}>
-            <button className="btn btn-g btn-sm" onClick={()=>setPosts(x=>x.map(z=>z.id===p.id?{...z,_st:"approved"}:z))}><Ic d={P.check} s={12} c="#fff" /> Approve</button>
-            <button className="btn btn-d btn-sm" onClick={()=>setPosts(x=>x.map(z=>z.id===p.id?{...z,_st:"rejected"}:z))}><Ic d={P.x} s={12} c="#fff" /> Reject</button>
-            <button className="btn btn-sm"><Ic d={P.edit} s={12} /> Edit</button>
-          </div>}
+          <div style={{fontSize:13,fontWeight:600,marginBottom:4}}>{q.title}</div>
+          <div style={{fontSize:12,color:"var(--tx2)",lineHeight:1.5,marginBottom:8}}>{q.content_preview}</div>
+          {q.image_url && <div style={{marginBottom:8}}><img src={q.image_url} alt="" style={{maxWidth:300,borderRadius:8}} onError={e=>{e.target.style.display="none"}} /></div>}
+          <div className="row" style={{gap:6}}>
+            <button className="btn btn-g btn-sm" onClick={()=>approveItem(q.id)}><Ic d={P.check} s={12} c="#fff" /> Approve</button>
+            <button className="btn btn-d btn-sm" onClick={()=>rejectItem(q.id)}><Ic d={P.x} s={12} c="#fff" /> Reject</button>
+            {q.full_payload && <button className="btn btn-sm" onClick={()=>setPreview(preview===i?null:i)}><Ic d={P.eye} s={11} /> Preview</button>}
+          </div>
+          {preview===i && q.full_payload && <div style={{marginTop:10,padding:12,background:"var(--sf2)",borderRadius:8,fontSize:11,whiteSpace:"pre-wrap",maxHeight:200,overflow:"auto"}}>{typeof q.full_payload==="string"?q.full_payload:JSON.stringify(q.full_payload,null,2)}</div>}
         </div>);
       })}
+    </div> :
+    /* ─── IG ENGAGEMENT TAB ─── */
+    <div>
+      <div className="card fi" style={{marginBottom:10,padding:"10px 14px",background:"var(--acBg)",borderColor:"var(--ac)"}}>
+        <div className="row" style={{justifyContent:"space-between"}}>
+          <div style={{fontSize:12,fontWeight:600}}>{engagement.length} engagement actions queued</div>
+          <div className="row" style={{gap:4}}>
+            <span className="badge bg-x">{[...new Set(engagement.map(e=>e.brand_key))].length} brands</span>
+            <span className="badge bg-x">{[...new Set(engagement.map(e=>e.action_type))].length} action types</span>
+          </div>
+        </div>
+      </div>
+      <div style={{display:"flex",flexDirection:"column",gap:4}}>
+        {engagement.slice(0,30).map((e,i) => { const b=BRANDS[e.brand_key]||{}; return (
+          <div key={i} className="card fi" style={{padding:"8px 14px",borderLeft:`3px solid ${b.color||"var(--gn)"}`}}>
+            <div className="row" style={{justifyContent:"space-between"}}>
+              <div className="row" style={{gap:8}}>
+                <span className="badge" style={{background:`${b.color||"#888"}18`,color:b.color||"#888",fontSize:9}}>{b.short||e.brand_key}</span>
+                <span style={{fontSize:12,fontWeight:500}}>@{e.target_handle}</span>
+                <span className="badge bg-x" style={{fontSize:9}}>{e.action_type}</span>
+              </div>
+              <div className="row" style={{gap:6}}>
+                <span className="mono" style={{fontSize:9,color:"var(--tx3)"}}>{e.ig_account}</span>
+                <span className="badge bg-y" style={{fontSize:9}}>pending</span>
+              </div>
+            </div>
+            {e.message_text && <div style={{fontSize:11,color:"var(--tx2)",marginTop:4}}>{e.message_text}</div>}
+          </div>);
+        })}
+      </div>
+      {engagement.length===0 && <div className="card" style={{textAlign:"center",padding:24,color:"var(--tx3)"}}>No engagement actions queued</div>}
     </div>}
   </div>);
 }
