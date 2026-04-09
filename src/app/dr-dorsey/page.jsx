@@ -74,6 +74,13 @@ function Directory({ d }) {
       {name:"Vercel Dashboard",url:"https://vercel.com/dr-dorseys-projects",icon:"▲",color:"#000"},
       {name:"GitHub",url:"https://github.com/dolodorsey",icon:"🐙",color:"#333"},
     ]},
+    {cat:"Directories & Data",items:[
+      {name:"Dolo Directory (2,143 Contacts)",url:"https://supabase.com/dashboard/project/dzlmtvodpyhetvektfuo/editor/dolo_directory",icon:"📇",color:"#C9A96E"},
+      {name:"VIP Circle",url:"https://supabase.com/dashboard/project/dzlmtvodpyhetvektfuo/editor/dolo_vip_circle",icon:"⭐",color:"#D4A843"},
+      {name:"Casper Cook Applications",url:"https://supabase.com/dashboard/project/dzlmtvodpyhetvektfuo/editor/casper_cook_applications",icon:"👨‍🍳",color:"#E74C3C"},
+      {name:"Casper Partner Venues",url:"https://supabase.com/dashboard/project/dzlmtvodpyhetvektfuo/editor/casper_partner_venues",icon:"🍽️",color:"#FF6B35"},
+      {name:"Contact Blacklist",url:"https://supabase.com/dashboard/project/dzlmtvodpyhetvektfuo/editor/contact_blacklist",icon:"🚫",color:"#C45B4A"},
+    ]},
     {cat:"Shopify Stores",items:[
       {name:"MAGA Store",url:"https://admin.shopify.com/store/makeatlantagreatagain",icon:"🛍️",color:"#96BF48"},
       {name:"Stush Store",url:"https://admin.shopify.com/store/stushusa",icon:"🛍️",color:"#A855F7"},
@@ -408,6 +415,12 @@ function Overview({ d, go }) {
       <div className="card st" onClick={()=>go("social")}><div className="st-v" style={{color:"var(--gn)"}}>{(d.social||[]).length}</div><div className="st-l">Social</div></div>
       <div className="card st" onClick={()=>go("emails")}><div className="st-v" style={{color:pEm.length>0?"var(--rd)":"var(--gn)"}}>{pEm.length}</div><div className="st-l">Emails</div></div>
     </div>
+    <div className="g4" style={{marginBottom:24}}>
+      <div className="card st" onClick={()=>go("accident_leads")}><div className="st-v" style={{color:"var(--rd)"}}>{(d.accident_leads||[]).length}</div><div className="st-l">Accident Leads</div></div>
+      <div className="card st" onClick={()=>go("all_leads")}><div className="st-v" style={{color:"var(--bl)"}}>{(d.mcp_leads||[]).length.toLocaleString()}</div><div className="st-l">MCP Leads</div></div>
+      <div className="card st" onClick={()=>go("contacts")}><div className="st-v" style={{color:"var(--ac)"}}>{(d.contacts||[]).length.toLocaleString()}</div><div className="st-l">Directory</div></div>
+      <div className="card st" onClick={()=>go("all_leads")}><div className="st-v" style={{color:"var(--gn)"}}>{((d.accident_leads||[]).length+(d.mcp_leads||[]).length+(d.crm_leads||[]).length+(d.casper_leads||[]).length+(d.umbrella_leads||[]).length).toLocaleString()}</div><div className="st-l">Total Leads</div></div>
+    </div>
     <div className="g2" style={{marginBottom:24}}>
       <div className="card"><div className="row" style={{justifyContent:"space-between",marginBottom:14}}><h3 style={{fontSize:15}}>Priority Tasks</h3><button className="btn btn-s" onClick={()=>go("tasks")}>Board</button></div>
         {open.filter(t=>t.priority==="critical"||t.priority==="high").slice(0,6).map((t,i)=>(<div key={i} style={{padding:"8px 0",borderBottom:"1px solid var(--sf2)"}}><div className="row" style={{gap:8}}><span className={`bg ${t.priority==="critical"?"bg-rd":"bg-ac"}`}>{t.priority}</span><span className="trunc" style={{flex:1,fontWeight:500}}>{t.title}</span><span className="bg bg-mt">{t.assigned_to||"—"}</span></div></div>))}
@@ -418,7 +431,7 @@ function Overview({ d, go }) {
       </div>
     </div>
     <div className="card"><h3 style={{fontSize:15,marginBottom:14}}>Quick Actions</h3>
-      <div className="row" style={{gap:10,flexWrap:"wrap"}}><button className="btn btn-p" onClick={()=>go("tasks")}>Tasks</button><button className="btn" onClick={()=>go("outreach")}>Outreach</button><button className="btn" onClick={()=>go("social")}>Social</button><button className="btn" onClick={()=>go("content")}>Content</button><button className="btn" onClick={()=>go("emails")}>Emails</button><button className="btn" onClick={()=>go("ops")}>Daily Ops</button><button className="btn" onClick={()=>go("directory")}>Links</button><button className="btn" onClick={()=>go("creds")}>Credentials</button><button className="btn" onClick={()=>go("contacts")}>Contacts</button><button className="btn" onClick={()=>go("vip")}>VIP Circle</button></div>
+      <div className="row" style={{gap:10,flexWrap:"wrap"}}><button className="btn btn-p" onClick={()=>go("tasks")}>Tasks</button><button className="btn" onClick={()=>go("outreach")}>Outreach</button><button className="btn" onClick={()=>go("social")}>Social</button><button className="btn" onClick={()=>go("content")}>Content</button><button className="btn" onClick={()=>go("emails")}>Emails</button><button className="btn btn-r" onClick={()=>go("accident_leads")}>Accident Leads</button><button className="btn" onClick={()=>go("all_leads")}>All Leads</button><button className="btn" onClick={()=>go("ops")}>Daily Ops</button><button className="btn" onClick={()=>go("directory")}>Links</button><button className="btn" onClick={()=>go("creds")}>Credentials</button><button className="btn" onClick={()=>go("contacts")}>Contacts</button><button className="btn" onClick={()=>go("vip")}>VIP Circle</button></div>
     </div>
   </div>);
 }
@@ -480,6 +493,105 @@ function Credentials({ d }) {
   </div>);
 }
 
+function AccidentLeads({ d }) {
+  const [search,setSearch]=useState("");const [statusF,setStatusF]=useState("all");
+  const all=d.accident_leads||[];
+  const statuses=[...new Set(all.map(l=>l.lead_status||"new"))].sort();
+  const filtered=all.filter(l=>{
+    if(statusF!=="all"&&(l.lead_status||"new")!==statusF)return false;
+    if(search){const q=search.toLowerCase();return(l.driver_1_name||"").toLowerCase().includes(q)||(l.county||"").toLowerCase().includes(q)||(l.city||"").toLowerCase().includes(q)||(l.source||"").toLowerCase().includes(q)||(l.source_report_id||"").toLowerCase().includes(q);}
+    return true;
+  });
+  const sev={"fatal":"bg-rd","injury":"bg-yl","property":"bg-mt"};
+  return(<div className="u">
+    <div className="row" style={{justifyContent:"space-between",marginBottom:16,flexWrap:"wrap",gap:10}}>
+      <div className="row" style={{gap:8}}><input className="inp" placeholder="Search accidents..." value={search} onChange={e=>setSearch(e.target.value)} style={{maxWidth:300}} />
+      <select className="inp" style={{maxWidth:180}} value={statusF} onChange={e=>setStatusF(e.target.value)}><option value="all">All Status ({all.length})</option>{statuses.map(s=><option key={s} value={s}>{s} ({all.filter(l=>(l.lead_status||"new")===s).length})</option>)}</select></div>
+      <a href="https://supabase.com/dashboard/project/dzlmtvodpyhetvektfuo/editor/h911_accident_leads" target="_blank" rel="noopener" className="btn btn-s">Open in Supabase ↗</a>
+    </div>
+    <div className="g4" style={{marginBottom:20}}>
+      <div className="card st"><div className="st-v">{all.length}</div><div className="st-l">Total Leads</div></div>
+      <div className="card st"><div className="st-v" style={{color:"var(--rd)"}}>{all.filter(l=>l.severity==="fatal").length}</div><div className="st-l">Fatal</div></div>
+      <div className="card st"><div className="st-v" style={{color:"var(--yl)"}}>{all.filter(l=>l.severity==="injury"||l.num_injuries>0).length}</div><div className="st-l">With Injuries</div></div>
+      <div className="card st"><div className="st-v" style={{color:"var(--gn)"}}>{all.filter(l=>l.lead_status==="contacted"||l.lead_status==="referred").length}</div><div className="st-l">Contacted</div></div>
+    </div>
+    <div className="sec">{filtered.length} accident leads</div>
+    <div className="card" style={{padding:0,overflow:"auto"}}><table className="tbl"><thead><tr><th>Date</th><th>County / City</th><th>Driver 1</th><th>Phone</th><th>Severity</th><th>Vehicles</th><th>Injuries</th><th>Source</th><th>Score</th><th>Status</th></tr></thead>
+    <tbody>{filtered.slice(0,100).map((l,i)=>(<tr key={i}>
+      <td style={{fontFamily:"var(--mn)",fontSize:11,whiteSpace:"nowrap"}}>{l.accident_date?new Date(l.accident_date).toLocaleDateString():"—"}</td>
+      <td><div style={{fontWeight:500}}>{l.county||"—"}</div><div style={{fontSize:11,color:"var(--tx3)"}}>{l.city||""}{l.state?", "+l.state:""}</div></td>
+      <td style={{fontWeight:500}}>{l.driver_1_name||"—"}</td>
+      <td style={{fontFamily:"var(--mn)",fontSize:11}}>{l.driver_1_phone||"—"}</td>
+      <td><span className={`bg ${sev[l.severity]||"bg-mt"}`}>{l.severity||"—"}</span></td>
+      <td style={{textAlign:"center"}}>{l.num_vehicles||"—"}</td>
+      <td style={{textAlign:"center"}}>{l.num_injuries||0}</td>
+      <td style={{fontSize:11}}>{l.source||"—"}</td>
+      <td style={{fontFamily:"var(--mn)",fontWeight:600,color:l.lead_score>=70?"var(--gn)":l.lead_score>=40?"var(--yl)":"var(--tx3)"}}>{l.lead_score||"—"}</td>
+      <td><span className={`bg ${(l.lead_status||"new")==="new"?"bg-bl":(l.lead_status||"")==="contacted"?"bg-gn":(l.lead_status||"")==="referred"?"bg-ac":"bg-mt"}`}>{l.lead_status||"new"}</span></td>
+    </tr>))}</tbody></table></div>
+    {filtered.length>100&&<div style={{textAlign:"center",padding:12,color:"var(--tx3)",fontSize:12}}>Showing 100 of {filtered.length} — open in Supabase for full view</div>}
+  </div>);
+}
+
+function AllLeads({ d }) {
+  const [search,setSearch]=useState("");const [src,setSrc]=useState("all");
+  const acc=d.accident_leads||[];const mcp=d.mcp_leads||[];const crm=d.crm_leads||[];const casper=d.casper_leads||[];const umbrella=d.umbrella_leads||[];
+  const sources=[
+    {key:"all",label:"All Leads",ct:acc.length+mcp.length+crm.length+casper.length+umbrella.length},
+    {key:"accident",label:"Accident (H911)",ct:acc.length},
+    {key:"mcp",label:"MCP / Scraped",ct:mcp.length},
+    {key:"crm",label:"CRM",ct:crm.length},
+    {key:"casper",label:"Casper",ct:casper.length},
+    {key:"umbrella",label:"Umbrella",ct:umbrella.length},
+  ];
+
+  const normalize=(items,source)=>items.map(l=>({
+    name:l.driver_1_name||l.full_name||l.lead_name||l.name||l.display_name||"—",
+    phone:l.driver_1_phone||l.phone||"—",
+    email:l.driver_1_email||l.email||"—",
+    company:l.company||l.company_or_event||l.agency||"—",
+    city:l.city||"—",
+    status:l.lead_status||l.pipeline_stage||l.status||"new",
+    score:l.lead_score||l.score||l.priority_score||null,
+    source:source,
+    date:l.accident_date||l.created_at||l.date_requested||"—",
+    brand:l.brand_key||l.brand_interest||"—",
+  }));
+
+  let all=[];
+  if(src==="all"||src==="accident")all=all.concat(normalize(acc,"Accident"));
+  if(src==="all"||src==="mcp")all=all.concat(normalize(mcp,"MCP"));
+  if(src==="all"||src==="crm")all=all.concat(normalize(crm,"CRM"));
+  if(src==="all"||src==="casper")all=all.concat(normalize(casper,"Casper"));
+  if(src==="all"||src==="umbrella")all=all.concat(normalize(umbrella,"Umbrella"));
+
+  if(search){const q=search.toLowerCase();all=all.filter(l=>l.name.toLowerCase().includes(q)||l.company.toLowerCase().includes(q)||l.city.toLowerCase().includes(q)||l.email.toLowerCase().includes(q));}
+
+  return(<div className="u">
+    <div className="g5" style={{marginBottom:20}}>
+      {sources.map(s=>(<div key={s.key} className="card st" style={{cursor:"pointer",borderColor:src===s.key?"var(--ac)":"var(--bd)"}} onClick={()=>setSrc(s.key)}><div className="st-v">{s.ct.toLocaleString()}</div><div className="st-l">{s.label}</div></div>))}
+    </div>
+    <div className="row" style={{gap:10,marginBottom:16}}>
+      <input className="inp" placeholder="Search all leads..." value={search} onChange={e=>setSearch(e.target.value)} style={{maxWidth:380}} />
+      <span style={{fontSize:12,color:"var(--tx3)"}}>{all.length.toLocaleString()} leads</span>
+    </div>
+    <div className="card" style={{padding:0,overflow:"auto"}}><table className="tbl"><thead><tr><th>Name</th><th>Phone</th><th>Email</th><th>Company</th><th>City</th><th>Source</th><th>Brand</th><th>Score</th><th>Status</th><th>Date</th></tr></thead>
+    <tbody>{all.slice(0,150).map((l,i)=>(<tr key={i}>
+      <td style={{fontWeight:500}}>{l.name}</td>
+      <td style={{fontFamily:"var(--mn)",fontSize:11}}>{l.phone}</td>
+      <td style={{fontSize:11}} className="trunc" title={l.email}>{l.email}</td>
+      <td style={{fontSize:12}}>{l.company}</td>
+      <td style={{fontSize:12}}>{l.city}</td>
+      <td><span className={`bg ${l.source==="Accident"?"bg-rd":l.source==="MCP"?"bg-bl":l.source==="Casper"?"bg-yl":l.source==="CRM"?"bg-gn":"bg-ac"}`}>{l.source}</span></td>
+      <td style={{fontSize:11}}>{l.brand}</td>
+      <td style={{fontFamily:"var(--mn)",fontWeight:600}}>{l.score||"—"}</td>
+      <td><span className="bg bg-mt">{l.status}</span></td>
+      <td style={{fontFamily:"var(--mn)",fontSize:10}}>{l.date&&l.date!=="—"?new Date(l.date).toLocaleDateString():""}</td>
+    </tr>))}</tbody></table></div>
+    {all.length>150&&<div style={{textAlign:"center",padding:12,color:"var(--tx3)",fontSize:12}}>Showing 150 of {all.length.toLocaleString()} — filter or open in Supabase for full view</div>}
+  </div>);
+}
+
 function DailyOps({ d }) {
   const crons=d.crons||[];const active=crons.filter(c=>c.status==="active");
   return (<div className="u"><div className="sec">{active.length} active · {crons.length-active.length} inactive</div>
@@ -495,7 +607,7 @@ export default function DrDorseyDashboard() {
   const [loading,setLoading]=useState(true);
 
   const load=useCallback(async()=>{
-    const [contacts,vip,outreach,social,tasks,content,emails,creds,crons,websites,ghl,handles,quotas,logos]=await Promise.all([
+    const [contacts,vip,outreach,social,tasks,content,emails,creds,crons,websites,ghl,handles,quotas,logos,accident_leads,mcp_leads,crm_leads,casper_leads,umbrella_leads]=await Promise.all([
       Q("dolo_directory","select=display_name,first_name,last_name,phone,email,instagram,category,subcategory,relationship_tier,company,profession,city,is_vip&order=display_name&limit=500"),
       Q("dolo_vip_circle","select=*&order=full_name&limit=50"),
       Q("contact_action_queue","select=*&brand_key=eq.dr_dorsey&order=created_at.desc&limit=100"),
@@ -510,12 +622,17 @@ export default function DrDorseyDashboard() {
       Q("brand_social_handles","select=*&order=brand_key"),
       Q("khg_daily_ops_quotas","select=*&brand_key=eq.dr_dorsey"),
       Q("brand_asset_files","select=entity_id,file_url,is_primary&asset_type=eq.logo&file_url=not.is.null&entity_id=eq.dr_dorsey"),
+      Q("h911_accident_leads","select=*&order=accident_date.desc.nullslast&limit=200"),
+      Q("mcp_leads","select=lead_id,brand_key,lead_type,name,full_name,email,phone,company,city,platform,handle,score,priority,status,source,created_at&order=created_at.desc&limit=200"),
+      Q("crm_leads","select=*&order=created_at.desc&limit=100"),
+      Q("casper_leads","select=*&order=created_at.desc&limit=100"),
+      Q("umbrella_leads","select=lead_id,vertical,full_name,first_name,last_name,email,phone,city,state,score,priority,status,source,accident_date,accident_location,agency,contract_title,created_at&order=created_at.desc&limit=200"),
     ]);
     setD({contacts:contacts||[],vip:vip||[],outreach:outreach||[],social:social||[],tasks:(tasks||[]).filter(function(t) {
       if (!t.brand || t.brand === "khg") return true;
       var b = (t.brand||"").toLowerCase().replace(/\s+/g,"_");
       return b === "dr_dorsey" || b.includes("dorsey");
-    }),content:content||[],emails:emails||[],creds:creds||[],crons:crons||[],websites:websites||[],ghl:ghl||[],handles:handles||[],quotas:quotas||[],logos:logos||[]});
+    }),content:content||[],emails:emails||[],creds:creds||[],crons:crons||[],websites:websites||[],ghl:ghl||[],handles:handles||[],quotas:quotas||[],logos:logos||[],accident_leads:accident_leads||[],mcp_leads:mcp_leads||[],crm_leads:crm_leads||[],casper_leads:casper_leads||[],umbrella_leads:umbrella_leads||[]});
     setLoading(false);
   },[]);
 
@@ -534,6 +651,8 @@ export default function DrDorseyDashboard() {
     {id:"social",label:"Social Media",sec:"Execution",ct:(d.social||[]).length},
     {id:"content",label:"Content Calendar",sec:"Execution",ct:(d.content||[]).length},
     {id:"emails",label:"Email Approvals",sec:"Execution",ct:(d.emails||[]).filter(e=>!e.approved).length},
+    {id:"accident_leads",label:"Accident Leads",sec:"Leads",ct:(d.accident_leads||[]).length},
+    {id:"all_leads",label:"All Leads",sec:"Leads",ct:(d.accident_leads||[]).length+(d.mcp_leads||[]).length+(d.crm_leads||[]).length+(d.casper_leads||[]).length+(d.umbrella_leads||[]).length},
     {id:"ops",label:"Daily Ops",sec:"System",ct:(d.crons||[]).filter(c=>c.status==="active").length},
   ];
   const secs=[...new Set(nav.map(n=>n.sec))];
@@ -552,6 +671,8 @@ export default function DrDorseyDashboard() {
       case "social":return<SocialMedia d={d} reload={load}/>;
       case "content":return<ContentCalendar d={d}/>;
       case "emails":return<EmailApprovals d={d} reload={load}/>;
+      case "accident_leads":return<AccidentLeads d={d}/>;
+      case "all_leads":return<AllLeads d={d}/>;
       case "quotas": {
         const qFields=[{key:"dms_per_day",label:"DMs / Day"},{key:"comments_per_day",label:"Comments / Day"},{key:"likes_per_day",label:"Likes / Day"},{key:"follows_per_day",label:"Follows / Day"},{key:"emails_per_day",label:"Emails / Day"},{key:"stories_per_day",label:"Stories / Day"},{key:"posts_per_day",label:"Posts / Day"},{key:"reels_per_week",label:"Reels / Week"}];
         return (<div className="up"><div className="sec-t">Dr. Dorsey Daily Quotas</div><p style={{fontSize:13,color:"var(--tx2)",marginBottom:20}}>Set daily limits. Changes save to Supabase instantly.</p>
